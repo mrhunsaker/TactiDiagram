@@ -13,7 +13,8 @@
     "@huggingface/transformers": "4.3.0",
     "@techstark/opencv-js": "4.12.0-release.1",
     "tesseract.js": "7.0.0",
-    "three": "0.186.1"
+    "three": "0.186.1",
+    "esm-potrace-wasm": "0.5.1"
   },
   "devDependencies": {
     "playwright": "1.64.0"

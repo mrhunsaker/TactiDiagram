@@ -21,3 +21,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 Sample diagrams in app/samples/ keep their own licenses (see app/samples/CREDITS.md).
+
+Third-party software
+--------------------
+
+TouchSight includes esm-potrace-wasm 0.5.1, which is licensed under GNU General Public License, version 2 (GPL-2.0). The full license text is provided in LICENSES/GPL-2.0.txt. The upstream project is https://github.com/tomayac/esm-potrace-wasm.

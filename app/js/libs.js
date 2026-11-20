@@ -28,7 +28,7 @@ export function loadOpenCV() {
         // The Emscripten module is a thenable that resolves to itself; awaiting it
         // (or resolving a promise with it) loops forever, so wait then drop then.
         if (typeof cv.then === 'function') await new Promise((resolve, reject) => {
-          try { cv.then(resolve); } catch (e) { reject(e); }
+          try { cv.then(() => resolve()); } catch (e) { reject(e); }
         });
         else if (!cv.Mat) await new Promise((resolve, reject) => {
           const previous = cv.onRuntimeInitialized;

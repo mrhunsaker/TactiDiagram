@@ -21,6 +21,9 @@ async function fetchTo(url, dst) {
   console.log('downloaded', url);
 }
 
+// Potrace (browser ESM + embedded WebAssembly)
+await cp(join(nm, 'esm-potrace-wasm/dist/index.js'), join(out, 'potrace/index.js'));
+
 // OpenCV.js
 await cp(join(nm, '@techstark/opencv-js/dist/opencv.js'), join(out, 'opencv/opencv.js'));
 

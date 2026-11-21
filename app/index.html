@@ -59,6 +59,8 @@
             <option value="simple">Simplified (3 mm spacing)</option>
           </select>
         </label>
+        <label class="check"><input id="opt-autotrace" type="checkbox"> Use Autotrace (Potrace)</label>
+        <p class="hint">Autotrace follows the diagram’s shapes as vector contours. Turn it off to use the default threshold-based tracing.</p>
         <label for="opt-sensitivity">Tracing sensitivity <output id="opt-sensitivity-value" for="opt-sensitivity">55</output>
           <input id="opt-sensitivity" type="range" min="0" max="100" step="5" value="55">
           <small class="hint">Higher values recover lighter contours but may add detail. Tactile spacing and braille clearance remain enforced.</small>

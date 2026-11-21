@@ -29,7 +29,7 @@ The vendor script is intended to prepare local browser assets: OpenCV.js, Tesser
 
 ### Asset path check
 
-**Important current source caveat:** the inspected `scripts/vendor.mjs` writes generated assets to `app/vendor` and `app/models`, while browser loaders in `src/js/libs.js` and `src/js/paddle.js` resolve assets relative to `src/` (under `src/vendor` and `src/models`). These paths do not currently agree in the checked-in source. Do not assume that a successful vendor command means the application can find every asset. This mismatch must be reconciled in code and verified before the clean-checkout setup can be considered reproducible.
+The server and vendor script target `src/`, matching the tracked application source. Run the commands above and confirm the browser console reports successful local asset loading.
 
 ## Start the local application
 

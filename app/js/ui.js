@@ -1,6 +1,7 @@
 import { loadOpenCV } from './libs.js';
 import { analyze, updateTracing } from './pipeline.js';
 import { DEFAULT_TRACING_SENSITIVITY } from './tracing-config.js';
+import { updateAutotrace } from './autotrace.js';
 import { buildLayout } from './tactile.js';
 import { renderTactile, renderKeyPage, TEXTURES } from './render.js';
 import { checkAll } from './check.js';
@@ -121,6 +122,10 @@ async function run() {
     state.analysis = await analyze(state.imageData, { sensitivity: state.sensitivity,
       onStage: (k, msg) => setStep(k, k === 'engines' ? 'Loading on-device models… (first run only)' : msg),
     });
+    if ($('#opt-autotrace').checked) {
+      setStep('layout', 'Vectorizing diagram outlines with Potrace…');
+      await updateAutotrace(state.imageData, state.analysis);
+    }
     await relayout(true);
     const secs = ((performance.now() - t0) / 1000).toFixed(1);
     const st = state.layout.stats;
@@ -344,6 +349,30 @@ $('#viewmode').addEventListener('click', (e) => {
   drawTactile();
 });
 for (const id of ['#opt-page', '#opt-style', '#opt-textures', '#opt-keys', '#opt-title']) $(id).addEventListener('change', () => state.analysis && !state.busy && relayout());
+
+const autotraceInput = $('#opt-autotrace');
+autotraceInput?.addEventListener('change', async () => {
+  if (!state.analysis || state.busy) return;
+  state.busy = true;
+  autotraceInput.disabled = true;
+  setStatus(autotraceInput.checked ? 'Vectorizing outlines with Potrace…' : 'Restoring threshold-based tracing…');
+  try {
+    if (autotraceInput.checked) await updateAutotrace(state.imageData, state.analysis);
+    else {
+      const cv = await loadOpenCV();
+      updateTracing(cv, state.imageData, state.analysis, state.sensitivity);
+    }
+    await relayout();
+    setStatus(autotraceInput.checked ? 'Autotrace updated · OCR and segmentation were reused.' : 'Threshold tracing restored · OCR and segmentation were reused.');
+  } catch (e) {
+    console.error(e);
+    autotraceInput.checked = !autotraceInput.checked;
+    setStatus('Could not change tracing mode: ' + (e.message || e), true);
+  } finally {
+    autotraceInput.disabled = false;
+    state.busy = false;
+  }
+});
 
 const sensitivityInput = $('#opt-sensitivity');
 const sensitivityValue = $('#opt-sensitivity-value');

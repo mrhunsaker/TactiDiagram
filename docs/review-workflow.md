@@ -56,7 +56,7 @@ The checker reports selected geometric properties alongside the edge-tracing bas
 
 Treat a flagged value as a reason to inspect the drawing. A low metric does not prove that the tactile graphic is understandable, and a high metric does not automatically mean that a particular line should be removed. Meaning and tactile legibility matter.
 
-## Final review checklist
+## Optional SVG-editor post-processing\n\nAfter completing the in-app review, export the editable tactile SVG. Inkscape is the recommended FOSS editor and exposes the named layers for textures, structural line art, outlines, knockouts, leaders, and braille. Illustrator, Affinity Designer, and other SVG-capable editors can perform the same post-processing. Adjust paths or positions only with the tactile design constraints in view. Save the edited file as a separate reviewed version. TouchSight-NG cannot rerun its automated checks against external edits, so manually recheck braille, 3 mm clearances, line weights, texture separation, page dimensions, and every label-to-part relationship.\n\n## Final review checklist
 
 Before exporting, verify:
 
@@ -67,7 +67,7 @@ Before exporting, verify:
 5. Textures are distinct, consistently assigned, and do not crowd boundaries.
 6. Braille is correct, oriented correctly, and has adequate clearance.
 7. The page title, key page, orientation, and page size are correct.
-8. The 3D preview and automated checks have been inspected, with exceptions resolved or documented.
+8. The 3D preview and automated checks have been inspected, with exceptions resolved or documented.\n9. If the SVG was edited externally, all affected geometry, braille, spacing, page dimensions, and tactile meaning have been reviewed again.
 
 ## Production proof
 

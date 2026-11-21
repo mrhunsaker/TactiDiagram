@@ -21,12 +21,12 @@ Naive tracing does not work: edge detection turns every printed label into raise
 - A **tactile page in millimetres** with a bold/fine line hierarchy, optional textures, and UEB Grade 1 (uncontracted) braille labels
 - A **key page** when labels do not fit in full braille
 - A **3D relief preview** of how the page will feel, plus an **STL export** for 3D printing
-- A **tactile SVG** (pure black, no greys) ready for swell paper, or print / PDF at true page size
+- An **editable, layered tactile SVG** (pure black, no greys) sized in millimetres, plus print / PDF at true page size. Open the SVG in Inkscape (FOSS) or another vector editor for manual adjustment and QC; Illustrator and Affinity Designer are also suitable.
 - An automated **guideline check**, shown side by side with a naive edge-tracing baseline
 
 In evaluation on 16 Wikimedia Commons diagrams, TouchSight-NG found 148 of 151 hand-counted labels (98%), placed all but 1 of 233 detected labels in braille, and left 66 fragments below the 12.5 mm touch threshold versus 763 for plain edge tracing. See [Evaluation and benchmarks](evaluation.md).
 
-## Learn the theory and technology
+## Editable SVG post-processing and QC\n\nThe tactile and key-page SVG exports contain vector geometry rather than a flattened image. Named layers separate textures, structural line art, outlines, label-clearance knockouts, leader lines, and braille dots. Use Inkscape as the recommended FOSS editor to inspect and adjust paths, positions, linework, or text. The SVG format is not Inkscape-exclusive: Adobe Illustrator, Affinity Designer, and other SVG-capable editors can perform the same work. After manual edits, repeat the transcriber and physical-proof checks; edits made outside TouchSight-NG are not covered by its automated checker.\n\n## Learn the theory and technology
 
 - [Architecture](architecture.md): why the system combines OCR, geometric computer vision, and segmentation.
 - [Pipeline stages](pipeline.md): how each stage works and how errors propagate.

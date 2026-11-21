@@ -24,7 +24,7 @@ GitHub Pages hosts the MkDocs documentation only. It does not host the applicati
 ## Conceptual processing architecture
 
 ```mermaid
-flowchart TD
+flowchart LR
   A[Source image] --> B[Decode, orient, resize, composite transparency]
   B --> C[OCR engines]
   C --> D[Word boxes and confidence]

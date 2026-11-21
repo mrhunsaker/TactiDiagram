@@ -4,9 +4,15 @@
 
 The tactile SVG is a vector drawing intended for physical production. It uses pure black geometry rather than relying on colour or greyscale to encode tactile features. The page is laid out in millimetres for the selected paper size. The preview may show grey label pills and other UI overlays that are not part of the production SVG.
 
+## Editable SVG post-processing
+
+The tactile SVG is a vector document, not a screenshot. Its geometry is expressed as editable SVG paths and circles, with named Inkscape layers separating textures, structural line art, outlines, label knockouts, leaders, and braille dots. Open it in Inkscape (the FOSS reference editor) to inspect and adjust individual elements. Adobe Illustrator, Affinity Designer, and other SVG-capable editors are also suitable; Inkscape is emphasized because this project targets FOSS systems, not because the file format is exclusive to it.
+
+Use external editing for final cleanup and QC—for example, correcting a contour, moving a braille group, removing an irrelevant fragment, or adjusting a leader. Preserve the page dimensions in millimetres and avoid scaling the page unintentionally. Any external edit invalidates the app's previous automated check results for the changed geometry. Recheck the full graphic and make a physical proof after edits.
+
 ## Swell-paper workflow
 
-1. Export **Download tactile SVG**, or choose **Print / PDF** in the application.
+1. Export **Download editable tactile SVG**, or choose **Print / PDF** in the application.
 2. Open the SVG or PDF in a tool that preserves page dimensions.
 3. Print on plain paper at **100% / actual size**. Disable “fit to page,” “shrink oversized pages,” or other scaling options.
 4. Confirm the page size and orientation before printing.

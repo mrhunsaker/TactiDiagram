@@ -60,7 +60,7 @@
           </select>
         </label>
         <label class="check"><input id="opt-autotrace" type="checkbox"> Use Autotrace (Potrace)</label>
-        <p class="hint">Autotrace follows the diagram’s shapes as vector contours. Turn it off to use the default threshold-based tracing.</p>
+        <p class="hint">Runs Potrace first and feeds its cleaned, reconstructed image into OCR, leader detection and segmentation. Turn it off to process the original image with threshold-based tracing.</p>
         <label for="opt-sensitivity">Tracing sensitivity <output id="opt-sensitivity-value" for="opt-sensitivity">55</output>
           <input id="opt-sensitivity" type="range" min="0" max="100" step="5" value="55">
           <small class="hint">Higher values recover lighter contours but may add detail. Tactile spacing and braille clearance remain enforced.</small>
@@ -133,7 +133,7 @@
           <div class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
           <p class="loadmsg" id="loadmsg">Starting…</p>
           <ol class="loadsteps" id="steps">
-            <li data-step="engines">Load on-device models</li>
+            <li data-step="engines">Prepare image and load models</li>
             <li data-step="ocr">Read the printed labels</li>
             <li data-step="leaders">Trace leader lines</li>
             <li data-step="segment">Segment each labeled part</li>
@@ -153,7 +153,8 @@
     <section class="card" id="howto">
       <h2 class="ph">How it works</h2>
       <ol class="how">
-        <li><b>Reads the labels</b> printed on the diagram (OCR).</li>
+        <li><b>Optionally cleans the image first</b> with Potrace vectorization (Autotrace).</li>
+        <li><b>Reads the labels</b> printed on the processed diagram (OCR).</li>
         <li><b>Follows each leader line</b> to the part it names.</li>
         <li><b>Segments that part</b> with Segment Anything.</li>
         <li><b>Redraws it for touch</b>: bold outlines, textures instead of colours, braille labels, 3 mm spacing (BANA guidelines).</li>

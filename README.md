@@ -12,13 +12,14 @@ The transcriber remains responsible for the finished graphic. TouchSight-NG is a
 - **Theory and pipeline:** [docs/architecture.md](docs/architecture.md), [docs/pipeline.md](docs/pipeline.md)
 - **Models and inference engines:** [docs/models-and-engines.md](docs/models-and-engines.md)
 - **Advanced, not-yet-implemented AI options:** [docs/advanced-model-options.md](docs/advanced-model-options.md)
+- **Editable SVG post-processing:** export named vector layers and use Inkscape or another SVG editor for manual adjustment and QC.
 - **Review workflow:** [docs/review-workflow.md](docs/review-workflow.md)
 
 ## Intended workflow
 
 The primary user is a braille transcriber or teacher of students with visual impairments (TVI) preparing tactile graphics from labeled science, geography, and other instructional diagrams.
 
-A typical job begins with a diagram from a textbook, worksheet, or other instructional source. The application analyzes the diagram and creates a first-draft tactile page. The transcriber reviews the detected wording, part boundaries, braille, spacing, textures, and overall readability; makes corrections in the editor; and exports the result for production and final quality assurance.
+A typical job begins with a diagram from a textbook, worksheet, or other instructional source. The application analyzes the diagram and creates a first-draft tactile page. The transcriber reviews the detected wording, part boundaries, braille, spacing, textures, and overall readability; makes in-app corrections; exports an editable, layered SVG; and can make further manual adjustments in Inkscape or another SVG editor before production QC.
 
 The goal is not to automate professional judgment. It is to provide a consistent, standards-informed starting point that a transcriber can inspect, correct, and finish.
 
@@ -41,18 +42,19 @@ flowchart TD
     D --> J
     J --> K["Automated guideline checks"]
     K --> L["Transcriber review and editing"]
-    L --> M["Tactile SVG / print PDF / key page / STL"]
-    M --> N["Production and final quality assurance"]
+    L --> M["Editable layered tactile SVG / print PDF / key page / STL"]
+    M --> N["Optional vector-editor adjustment and QC"]
+    N --> O["Production and final tactile proof"]
 ```
 
-**Potrace / Autotrace is not yet part of the active pipeline on `main`.** The optional first-pass preprocessing design is being developed in [PR #4](https://github.com/mrhunsaker/touchsight-NG/pull/4). Once verified and merged, it is intended to prepare an alternate raster for OCR, leader detection, foreground analysis, and segmentation—not replace those stages or directly generate the final tactile page. See [Pipeline stages](docs/pipeline.md).
+**Potrace / Autotrace is an optional preprocessing stage.** When enabled, it reconstructs an alternate raster for OCR, leader detection, foreground analysis, and segmentation. The original image is retained; Potrace does not generate the tactile page. See [Pipeline stages](docs/pipeline.md).
 
 ## What the application produces
 
 - **Tactile graphic:** a page laid out in physical millimetres, with a bold/fine line hierarchy, optional textures, and uncontracted UEB Grade 1 braille.
 - **Key page:** a legend for two-letter label keys when full braille labels do not fit.
 - **3D relief preview:** a view of the raised lines and braille, plus STL export for 3D printing.
-- **Production files:** tactile SVG (pure black, suitable for swell-paper workflows), key page, and print/PDF at true page size.
+- **Production files:** editable, layered tactile SVG (pure black, sized in millimetres), editable key-page SVG, and print/PDF at true page size. The SVG geometry and braille dots can be adjusted in Inkscape or any compatible vector editor.
 - **Review information:** detected labels, OCR corrections, leader-line and segmentation overlays, and automated checks alongside a simple edge-tracing baseline.
 
 ## Transcriber review is part of the process
@@ -63,7 +65,7 @@ The generated page is a draft that must be checked against the source diagram. I
 2. Correct OCR errors and remove labels that should not appear; merge labels split across lines.
 3. Inspect leader paths, segmentation boundaries, and the named-part line hierarchy.
 4. Check braille placement, clearance, line spacing, texture distinctions, and the key page.
-5. Review the 3D relief preview where available, then export and follow the applicable production and quality-assurance process.
+5. Review the 3D relief preview where available, then export the editable SVG. Optionally open it in Inkscape (the FOSS reference editor) or another SVG editor—such as Illustrator or Affinity Designer—to adjust paths, labels, linework, or layout. Recheck braille, physical dimensions, spacing, and tactile semantics after every edit; then follow the applicable production and quality-assurance process.
 
 See [The transcriber review workflow](docs/review-workflow.md), [Tactile layout and BANA guidelines](docs/guidelines.md), and [Printing and swell paper](docs/printing.md).
 
@@ -91,7 +93,7 @@ npm run vendor
 npm run serve
 ```
 
-Open http://localhost:5173 if the local app runtime has been assembled. Note that the current checkout has an incomplete `src/` to `app/` transition: the server and vendor script target `app/`, but the tracked application source is under `src/` and no build/copy step currently populates `app/`. See [Getting started](docs/getting-started.md#asset-path-check) before treating this as a verified clean-checkout setup. To run the automated evaluation harness:
+Open http://localhost:5173 if the local app runtime has been assembled. The local server and vendor script target `src/`, matching the tracked application source. Run the vendor step before starting the application. To run the automated evaluation harness:
 
 ```bash
 npm run eval

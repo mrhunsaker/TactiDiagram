@@ -54,7 +54,7 @@ Encodes uncontracted UEB Grade 1 and generates two-letter label keys.
 
 ### `render.js`
 
-Renders the tactile page and key page as SVG, including line geometry, texture patterns, braille dots, and preview-only presentation elements.
+Renders editable tactile and key-page SVGs in physical millimetres. The tactile export groups texture, line-art, outlines, knockouts, leaders, and braille as named Inkscape layers; braille is vector-dot geometry, not a flattened bitmap.
 
 ### `check.js`
 

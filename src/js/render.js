@@ -102,7 +102,7 @@ export function renderTactile(layout, { preview = false, highlight = null, under
 export function renderKeyPage(layout, { preview = false } = {}) {
   const { pageW, pageH, margin } = layout;
   const out = [`<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${f(pageW)}mm" height="${f(pageH)}mm" viewBox="0 0 ${f(pageW)} ${f(pageH)}">`,
-    `<rect width="${f(pageW)}" height="${f(pageH)}" fill="#fff"/>`, '<g fill="#000">'];
+    `<rect width="${f(pageW)}" height="${f(pageH)}" fill="#fff"/>`, '<g id="braille-key-dots" inkscape:groupmode="layer" inkscape:label="Braille key dots" fill="#000">'];
   let y = margin;
   const titleCells = layout.title ? layout.title.cells : [];
   if (titleCells.length) { out.push(brailleSVG(titleCells, (pageW - brailleWidth(titleCells.length)) / 2, y)); y += 2 * BRAILLE.linePitch; }

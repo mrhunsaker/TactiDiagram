@@ -2,7 +2,7 @@
 
 This page distinguishes **trained model weights** from **runtime libraries**. The runtime libraries execute algorithms; model files contain learned parameters and vocabularies. They have different sizes, licenses, loading behavior, and failure modes.
 
-The file names below come from the checked-in `scripts/vendor.mjs`, `package.json`, and browser loader modules. The vendor script currently writes to `app/`, while the browser code resolves from `src/`; see the [asset-path caveat](getting-started.md#asset-path-check).
+The file names below come from the checked-in `scripts/vendor.mjs`, `package.json`, and browser loader modules. The current source/build transition is incomplete: the server and vendor script target `app/`, while source modules are maintained under `src/`; see the [asset-path caveat](getting-started.md#asset-path-check).
 
 ## At a glance
 

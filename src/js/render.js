@@ -27,13 +27,13 @@ const textW = (s, size) => s.length * size * 0.55;
 export function renderTactile(layout, { preview = false, highlight = null, underlay = null, braille = true } = {}) {
   const { pageW, pageH } = layout;
   const out = [];
-  out.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${f(pageW)}mm" height="${f(pageH)}mm" viewBox="0 0 ${f(pageW)} ${f(pageH)}">`);
+  out.push(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${f(pageW)}mm" height="${f(pageH)}mm" viewBox="0 0 ${f(pageW)} ${f(pageH)}">`);
   out.push(`<defs>${TEXTURES.map((t) => t.svg).join('')}</defs>`);
   out.push(`<rect width="${f(pageW)}" height="${f(pageH)}" fill="#fff"/>`);
 
   // Textures (largest first so smaller parts sit on top), each with a white underlay.
   const textured = layout.parts.filter((p) => p.texture != null).sort((a, b) => b.areaMM - a.areaMM);
-  out.push('<g id="textures">');
+  out.push('<g id="textures" inkscape:groupmode="layer" inkscape:label="Textures">');
   for (const p of textured) {
     const d = pathD(p.fill);
     out.push(`<path d="${d}" fill="#fff" fill-rule="evenodd"/><path d="${d}" fill="url(#tx${p.texture})" fill-rule="evenodd" data-part="${p.id}"/>`);
@@ -41,7 +41,7 @@ export function renderTactile(layout, { preview = false, highlight = null, under
   out.push('</g>');
 
   if (layout.lineArt?.length) out.push(`<path id="lineart" d="${pathD(layout.lineArt)}" fill="#000" fill-rule="evenodd"/>`);
-  out.push(`<g id="outlines" fill="none" stroke="#000" stroke-linejoin="round" stroke-linecap="round">`);
+  out.push(`<g id="outlines" inkscape:groupmode="layer" inkscape:label="Silhouette and part outlines" fill="none" stroke="#000" stroke-linejoin="round" stroke-linecap="round">`);
   out.push(`<path d="${pathD(layout.silhouette)}" stroke-width="${SPEC.outline}"/>`);
   for (const p of layout.parts) if (p.outline.length) out.push(`<path d="${pathD(p.outline)}" stroke-width="${SPEC.partLine}" data-part="${p.id}"/>`);
   out.push('</g>');
@@ -52,7 +52,7 @@ export function renderTactile(layout, { preview = false, highlight = null, under
   }
   // Knockouts: pill-shaped blank space around labels that had to sit on the drawing.
   // (Always white in the tactile output: grey toner would swell on capsule paper.)
-  out.push('<g id="knockouts" fill="#fff">');
+  out.push('<g id="knockouts" inkscape:groupmode="layer" inkscape:label="Label clearance knockouts" fill="#fff">');
   for (const L of layout.labels) if (L.knockout) {
     const g = SPEC.clearance, r = L.rect, h = r.h + 2 * g;
     out.push(`<rect x="${f(r.x - g)}" y="${f(r.y - g)}" width="${f(r.w + 2 * g)}" height="${f(h)}" rx="${f(h / 2)}"/>`);
@@ -70,14 +70,14 @@ export function renderTactile(layout, { preview = false, highlight = null, under
     out.push('</g>');
   }
 
-  out.push(`<g id="leaders" stroke="#000" stroke-width="${SPEC.leaderLine}" stroke-linecap="round">`);
+  out.push(`<g id="leaders" inkscape:groupmode="layer" inkscape:label="Leader lines" stroke="#000" stroke-width="${SPEC.leaderLine}" stroke-linecap="round">`);
   for (const L of layout.labels) if (L.leader) {
     const [[x1, y1], [x2, y2]] = L.leader;
     out.push(`<line x1="${f(x1)}" y1="${f(y1)}" x2="${f(x2)}" y2="${f(y2)}"/>`);
   }
   out.push('</g>');
 
-  out.push('<g id="braille" fill="#000">');
+  out.push('<g id="braille" inkscape:groupmode="layer" inkscape:label="Braille dots" fill="#000">');
   if (braille && layout.title) {
     const w = brailleWidth(layout.title.cells.length);
     out.push(brailleSVG(layout.title.cells, (pageW - w) / 2, layout.margin));
@@ -87,7 +87,7 @@ export function renderTactile(layout, { preview = false, highlight = null, under
 
   if (preview) {
     // Print layer for sighted teachers (not part of the tactile export).
-    out.push('<g id="print-preview" font-family="Atkinson Hyperlegible, system-ui, sans-serif" fill="#1e3a8a">');
+    out.push('<g id="print-preview" inkscape:groupmode="layer" inkscape:label="Sighted print labels (preview only)" font-family="Atkinson Hyperlegible, system-ui, sans-serif" fill="#1e3a8a">');
     layout.labels.forEach((L, i) => {
       const hl = highlight === i;
       out.push(`<text x="${f(L.rect.x)}" y="${f(L.rect.y - 1.7)}" font-size="${hl ? 3.6 : 3.0}" font-weight="700">${esc(L.usesKey ? `${L.key} = ${L.text}` : L.text)}</text>`);

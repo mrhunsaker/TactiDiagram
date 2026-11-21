@@ -9,6 +9,9 @@ The transcriber remains responsible for the finished graphic. TouchSight-NG is a
 - **Application:** Run locally; the application is not hosted on GitHub Pages.
 - **User and technical documentation:** https://mrhunsaker.github.io/touchsight-NG/
 - **Getting started:** [docs/getting-started.md](docs/getting-started.md)
+- **Theory and pipeline:** [docs/architecture.md](docs/architecture.md), [docs/pipeline.md](docs/pipeline.md)
+- **Models and inference engines:** [docs/models-and-engines.md](docs/models-and-engines.md)
+- **Advanced, not-yet-implemented AI options:** [docs/advanced-model-options.md](docs/advanced-model-options.md)
 - **Review workflow:** [docs/review-workflow.md](docs/review-workflow.md)
 
 ## Intended workflow
@@ -100,7 +103,7 @@ The evaluation harness uses Playwright; install its Chromium browser if it is no
 npx playwright install chromium
 ```
 
-See [Getting started](docs/getting-started.md) for input formats, application options, and output details.
+See [Getting started](docs/getting-started.md) for setup and use, [Models and inference engines](docs/models-and-engines.md) for the model inventory, and [Advanced model options](docs/advanced-model-options.md) for clearly marked research directions.
 
 ## Project structure
 

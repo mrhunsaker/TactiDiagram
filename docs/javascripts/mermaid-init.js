@@ -1,4 +1,4 @@
-// Render top-to-bottom diagrams with accessible typography and readable labels.
+// Render documentation diagrams with accessible typography and reduced connector crossings.
 document.addEventListener('DOMContentLoaded', () => {
   if (window.mermaid) {
     window.mermaid.initialize({
@@ -18,9 +18,9 @@ document.addEventListener('DOMContentLoaded', () => {
       },
       flowchart: {
         htmlLabels: true,
-        curve: 'linear',
-        nodeSpacing: 38,
-        rankSpacing: 48,
+        curve: 'step',
+        nodeSpacing: 64,
+        rankSpacing: 72,
         useMaxWidth: true
       }
     });

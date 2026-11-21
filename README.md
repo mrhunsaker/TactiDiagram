@@ -115,7 +115,7 @@ The evaluation harness uses Playwright; install its Chromium browser if it is no
 npx playwright install chromium
 ```
 
-See [Getting started](docs/getting-started.md) for setup and [Application controls and options](docs/application-options.md) for the meaning and effect of every UI control, result view, review action, and export. For the processing sequence, see [Pipeline stages](docs/pipeline.md); for the model inventory, see [Models and inference engines](docs/models-and-engines.md). Research candidates are described in [Advanced model options](docs/advanced-model-options.md) for clearly marked research directions.
+See [Getting started](docs/getting-started.md) for setup and [Application controls and options](docs/application-options.md) for the meaning and effect of every UI control, result view, review action, and export. For the processing sequence, see [Pipeline stages](docs/pipeline.md); for the model inventory, see [Models and inference engines](docs/models-and-engines.md). Future research candidates are described separately in [Advanced model options](docs/advanced-model-options.md); they are not implemented application controls.
 
 ## Project structure
 

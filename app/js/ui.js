@@ -383,11 +383,16 @@ sensitivityInput?.addEventListener('change', async () => {
   sensitivityInput.disabled = true;
   setStatus('Updating tracing sensitivity…');
   try {
-    const cv = await loadOpenCV();
     state.sensitivity = Number(sensitivityInput.value);
-    updateTracing(cv, state.imageData, state.analysis, state.sensitivity);
+    if (autotraceInput?.checked) {
+      await updateAutotrace(state.imageData, state.analysis);
+      setStatus('Autotrace is active · threshold sensitivity will apply when Autotrace is turned off.');
+    } else {
+      const cv = await loadOpenCV();
+      updateTracing(cv, state.imageData, state.analysis, state.sensitivity);
+      setStatus(`Tracing updated · sensitivity ${state.sensitivity}/100 · OCR and segmentation were reused.`);
+    }
     await relayout();
-    setStatus(`Tracing updated · sensitivity ${state.sensitivity}/100 · OCR and segmentation were reused.`);
   } catch (e) {
     console.error(e);
     setStatus('Could not update tracing: ' + (e.message || e), true);

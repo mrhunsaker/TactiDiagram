@@ -45,7 +45,7 @@ flowchart TD
     M --> N["Production and final quality assurance"]
 ```
 
-**Potrace / Autotrace is not yet part of the active pipeline on `main`.** The optional first-pass preprocessing design is being developed in [PR #4](https://github.com/mrhunsaker/touchsight-NG/pull/4). Once verified and merged, it is intended to prepare an alternate raster for OCR, leader detection, foreground analysis, and segmentation—not replace those stages or directly generate the final tactile page. See [Pipeline stages](docs/pipeline.md).
+**Optional Potrace / Autotrace preprocessing** is available to reconstruct a raster before OCR, leader detection, foreground analysis, and segmentation. It does not replace those stages or generate the final tactile page. See [Pipeline stages](docs/pipeline.md).
 
 ## What the application produces
 

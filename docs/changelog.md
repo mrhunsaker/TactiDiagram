@@ -1,3 +1,4 @@
 # Changelog
 
 A rendered copy of the repository changelog lives at [CHANGES.md](https://github.com/mrhunsaker/touchsight-NG/blob/main/CHANGES.md). Documentation is versioned with the repository; this site always reflects the current `main` branch.
+\n## Current development\n\n- Potrace Autotrace is available as optional upstream preprocessing.\n- Tactile and key-page exports are editable SVGs with named Inkscape layers and physical millimetre dimensions.\n- Inkscape is documented as the FOSS reference for manual post-processing and QC; other SVG editors, including Illustrator and Affinity Designer, are supported by the SVG format.\n

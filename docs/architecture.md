@@ -70,11 +70,11 @@ This is a hybrid system: learned models handle text recognition and part segment
 | SlimSAM | Point-prompted segmentation of labeled parts | Transformers.js + ONNX Runtime WASM |
 | ONNX Runtime Web | Executes OCR and segmentation ONNX models | WebAssembly |
 | three.js | Interactive 3D relief preview | WebGL |
-| Potrace WASM | Optional vector-tracing/preprocessing experiment; not active in the inspected main-branch pipeline | WebAssembly package dependency |
+| Potrace WASM | Optional raster reconstruction before OCR and analysis | WebAssembly |
 
 See [Models and inference engines](models-and-engines.md) for model identities, files, roles, and caveats.
 
-## Source layout
+## Editable vector output and post-processing\n\nThe renderer emits real SVG paths and circles at physical millimetre dimensions. Tactile content is separated into named layers for textures, structural line art, outlines, label-clearance knockouts, leader lines, and braille dots. The exported SVG can be opened and edited in Inkscape, the FOSS reference editor, or in proprietary SVG editors such as Illustrator and Affinity Designer. This is a human post-processing stage: edits made externally are not reflected in TouchSight-NG's automated checks, so transcribers must repeat geometry, braille, and tactile proofing.\n\n## Source layout
 
 ```
 src/                browser application source
@@ -88,7 +88,7 @@ scripts/            vendor setup, local server, evaluation and QA tooling
 docs/               MkDocs documentation (published to GitHub Pages)
 ```
 
-Generated vendor libraries and model weights are not committed as application source. The repository currently has an incomplete `src/` to `app/` runtime transition: the local server and vendor script target `app/`, while the application source tree is `src/`, and no build/copy step currently populates the served directory. Resolve this before treating a clean checkout as runnable; see [Getting started](getting-started.md#asset-path-check).
+Generated vendor libraries and model weights are not committed as application source. The local server and vendor script target `src/`, matching the tracked application source tree.
 
 ## Module map
 

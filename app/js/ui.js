@@ -1,7 +1,7 @@
 import { loadOpenCV } from './libs.js';
 import { analyze, updateTracing } from './pipeline.js';
 import { DEFAULT_TRACING_SENSITIVITY } from './tracing-config.js';
-import { updateAutotrace } from './autotrace.js';
+import { prepareAutotrace } from './autotrace.js';
 import { buildLayout } from './tactile.js';
 import { renderTactile, renderKeyPage, TEXTURES } from './render.js';
 import { checkAll } from './check.js';
@@ -21,7 +21,7 @@ async function showRelief() {
 }
 
 const $ = (s) => document.querySelector(s);
-const state = { imageData: null, original: null, analysis: null, layout: null, check: null, name: 'diagram', busy: false, mode: 'tactile', sensitivity: DEFAULT_TRACING_SENSITIVITY };
+const state = { imageData: null, sourceImageData: null, original: null, analysis: null, layout: null, check: null, name: 'diagram', busy: false, mode: 'tactile', sensitivity: DEFAULT_TRACING_SENSITIVITY };
 const MAX_SIDE = 1400; // keep in-browser inference fast
 const PAL = ['#e6194b', '#3cb44b', '#0082c8', '#f58230', '#911eb4', '#2fa8a8', '#f032e6', '#7f9d1f', '#008080', '#aa6e28', '#5a5aff', '#c0392b'];
 
@@ -73,7 +73,8 @@ async function runFromURL(url, title, name) {
     const c = document.createElement('canvas'); c.width = W; c.height = H;
     const ctx = c.getContext('2d', { willReadFrequently: true });
     ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.drawImage(img, 0, 0, W, H);
-    state.imageData = ctx.getImageData(0, 0, W, H);
+    state.sourceImageData = ctx.getImageData(0, 0, W, H);
+    state.imageData = state.sourceImageData;
     state.original = c.toDataURL('image/jpeg', 0.85);
     state.name = name || 'diagram';
     $('#opt-title').value = title || '';
@@ -119,13 +120,14 @@ async function run() {
   const t0 = performance.now();
   try {
     state.sensitivity = Number($('#opt-sensitivity')?.value ?? DEFAULT_TRACING_SENSITIVITY);
+    state.imageData = state.sourceImageData;
+    if ($('#opt-autotrace')?.checked) {
+      setStep('engines', 'Preparing a cleaner diagram with Potrace…');
+      state.imageData = await prepareAutotrace(state.sourceImageData);
+    }
     state.analysis = await analyze(state.imageData, { sensitivity: state.sensitivity,
       onStage: (k, msg) => setStep(k, k === 'engines' ? 'Loading on-device models… (first run only)' : msg),
     });
-    if ($('#opt-autotrace').checked) {
-      setStep('layout', 'Vectorizing diagram outlines with Potrace…');
-      await updateAutotrace(state.imageData, state.analysis);
-    }
     await relayout(true);
     const secs = ((performance.now() - t0) / 1000).toFixed(1);
     const st = state.layout.stats;
@@ -352,26 +354,8 @@ for (const id of ['#opt-page', '#opt-style', '#opt-textures', '#opt-keys', '#opt
 
 const autotraceInput = $('#opt-autotrace');
 autotraceInput?.addEventListener('change', async () => {
-  if (!state.analysis || state.busy) return;
-  state.busy = true;
-  autotraceInput.disabled = true;
-  setStatus(autotraceInput.checked ? 'Vectorizing outlines with Potrace…' : 'Restoring threshold-based tracing…');
-  try {
-    if (autotraceInput.checked) await updateAutotrace(state.imageData, state.analysis);
-    else {
-      const cv = await loadOpenCV();
-      updateTracing(cv, state.imageData, state.analysis, state.sensitivity);
-    }
-    await relayout();
-    setStatus(autotraceInput.checked ? 'Autotrace updated · OCR and segmentation were reused.' : 'Threshold tracing restored · OCR and segmentation were reused.');
-  } catch (e) {
-    console.error(e);
-    autotraceInput.checked = !autotraceInput.checked;
-    setStatus('Could not change tracing mode: ' + (e.message || e), true);
-  } finally {
-    autotraceInput.disabled = false;
-    state.busy = false;
-  }
+  if (!state.sourceImageData || state.busy) return;
+  await run(); // Autotrace is upstream: OCR and segmentation must consume the selected image.
 });
 
 const sensitivityInput = $('#opt-sensitivity');

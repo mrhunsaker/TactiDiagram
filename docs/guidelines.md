@@ -1,84 +1,69 @@
 # Tactile layout and BANA guidelines
 
-TouchSight-NG's layout stage implements a checkable subset of the BANA *Guidelines and Standards for Tactile Graphics* (2022), along with braille dimensions referenced from Library of Congress Spec 800 and uncontracted Unified English Braille (UEB). This page documents the values currently described by the project; it is not a replacement for consulting the full standards or a qualified transcriber.
+TouchSight-NG implements a checkable subset of the BANA *Guidelines and Standards for Tactile Graphics* (2022), with braille geometry based on Library of Congress Spec 800 and uncontracted Unified English Braille (UEB) Grade 1. These are current implementation targets, not a substitute for full standards, local production requirements, or qualified transcription review.
 
 ## Why tactile translation differs from visual tracing
 
-A visual diagram can use colour, subtle shading, small labels, thin leader lines, and closely spaced contours. A tactile graphic has finite spatial resolution: raised features that are too close can merge under a finger, while tiny fragments may be impossible to identify. The design therefore needs hierarchy and selective simplification.
-
-TouchSight-NG attempts to preserve named-part boundaries, suppress print text and visual noise, and replace colour distinctions with line weights and a limited texture vocabulary.
+Colour, shading, small labels, thin leaders, and close contours do not transfer directly to touch. Raised features that are too close can merge; tiny fragments may be impossible to identify. TouchSight-NG attempts to preserve named-part boundaries, suppress print/noise, and replace colour distinctions with line hierarchy and limited texture patterns.
 
 ## Line hierarchy
 
-| Element | Current nominal weight |
+| Element | Nominal vector width |
 |---|---:|
-| Silhouette and named-part edges (Detailed style) | 1.5 mm |
-| Detail lines | 0.8–1.0 mm |
+| Silhouette | 1.5 mm |
+| Named-part boundary emphasis (Detailed) | 1.5 mm |
+| Fine structural detail (Detailed) | 0.8 mm |
+| Structural strokes (Simplified) | 1.0 mm |
 | Leader lines | 0.6 mm |
 
-A hierarchy is useful only if it survives the selected production process. Verify line prominence on a physical proof; the nominal SVG width is not a guarantee of identical raised height.
+Vector widths do not guarantee identical raised height or tactile detectability. Verify on a physical proof.
 
 ## Textures
 
-- At most **five distinguishable textures** are assigned.
-- A texture fills the part it identifies and is inset **1.5 mm** from the outline.
-- Textures are optional. The default presentation relies on bold/fine line hierarchy.
-- Colour is not a tactile distinction. Texture assignments should be consistent and explained in a key or legend where needed.
-
-Avoid texture patterns so dense that they obscure braille, boundaries, or nearby features. Inspect the physical proof to determine whether patterns remain distinguishable.
+When enabled, the current layout assigns patterns to up to **four** sufficiently large, non-dominant segmented parts. Small parts and parts covering most of the figure are excluded. Patterns are inset from boundaries and kept clear of structural line art where possible. The legend identifies assignments. Texture use is optional; verify that patterns remain distinguishable on the target swell paper and fuser.
 
 ## Braille
 
-- The current encoder produces **uncontracted UEB Grade 1**.
-- Dot geometry follows Library of Congress **Spec 800** dimensions.
-- Full words are used where they fit; otherwise the layout can use two-letter keys and a key page.
-- The key generator avoids the ambiguous pairs aa/ac/cc/ca and requires dot 3 or dot 6.
-- The layout targets **3 mm clearance** around braille labels, with knockouts when a label must sit over drawing geometry.
-- A page title in braille is optional.
+- Current encoding is uncontracted UEB Grade 1 for English labels and titles.
+- Dot diameter: 1.44 mm; dot pitch: 2.34 mm; cell pitch: 6.2 mm; line pitch: 10 mm.
+- Full words are used when they fit. Otherwise the layout can substitute a unique two-letter key and provide a key page.
+- **Use letter keys for every label** forces key representation for all labels that can be placed.
+- The key generator avoids `aa`, `ac`, `cc`, and `ca`, and requires at least one letter with dot 3 or 6.
+- The layout targets 3 mm clearance around braille. A white knockout may be used behind a label when needed.
+- Optional title field: up to 40 characters.
 
-Always proofread the braille against the corrected print label. OCR correctness and braille encoding correctness are separate concerns.
+Proofread braille against corrected print labels. The encoder is not a full contracted-braille or multilingual transcription system.
 
-## Spacing and simplification
+## Page geometry
 
-- Lines closer than **3 mm** are merged/thinned to a centreline in Simplified style.
-- Simplified style removes short fragments below **12.5 mm**.
-- Detailed style preserves more of the source structure and reports residual narrow gaps and fragments for transcriber review.
+Letter is 215.9 × 279.4 mm; Tabloid is 279.4 × 431.8 mm; Braille page is 292.1 × 279.4 mm. Layout reserves a 15 mm margin and preserves source aspect ratio. Letter and Tabloid switch to landscape when source width/height exceeds 1.15; Braille page does not auto-rotate.
 
-These are project implementation thresholds. They should be reviewed against the current applicable BANA guidance and the actual output device, not treated as a universal substitute for professional judgment.
+## Detailed and Simplified
 
-## What the automated checker measures
+- **Detailed** retains more source structure, removes connected fragments under 4 mm where possible, emphasizes named-part boundaries, and keeps other details finer. It may retain crowded detail.
+- **Simplified** closes nearby lines at approximately 3 mm, thins merged regions to centerlines, removes fragments shorter than 12.5 mm, and produces cleaner structural strokes. It may also remove meaningful details.
 
-`src/js/check.js` evaluates the generated output and a Canny edge-tracing baseline at the same page size. The reported measures include:
+The styles are different trade-offs. Inspect the result against the source and physical proof.
 
-- print-label locations still represented as raised marks
-- short fragments below 12.5 mm
-- mean figure area where lines are closer than 3 mm
-- braille labels with full 3 mm clearance
+## Tracing sensitivity
 
-The checker is geometric. It does not test whether a blind reader can identify a shape, whether the label-to-part association is semantically correct, or whether two textures are distinguishable in physical production.
+The slider ranges 0–100 in increments of 5, default 55. Higher values lower thresholds for foreground, edge, colour-region, and thin-stroke recovery. This can recover faint contours but may add noise. Lower values are more conservative and may omit pale features. Sensitivity does not turn off physical layout or braille-clearance logic. The UI updates tracing while reusing OCR and segmentation.
 
-## Recommended QA loop
+## Automated checks
 
-1. Review the source diagram and all detected labels.
-2. Inspect each label's leader endpoint and segmentation mask.
-3. Review line hierarchy, fragments, close gaps, braille, and texture assignment.
-4. Export at the intended physical page size.
-5. Produce a physical proof on the target swell-paper/fuser system.
-6. Obtain tactile-reader feedback where possible and revise the source or layout.
+The checker compares TouchSight-NG output with a Canny edge baseline at the same page scale. It reports residual print-label marks, braille placement, proportion of figure area affected by lines closer than 3 mm, fragments shorter than 12.5 mm, braille labels meeting the 3 mm clearance target, texture count, and diagnostic leader lengths in the 20–37.5 mm range.
 
-## Editable SVG post-processing and quality control
+These are geometric proxies. They do not verify scientific correctness, semantic label-to-part relationships, tactile-reader comprehension, physical texture distinction, or full standards compliance. A green status is not certification; some rows are diagnostic only.
 
-The tactile SVG export is a vector document with physical dimensions in millimetres. It contains separate, named SVG groups for the page background, textures, structural line art, outlines, label-clearance knockouts, leader lines, and braille dots. The key-page SVG also separates braille from sighted print-reference text. Paths, circles, and text remain vector objects rather than a flattened screenshot.
+## QA loop
 
-**Inkscape is the recommended reference editor because it is free and open-source (FOSS).** The exported SVG is standard vector artwork; other SVG-capable editors—including Adobe Illustrator and Affinity Designer—can also be used. TouchSight-NG targets FOSS workflows, so Inkscape is the editor used in these instructions, not a technical requirement.
+1. Verify every label against the source.
+2. Inspect leader endpoints and segmentation masks.
+3. Compare styles where density or missing detail is a concern.
+4. Check braille, keys, textures, margins, and clearances.
+5. Print at actual size and produce a physical swell-paper proof.
+6. Obtain tactile-reader feedback where possible.
 
-Recommended post-processing sequence:
+## Editable SVG handoff
 
-1. Export the editable tactile SVG and, when present, the key-page SVG.
-2. Open the SVG in Inkscape. Use the Objects/Layers panel to inspect and isolate the named groups.
-3. Compare the artwork with the source diagram and the TouchSight-NG analysis views. Correct path geometry, remove false contours, reconnect broken boundaries, and adjust leader placement where necessary.
-4. Check label-to-part correspondence, braille spelling and dot patterns, line hierarchy, texture distinction, clearances, and page margins. Do not assume that a visually attractive edit is tactilely legible.
-5. Preserve the physical page dimensions and millimetre scale. Avoid scaling individual objects in ways that alter specified braille or line dimensions.
-6. Save a separate reviewed SVG, then produce a physical proof on the target printer/swell-paper/fuser system. Inspect the raised output and obtain tactile-reader feedback where possible.
-
-The vector editor is a post-processing and QC option, not an automated validation step. Editing SVG geometry does not update TouchSight-NG's analysis state or its automated guideline report. Re-run or independently perform checks after edits, and retain the unmodified export so changes can be compared or reverted.
+The SVG uses millimetre dimensions and named groups. Inkscape is the recommended FOSS editor; other SVG editors are compatible. Vector editing is manual post-processing, not validation: edits do not update the app's analysis or report. Preserve the original export, page dimensions, and braille geometry, then independently recheck edited files.

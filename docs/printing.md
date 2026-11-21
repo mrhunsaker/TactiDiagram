@@ -1,4 +1,4 @@
-# Printing and swell paper
+# Printing, editable SVGs, and swell paper
 
 ## What the tactile SVG contains
 

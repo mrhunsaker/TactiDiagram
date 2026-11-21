@@ -1,12 +1,12 @@
 # Evaluation and benchmarks
 
-## What the current evaluation measures
+## What the evaluation measures
 
-The evaluation harness runs the browser application against repository sample diagrams and records selected geometric guideline metrics. A separate recall script compares recognized labels with hand-counted ground truth. This is useful for regression testing; it is not a formal usability study.
+The Playwright harness drives the local browser app against repository samples and records selected geometric guideline metrics. A separate recall script compares recognized labels with hand-counted ground truth. This supports regression testing; it is not a formal tactile-usability study.
 
-## Run the harness
+## Run
 
-Requirements: Node.js 24+, installed npm dependencies, generated runtime assets, and Playwright Chromium.
+Requirements: Node.js 24+, npm dependencies, vendored browser assets/models, and Playwright Chromium.
 
 ```bash
 npm ci
@@ -15,20 +15,20 @@ npx playwright install chromium
 npm run serve
 ```
 
-In another terminal:
+In a second terminal:
 
 ```bash
 npm run eval
 node scripts/recall.mjs
 ```
 
-The scripts write evaluation output under `eval-out/`. Other tools include `scripts/ocrbench.mjs` (Tesseract vs PaddleOCR label recall), `scripts/lab.mjs` (per-stage overlays and JSON), `scripts/qa.mjs` and `scripts/edge.mjs` (interaction and edge-case QA), and screenshot scripts.
+The server serves `src/`; `npm run vendor` prepares `src/vendor/` and `src/models/`. Generated evaluation output is written under `eval-out/`.
 
-**Setup note:** vendor output paths and browser-loader paths are inconsistent in the inspected source. Resolve that mismatch before interpreting a failed clean-checkout run as a model-quality failure.
+Other repository scripts include `scripts/ocrbench.mjs` (OCR benchmarking), `scripts/lab.mjs`, `scripts/la.mjs`, and `scripts/edge.mjs` (analysis/line-art/edge investigation), `scripts/qa.mjs` (QA automation), `scripts/record.mjs`, `scripts/shot.mjs`, `scripts/shot3d.mjs`, and `scripts/thumb.mjs` (recording and screenshots), `scripts/gallery.mjs` and `scripts/tsvg.mjs` (gallery/SVG tooling), and `scripts/desktop.mjs` (Neutralino launcher). These are developer tools; not all are npm commands. Inspect each script before use.
 
-## Snapshot results
+## Historical snapshot
 
-The current documentation snapshot reports results on 16 Wikimedia Commons diagrams:
+The documentation snapshot reports results on 16 Wikimedia Commons diagrams:
 
 | Metric | Detailed | Simplified | Canny edge baseline | Canny, text erased |
 |---|---:|---:|---:|---:|
@@ -39,28 +39,24 @@ The current documentation snapshot reports results on 16 Wikimedia Commons diagr
 | Mean figure area with lines under 3 mm apart | 3.5% | 1.0% | 6.4% | 4.8% |
 | Braille labels with full 3 mm clearance | 165/232 (71%) | 172/231 (74%) | n/a | n/a |
 
-These are historical snapshots. Re-run the harness after code or model changes; do not assume they describe an untested branch or new build.
+These are historical figures, not a fresh run for this documentation change. Rerun after code, model, or configuration changes.
 
-## OCR engine comparison
+## OCR comparison and performance
 
-The repository includes `scripts/ocrbench.mjs` to compare label recall between PaddleOCR and Tesseract. The intended path is PaddleOCR first, Tesseract fallback. Changes to detector thresholds, recognizer models, image preprocessing, or fallback behavior should be measured against the same hand-counted labels.
+The OCR chain is Indra (only when selected) → PaddleOCR → Tesseract fallback. This is sequential fallback, not an ensemble. Compare engines against the same hand-counted labels; see [OCR engines](ocr-engines.md).
 
-## Performance and model size
-
-Earlier project measurements report roughly 10–30 seconds per diagram on an i9-14900KF desktop running Chromium, once model assets are cached. The documentation has described first-run model downloads as approximately 90 MB. Actual time and transfer size vary with browser, cache state, network, image dimensions, and asset compression; measure on representative target hardware.
+Earlier measurements report roughly 10–30 seconds per diagram on an i9-14900KF desktop running Chromium with assets cached. This is a hardware-specific historical observation, not a performance guarantee.
 
 ## What is not measured
 
-The automated harness does not establish tactile readability, semantic correctness of every label-to-part association, texture discrimination on physical swell paper, transcription time savings, or compatibility with every printer and production workflow. Those require transcriber review, physical production tests, and structured evaluation with tactile readers.
+The harness does not establish tactile readability, semantic correctness of every label-to-part association, physical texture discrimination, transcription time savings, or compatibility with every printer/fuser. Those require professional review, physical proofs, and structured evaluation with tactile readers.
 
 ## Regression practice
 
-For changes to OCR, leader detection, segmentation, tracing, or layout:
-
-1. Run the full evaluation on the same sample set.
+1. Run the same sample set before and after a change.
 2. Compare label recall and false positives.
-3. Inspect overlays for leader endpoint and mask errors.
-4. Compare Detailed and Simplified geometry metrics.
-5. Review braille placement and clearances.
-6. Record browser, hardware, model versions, and cache state.
-7. Keep before/after examples for diagrams where behavior changed.
+3. Inspect leader endpoints and segmentation masks.
+4. Compare Detailed and Simplified geometry.
+5. Review braille placement and clearance.
+6. Record browser, OS, hardware, model revisions, and cache state.
+7. Keep before/after examples where behavior changes.

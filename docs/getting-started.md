@@ -1,15 +1,16 @@
 # Getting started
 
-This guide covers a local developer setup. GitHub Pages hosts the documentation only; it does not host the TouchSight-NG application.
+GitHub Pages publishes the documentation only. The browser application is run locally.
 
 ## Requirements
 
-- Node.js 24 or newer (npm is included with Node.js).
-- A current desktop browser with WebAssembly support. WebGL is needed for the 3D relief preview.
-- Internet access for initial dependency and model-asset setup.
-- Enough memory for in-browser image processing and neural-network inference.
+- Node.js 24 or newer (npm included).
+- A current desktop browser with JavaScript modules, WebAssembly, and Canvas support.
+- WebGL for the optional 3D relief view and STL export.
+- Internet access for dependency installation and initial asset preparation.
+- Enough memory for in-browser OCR, segmentation, and image processing.
 
-## Get the source and install dependencies
+## 1. Clone and install
 
 ```bash
 git clone https://github.com/mrhunsaker/touchsight-NG.git
@@ -17,95 +18,91 @@ cd touchsight-NG
 npm ci
 ```
 
-`npm ci` installs exact dependency versions recorded in `package-lock.json`. It does not by itself download model weights.
+`npm ci` installs the exact dependency tree in `package-lock.json`. It does not populate all browser model assets.
 
-## Prepare browser libraries and model files
+## 2. Prepare browser assets and models
 
 ```bash
 npm run vendor
 ```
 
-The vendor script is intended to prepare local browser assets: OpenCV.js, Tesseract.js and English traineddata, Transformers.js, ONNX Runtime Web, three.js, SlimSAM weights, PaddleOCR ONNX weights, and the optional Indra OCR ONNX weights (used only when "Use Indra OCR" is enabled; see [OCR engines](ocr-engines.md)). The model files are downloaded into generated local folders and then served by the local app. See [Models and inference engines](models-and-engines.md) for the file inventory and each component's role.
+The vendor script copies browser libraries into `src/vendor/` and downloads model assets into `src/models/`. It prepares OpenCV.js, Tesseract.js and English traineddata, Transformers.js, ONNX Runtime Web, three.js, SlimSAM, PaddleOCR, optional Indra OCR files, and the Potrace runtime/license notice. Existing nonempty downloaded files are skipped. If a specific generated file is corrupt or incomplete, remove that file and rerun the command.
 
-### Asset path check
+Generated browser libraries and model weights are local runtime output, not application source. Do not commit them unless a deliberate distribution policy requires it.
 
-The server and vendor script target `src/`, matching the tracked application source. Run the commands above and confirm the browser console reports successful local asset loading.
-
-## Start the local application
+## 3. Start the app
 
 ```bash
 npm run serve
 ```
 
-Open the local address printed by the server (the current script defaults to `http://localhost:5173`). Keep the terminal running while using the app.
+The static server serves the tracked `src/` directory. Its default address is `http://localhost:5173`; keep the terminal open. To change the port, set `PORT` before starting (for example, `PORT=8080 npm run serve` on macOS/Linux).
 
-## Process a diagram
+## 4. Run a diagram
 
-1. Choose a built-in sample or upload a PNG, JPG/JPEG, or WebP image.
-2. The app normalizes the image and loads its on-device engines.
-3. OCR finds printed labels through the engine chain: the experimental Indra
-   engine (only when "Use Indra OCR" is checked under Output options), then
-   PaddleOCR by default, then Tesseract if the ONNX path fails.
-   See [OCR engines](ocr-engines.md).
-4. Leader-line detection attempts to associate labels with parts.
-5. SlimSAM segments parts using point prompts derived from those associations.
-6. The app creates a tactile layout and runs geometric checks.
-7. Review and correct labels and diagram structure before exporting.
+Choose a built-in sample or upload/drop a PNG, JPEG/JPG, or WebP image no larger than 15 MiB. The UI composites transparency onto white and scales the longest side to at most 1,400 pixels.
 
-Input files larger than 15 MB are rejected by the current UI. The app scales the longest side to at most 1,400 pixels for analysis.
+Set paper and outline style. Leave optional Autotrace and Indra OCR off for a baseline run, and begin with tracing sensitivity 55. Optionally add a braille title, texture fills, or force letter keys. The processing stages are image/model preparation, OCR, leader detection, segmentation, tactile layout, and guideline checks.
 
-## Review and export
+Read [Application controls and options](application-options.md) for the exact effect of every control, tab, review action, and export.
 
-Use the review rail to correct OCR text, merge split labels, or remove incorrect detections. Inspect the **Tactile graphic**, **What the AI saw**, and **vs. edge tracing** views. Check braille, part boundaries, line spacing, textures, and the key page. The relief tab requires WebGL.
+## 5. Review and export
 
-Current exports include the tactile SVG, key page SVG, print/PDF through the browser print dialog, and STL from the relief view. See [Review workflow](review-workflow.md), [Guidelines](guidelines.md), and [Printing](printing.md).
+Correct every detected label against the source. Inspect **What the AI saw** for OCR boxes, leader endpoints, and masks. Compare Detailed and Simplified styles where the drawing is crowded. Review braille, key mappings, textures, line spacing, page size, and automated checks. The app cannot currently add a label that OCR entirely missed.
 
-## Evaluation and development checks
+Exports are editable tactile SVG, key-page SVG, browser Print/PDF, and STL from the 3D relief tab. For swell paper, print at 100% / actual size, photocopy onto swell paper, and follow the fuser manufacturer's procedure. See [Printing and swell paper](printing.md).
 
-Install Playwright's Chromium browser if needed:
+## Optional desktop window
+
+After npm installation and asset preparation:
+
+```bash
+npx neu update
+npm run desktop
+```
+
+This downloads Neutralino binaries into the ignored `desktop/neutralino/bin/` directory and opens the same local app in the operating system webview. See [Desktop GUI](desktop-gui.md).
+
+## Evaluation
+
+Install Playwright Chromium once:
 
 ```bash
 npx playwright install chromium
-npm run serve
 ```
 
-In a second terminal:
+Run `npm run serve` in one terminal, then in another:
 
 ```bash
 npm run eval
 node scripts/recall.mjs
 ```
 
-The harness records metrics for the sample set and compares TouchSight-NG with a Canny edge-tracing baseline. See [Evaluation and benchmarks](evaluation.md).
+Generated output is written under `eval-out/`. The harness measures selected geometric metrics and label recall; it is not a tactile-reader usability study. See [Evaluation](evaluation.md).
 
 ## Troubleshooting
 
-| Symptom | Likely cause / action |
+| Symptom | Check |
 |---|---|
-| Models fail to load | Check generated asset paths, network access during vendor setup, and browser console errors. |
-| PaddleOCR fails | The pipeline attempts Tesseract fallback; inspect console output to identify the underlying failure. |
-| SlimSAM fails | Confirm both ONNX files and the Transformers.js/ONNX Runtime WASM files are present at the paths expected by the loaders. |
-| Slow first run | Initial model downloads and WASM initialization are expected; subsequent browser caching may help. |
-| 3D view is blank | Check WebGL support and browser/GPU settings; tactile SVG export does not require WebGL. |
-| Upload rejected | Use PNG, JPG/JPEG, or WebP under the 15 MB UI limit. |
+| Server fails | Use Node.js 24+, run from repository root, check whether port 5173 is occupied. |
+| Library/model missing | Run `npm run vendor`; inspect `src/vendor/`, `src/models/`, and browser console. |
+| Vendor download fails | Check network access. Remove only the known-bad generated file before retrying because nonempty files are skipped. |
+| PaddleOCR fails | The pipeline attempts Tesseract fallback; inspect console errors. |
+| Indra unavailable | Confirm detector, recognizer, metadata, and license files in `src/models/indra/`; fallback should continue to PaddleOCR. |
+| SlimSAM fails | Confirm both SlimSAM ONNX files and Transformers.js/ONNX Runtime assets exist. |
+| 3D view blank | Check WebGL/browser/GPU support; SVG and Print/PDF do not need WebGL. |
+| Upload rejected | Use PNG/JPEG/WebP under 15 MiB. |
+| Print dimensions wrong | Print at actual size and disable fit-to-page/shrink-to-fit. |
 
 ## Privacy and network behavior
 
-Image inference runs in the browser. The current design does not upload source diagrams to an application backend. Initial setup downloads public libraries and model files; after those assets are local, inference uses local browser assets. OpenCV has a pinned jsDelivr fallback in `libs.js` for setups where its vendored copy is unavailable. That request fetches library code, not user image pixels.
+Image decoding, OCR, segmentation, layout, checking, and rendering run in the browser. There is no application backend or image-upload endpoint. Initial setup downloads npm dependencies, browser libraries, and model files. OpenCV has a version-pinned jsDelivr fallback in `src/js/libs.js` if its local bundle is unavailable; that fetches library code, not source-image pixels. Normal browser/network infrastructure and setup downloads still apply.
 
-## Editable SVG post-processing and quality control
+## Further reading
 
-The tactile SVG export is a vector document with physical dimensions in millimetres. It contains separate, named SVG groups for the page background, textures, structural line art, outlines, label-clearance knockouts, leader lines, and braille dots. The key-page SVG also separates braille from sighted print-reference text. Paths, circles, and text remain vector objects rather than a flattened screenshot.
-
-**Inkscape is the recommended reference editor because it is free and open-source (FOSS).** The exported SVG is standard vector artwork; other SVG-capable editors—including Adobe Illustrator and Affinity Designer—can also be used. TouchSight-NG targets FOSS workflows, so Inkscape is the editor used in these instructions, not a technical requirement.
-
-Recommended post-processing sequence:
-
-1. Export the editable tactile SVG and, when present, the key-page SVG.
-2. Open the SVG in Inkscape. Use the Objects/Layers panel to inspect and isolate the named groups.
-3. Compare the artwork with the source diagram and the TouchSight-NG analysis views. Correct path geometry, remove false contours, reconnect broken boundaries, and adjust leader placement where necessary.
-4. Check label-to-part correspondence, braille spelling and dot patterns, line hierarchy, texture distinction, clearances, and page margins. Do not assume that a visually attractive edit is tactilely legible.
-5. Preserve the physical page dimensions and millimetre scale. Avoid scaling individual objects in ways that alter specified braille or line dimensions.
-6. Save a separate reviewed SVG, then produce a physical proof on the target printer/swell-paper/fuser system. Inspect the raised output and obtain tactile-reader feedback where possible.
-
-The vector editor is a post-processing and QC option, not an automated validation step. Editing SVG geometry does not update TouchSight-NG's analysis state or its automated guideline report. Re-run or independently perform checks after edits, and retain the unmodified export so changes can be compared or reverted.
+- [Application controls and options](application-options.md)
+- [Transcriber review workflow](review-workflow.md)
+- [Tactile layout and BANA guidelines](guidelines.md)
+- [Models and inference engines](models-and-engines.md)
+- [Pipeline stages](pipeline.md)
+- [Printing and swell paper](printing.md)

@@ -35,15 +35,13 @@ markdown_extensions:
   - pymdownx.tabbed
 extra_css:
   - stylesheets/accessibility.css
-extra_css:
-  - stylesheets/accessibility.css
 extra_javascript:
   - https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js
   - javascripts/mermaid-init.js
 nav:
   - Home: index.md
   - For transcribers:
-      - Getting started: getting-started.md
+      - Getting started: getting-started.md\n      - Application controls and options: application-options.md
       - The teacher review workflow: review-workflow.md
       - Printing and swell paper: printing.md
   - How it works:

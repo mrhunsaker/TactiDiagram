@@ -145,11 +145,11 @@ Two line-art styles are available:
 - **Detailed:** retains more of the source drawing's structure. Text and leader lines are removed from the figure tracing where possible. Boundaries associated with named-part masks receive stronger emphasis.
 - **Simplified:** emphasizes boundaries between flat colour regions and thin drawn strokes while suppressing shading and small specks. Nearby lines are merged/thinned more aggressively.
 
-The tracing sensitivity control changes contour/foreground recovery. It does not disable the tactile layout's physical checks.
+The tracing sensitivity control (0–100, default 55, step 5) changes foreground, edge, colour-region, and thin-stroke recovery. Higher values lower detection thresholds and can recover faint features at the cost of added noise; lower values are more conservative. Changing sensitivity recomputes tracing while reusing OCR and segmentation. It does not disable physical layout or braille-clearance logic. See [Application controls and options](application-options.md).
 
 ## 7. Lay out braille and textures
 
-The layout engine works in millimetres for the selected page size. It places uncontracted UEB Grade 1 braille, optional two-letter keys, and up to five textures. It applies line hierarchy, texture insets, braille clearance, and knockouts. See [Tactile layout and BANA guidelines](guidelines.md).
+The layout engine works in millimetres for the selected page size. It places uncontracted UEB Grade 1 braille, optional two-letter keys, and up to four textures. It applies line hierarchy, texture insets, braille clearance, and knockouts. See [Tactile layout and BANA guidelines](guidelines.md).
 
 ## 8. Check and review
 

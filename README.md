@@ -9,6 +9,7 @@ The transcriber remains responsible for the finished graphic. TouchSight-NG is a
 - **Application:** Run locally; the application is not hosted on GitHub Pages.
 - **User and technical documentation:** https://mrhunsaker.github.io/touchsight-NG/
 - **Getting started:** [docs/getting-started.md](docs/getting-started.md)
+- **Every application setting and action:** [docs/application-options.md](docs/application-options.md)
 - **Theory and pipeline:** [docs/architecture.md](docs/architecture.md), [docs/pipeline.md](docs/pipeline.md)
 - **Models and inference engines:** [docs/models-and-engines.md](docs/models-and-engines.md)
 - **OCR engines (optional Indra engine):** [docs/ocr-engines.md](docs/ocr-engines.md)
@@ -84,13 +85,15 @@ This design supports use with school and student materials while keeping source 
 
 ## Run locally
 
-Requirements: Node.js 24 or newer.
+Requirements: Node.js 24 or newer and a current desktop browser with WebAssembly support. WebGL is needed only for the 3D relief view and STL export.
 
 ```bash
 npm ci
 npm run vendor
 npm run serve
 ```
+
+The vendor step copies browser libraries into `src/vendor/` and downloads model assets into `src/models/`. The local server serves `src/` directly at http://localhost:5173 by default. Keep the terminal open while using the app.
 
 By default the application runs in a browser tab. An optional desktop window
 (neutralino, using the operating system webview instead of a bundled Chromium)
@@ -100,7 +103,7 @@ is also available; see [Desktop GUI](docs/desktop-gui.md).
 npm run desktop
 ```
 
-Open http://localhost:5173 if the local app runtime has been assembled. Note that the current checkout has an incomplete `src/` to `app/` transition: the server and vendor script target `app/`, but the tracked application source is under `src/` and no build/copy step currently populates `app/`. See [Getting started](docs/getting-started.md#asset-path-check) before treating this as a verified clean-checkout setup. To run the automated evaluation harness:
+To run the automated evaluation harness:
 
 ```bash
 npm run eval
@@ -112,7 +115,7 @@ The evaluation harness uses Playwright; install its Chromium browser if it is no
 npx playwright install chromium
 ```
 
-See [Getting started](docs/getting-started.md) for setup and use, [Models and inference engines](docs/models-and-engines.md) for the model inventory, and [Advanced model options](docs/advanced-model-options.md) for clearly marked research directions.
+See [Getting started](docs/getting-started.md) for setup and [Application controls and options](docs/application-options.md) for the meaning and effect of every UI control, result view, review action, and export. For the processing sequence, see [Pipeline stages](docs/pipeline.md); for the model inventory, see [Models and inference engines](docs/models-and-engines.md). Future research candidates are described separately in [Advanced model options](docs/advanced-model-options.md); they are not implemented application controls.
 
 ## Project structure
 

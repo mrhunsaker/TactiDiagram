@@ -88,7 +88,7 @@ scripts/            vendor setup, local server, evaluation and QA tooling
 docs/               MkDocs documentation (published to GitHub Pages)
 ```
 
-Generated vendor libraries and model weights are not committed as application source. The current vendor script's output paths and the browser loaders should be reconciled before treating a clean checkout as a verified setup; see [Getting started](getting-started.md#asset-path-check).
+Generated vendor libraries and model weights are not committed as application source. The repository currently has an incomplete `src/` to `app/` runtime transition: the local server and vendor script target `app/`, while the application source tree is `src/`, and no build/copy step currently populates the served directory. Resolve this before treating a clean checkout as runnable; see [Getting started](getting-started.md#asset-path-check).
 
 ## Module map
 

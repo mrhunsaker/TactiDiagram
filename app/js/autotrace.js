@@ -1,54 +1,53 @@
-// Potrace vectorization is an alternate outline extractor. It deliberately leaves
-// OCR, leader assignment, SAM masks, and foreground segmentation untouched.
+// First-stage image cleanup. Potrace vectorizes the source before OCR, leader
+// detection, foreground extraction, and SAM segmentation run. The rasterized SVG
+// is deliberately returned as ImageData so every downstream stage sees one clean,
+// consistent image rather than mixing raw pixels with a late-stage outline mask.
 let potraceReady;
-async function engine() {
-  if (!potraceReady) potraceReady = import('../vendor/potrace/index.js').then(async (m) => {
-    await m.init();
-    return m.potrace;
-  }).catch((e) => { potraceReady = null; throw e; });
+async function loadPotrace() {
+  if (!potraceReady) {
+    potraceReady = import('../vendor/potrace/index.js').then(async (m) => {
+      await m.init();
+      return m.potrace;
+    }).catch((error) => {
+      potraceReady = null;
+      throw error;
+    });
+  }
   return potraceReady;
 }
 
-export async function updateAutotrace(imageData, analysis) {
-  const potrace = await engine();
-  const source = document.createElement('canvas');
-  source.width = imageData.width;
-  source.height = imageData.height;
-  source.getContext('2d').putImageData(imageData, 0, 0);
-  const svg = await potrace(source, {
-    turdsize: 3,
+export async function prepareAutotrace(sourceImageData) {
+  const potrace = await loadPotrace();
+  const svg = await potrace(sourceImageData, {
+    turdsize: 4,
     turnpolicy: 4,
     alphamax: 1,
     opticurve: 1,
     opttolerance: 0.25,
     pathonly: false,
-    extractcolors: false,
-    posterizelevel: 1,
+    extractcolors: true,
+    posterizelevel: 4,
     posterizationalgorithm: 0,
   });
-  const blob = new Blob([svg], { type: 'image/svg+xml' });
-  const url = URL.createObjectURL(blob);
+
+  const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
   try {
     const image = new Image();
     image.src = url;
     await image.decode();
     const canvas = document.createElement('canvas');
-    canvas.width = imageData.width;
-    canvas.height = imageData.height;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-    const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-    const mask = new Uint8Array(canvas.width * canvas.height);
-    for (let p = 0; p < mask.length; p++) {
-      const i = p * 4;
-      // Potrace emits dark vector paths on a transparent canvas.
-      mask[p] = pixels[i + 3] > 16 && (pixels[i] + pixels[i + 1] + pixels[i + 2]) < 600 ? 1 : 0;
+    canvas.width = sourceImageData.width;
+    canvas.height = sourceImageData.height;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    // Potrace SVG may be transparent; use the same white page background as input.
+    context.fillStyle = '#fff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const cleaned = context.getImageData(0, 0, canvas.width, canvas.height);
+    if (!cleaned.data.some((value, index) => index % 4 !== 3 && value < 245)) {
+      throw new Error('Potrace did not produce any visible diagram contours.');
     }
-    if (!mask.some(Boolean)) throw new Error('Potrace returned no traceable contours for this image.');
-    analysis.lineArt = mask;
-    analysis.edges = mask;
-    analysis.autotrace = true;
-    return analysis;
+    return cleaned;
   } finally {
     URL.revokeObjectURL(url);
   }

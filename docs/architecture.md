@@ -74,7 +74,11 @@ This is a hybrid system: learned models handle text recognition and part segment
 
 See [Models and inference engines](models-and-engines.md) for model identities, files, roles, and caveats.
 
-## Editable vector output and post-processing\n\nThe renderer emits real SVG paths and circles at physical millimetre dimensions. Tactile content is separated into named layers for textures, structural line art, outlines, label-clearance knockouts, leader lines, and braille dots. The exported SVG can be opened and edited in Inkscape, the FOSS reference editor, or in proprietary SVG editors such as Illustrator and Affinity Designer. This is a human post-processing stage: edits made externally are not reflected in TouchSight-NG's automated checks, so transcribers must repeat geometry, braille, and tactile proofing.\n\n## Source layout
+## Editable vector output and post-processing
+
+The renderer emits real SVG paths and circles at physical millimetre dimensions. Tactile content is separated into named layers for textures, structural line art, outlines, label-clearance knockouts, leader lines, and braille dots. The exported SVG can be opened and edited in Inkscape, the FOSS reference editor, or in proprietary SVG editors such as Illustrator and Affinity Designer. This is a human post-processing stage: edits made externally are not reflected in TouchSight-NG's automated checks, so transcribers must repeat geometry, braille, and tactile proofing.
+
+## Source layout
 
 ```
 src/                browser application source

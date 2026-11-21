@@ -374,7 +374,7 @@ sensitivityInput?.addEventListener('input', () => { sensitivityValue.value = sen
 sensitivityInput?.addEventListener('change', async () => {
   if (!state.analysis || state.busy) return;
   state.busy = true;
-  sensitivityInput.disabled = true;
+  document.querySelectorAll('#opt-autotrace, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file').forEach((el) => { el.disabled = true; });
   setStatus('Updating tracing sensitivity…');
   try {
     const cv = await loadOpenCV();
@@ -386,7 +386,7 @@ sensitivityInput?.addEventListener('change', async () => {
     console.error(e);
     setStatus('Could not update tracing: ' + (e.message || e), true);
   } finally {
-    sensitivityInput.disabled = false;
+    document.querySelectorAll('#opt-autotrace, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file').forEach((el) => { el.disabled = false; });
     state.busy = false;
   }
 });

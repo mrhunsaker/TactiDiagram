@@ -45,6 +45,7 @@ flowchart TD
     L --> M["Editable layered tactile SVG / print PDF / key page / STL"]
     M --> N["Optional vector-editor adjustment and QC"]
     N --> O["Production and final tactile proof"]
+    N --> O["Production and final tactile proof"]
 ```
 
 **Potrace / Autotrace is an optional preprocessing stage.** When enabled, it reconstructs an alternate raster for OCR, leader detection, foreground analysis, and segmentation. The original image is retained; Potrace does not generate the tactile page. See [Pipeline stages](docs/pipeline.md).

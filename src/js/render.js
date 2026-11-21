@@ -40,7 +40,7 @@ export function renderTactile(layout, { preview = false, highlight = null, under
   }
   out.push('</g>');
 
-  if (layout.lineArt?.length) out.push(`<path id="lineart" d="${pathD(layout.lineArt)}" fill="#000" fill-rule="evenodd"/>`);
+  if (layout.lineArt?.length) out.push(`<g id="lineart-layer" inkscape:groupmode="layer" inkscape:label="Fine structural line art"><path id="lineart" d="${pathD(layout.lineArt)}" fill="#000" fill-rule="evenodd"/></g>`);
   out.push(`<g id="outlines" inkscape:groupmode="layer" inkscape:label="Silhouette and part outlines" fill="none" stroke="#000" stroke-linejoin="round" stroke-linecap="round">`);
   out.push(`<path d="${pathD(layout.silhouette)}" stroke-width="${SPEC.outline}"/>`);
   for (const p of layout.parts) if (p.outline.length) out.push(`<path d="${pathD(p.outline)}" stroke-width="${SPEC.partLine}" data-part="${p.id}"/>`);
@@ -60,7 +60,7 @@ export function renderTactile(layout, { preview = false, highlight = null, under
   out.push('</g>');
   if (preview) {
     // Screen-only: a light grey pill behind each label (braille + print) so it reads clearly.
-    out.push('<g id="label-pills" fill="#e8e5dc" stroke="#d3cfc3" stroke-width="0.25">');
+    out.push('<g id="label-pills" inkscape:groupmode="layer" inkscape:label="Screen preview label backgrounds" fill="#e8e5dc" stroke="#d3cfc3" stroke-width="0.25">');
     layout.labels.forEach((L, i) => {
       const r = L.rect, ts = highlight === i ? 3.6 : 3.0;
       const txt = L.usesKey ? `${L.key} = ${L.text}` : L.text;
@@ -101,7 +101,7 @@ export function renderTactile(layout, { preview = false, highlight = null, under
 // Key page: braille key in a two-column list, with print text in the preview layer.
 export function renderKeyPage(layout, { preview = false } = {}) {
   const { pageW, pageH, margin } = layout;
-  const out = [`<svg xmlns="http://www.w3.org/2000/svg" width="${f(pageW)}mm" height="${f(pageH)}mm" viewBox="0 0 ${f(pageW)} ${f(pageH)}">`,
+  const out = [`<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${f(pageW)}mm" height="${f(pageH)}mm" viewBox="0 0 ${f(pageW)} ${f(pageH)}">`,
     `<rect width="${f(pageW)}" height="${f(pageH)}" fill="#fff"/>`, '<g fill="#000">'];
   let y = margin;
   const titleCells = layout.title ? layout.title.cells : [];
@@ -123,7 +123,7 @@ export function renderKeyPage(layout, { preview = false } = {}) {
   }
   out.push('</g>');
   if (preview) {
-    out.push('<g font-family="system-ui, sans-serif" font-size="3.2" fill="#2563eb">');
+    out.push('<g id="key-print-text" inkscape:groupmode="layer" inkscape:label="Editable print key text" font-family="system-ui, sans-serif" font-size="3.2" fill="#2563eb">');
     for (const r of printRows) out.push(`<text x="${f(margin)}" y="${f(r.y - 1.6)}">${esc(r.key)}</text><text x="${f(margin + 4 * BRAILLE.cellPitch)}" y="${f(r.y - 1.6)}">${esc(r.text)}</text>`);
     out.push('</g>');
   }

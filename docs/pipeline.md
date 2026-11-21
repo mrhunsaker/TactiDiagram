@@ -7,7 +7,10 @@ TouchSight-NG is a hybrid computer-vision pipeline. OCR and segmentation use tra
 ```mermaid
 flowchart TD
   A[Input: PNG, JPG, WebP] --> B[Decode and normalize]
-  B --> C{Primary OCR available?}
+  B --> B1{Optional Potrace Autotrace?}
+  B1 -->|Enabled| B2[Reconstruct alternate raster]
+  B1 -->|Disabled| C{Primary OCR available?}
+  B2 --> C
   C -->|Yes| D[PaddleOCR detection and recognition]
   C -->|No / error| E[Tesseract fallback]
   D --> F[Normalize word boxes]
@@ -34,7 +37,9 @@ flowchart TD
   V --> W[Braille, keys, textures, knockouts]
   W --> X[Automated guideline checks]
   X --> Y[Transcriber review and correction]
-  Y --> Z[SVG / key page / print-PDF / STL]
+  Y --> Z[Editable layered SVG / key page / print-PDF / STL]
+  Z --> Z1[Optional Inkscape or other SVG-editor adjustment and QC]
+  Z1 --> Z2[Physical proof and tactile QA]
 ```
 
 ## 1. Input normalization
@@ -134,9 +139,9 @@ The layout engine works in millimetres for the selected page size. It places unc
 
 The checker measures selected geometric properties such as short fragments, narrow gaps, and braille clearance. It also compares the output with a Canny edge-tracing baseline. These are diagnostics, not a pass/fail determination of tactile usability.
 
-The transcriber must compare every label and part relationship against the source, inspect the tactile graphic and 3D relief, and perform applicable production QA. See [Review workflow](review-workflow.md).
+The transcriber must compare every label and part relationship against the source, inspect the tactile graphic and 3D relief, and perform applicable production QA. After in-app review, the tactile SVG can be opened in Inkscape (FOSS) or another SVG editor such as Illustrator or Affinity Designer. Named layers separate textures, structural line art, outlines, label knockouts, leaders, and braille dots. External edits are not covered by the app's checker; repeat the geometry and braille review and produce a physical proof. See [Review workflow](review-workflow.md) and [Printing](printing.md).
 
-## Potrace: planned optional preprocessing, not yet active in this main-branch pipeline
+## Potrace: optional upstream preprocessing
 
 Potrace is a bitmap-to-vector tracing engine. The project has an `esm-potrace-wasm` dependency associated with the separate Autotrace work in [PR #4](https://github.com/mrhunsaker/touchsight-NG/pull/4). The current `src/js/pipeline.js` does not import or invoke a Potrace preprocessing stage, and the current `scripts/vendor.mjs` does not copy a Potrace browser bundle into the app's runtime assets.
 

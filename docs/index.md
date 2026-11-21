@@ -26,7 +26,11 @@ Naive tracing does not work: edge detection turns every printed label into raise
 
 In evaluation on 16 Wikimedia Commons diagrams, TouchSight-NG found 148 of 151 hand-counted labels (98%), placed all but 1 of 233 detected labels in braille, and left 66 fragments below the 12.5 mm touch threshold versus 763 for plain edge tracing. See [Evaluation and benchmarks](evaluation.md).
 
-## Editable SVG post-processing and QC\n\nThe tactile and key-page SVG exports contain vector geometry rather than a flattened image. Named layers separate textures, structural line art, outlines, label-clearance knockouts, leader lines, and braille dots. Use Inkscape as the recommended FOSS editor to inspect and adjust paths, positions, linework, or text. The SVG format is not Inkscape-exclusive: Adobe Illustrator, Affinity Designer, and other SVG-capable editors can perform the same work. After manual edits, repeat the transcriber and physical-proof checks; edits made outside TouchSight-NG are not covered by its automated checker.\n\n## Learn the theory and technology
+## Editable SVG post-processing and QC
+
+The tactile and key-page SVG exports contain vector geometry rather than a flattened image. Named layers separate textures, structural line art, outlines, label-clearance knockouts, leader lines, and braille dots. Use Inkscape as the recommended FOSS editor to inspect and adjust paths, positions, linework, or text. The SVG format is not Inkscape-exclusive: Adobe Illustrator, Affinity Designer, and other SVG-capable editors can perform the same work. After manual edits, repeat the transcriber and physical-proof checks; edits made outside TouchSight-NG are not covered by its automated checker.
+
+## Learn the theory and technology
 
 - [Architecture](architecture.md): why the system combines OCR, geometric computer vision, and segmentation.
 - [Pipeline stages](pipeline.md): how each stage works and how errors propagate.

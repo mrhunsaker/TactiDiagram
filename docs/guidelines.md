@@ -57,11 +57,11 @@ These are project implementation thresholds. They should be reviewed against the
 
 The checker is geometric. It does not test whether a blind reader can identify a shape, whether the label-to-part association is semantically correct, or whether two textures are distinguishable in physical production.
 
-## Recommended QA loop
+## Manual vector-editor QC\n\nThe exported SVG can be inspected and adjusted after automated layout. Inkscape is the FOSS reference editor; Illustrator, Affinity Designer, and other SVG editors are also compatible. The named SVG layers make it possible to isolate braille dots, leaders, outlines, textures, and line art. When editing, preserve physical page dimensions and the tactile constraints above. The app's geometric checker does not inspect edits made after export. Repeat checks for braille correctness, 3 mm clearance, line separation, minimum fragment length, texture distinguishability, and semantic label-to-part association.\n\n## Recommended QA loop
 
 1. Review the source diagram and all detected labels.
 2. Inspect each label's leader endpoint and segmentation mask.
 3. Review line hierarchy, fragments, close gaps, braille, and texture assignment.
 4. Export at the intended physical page size.
 5. Produce a physical proof on the target swell-paper/fuser system.
-6. Obtain tactile-reader feedback where possible and revise the source or layout.
+7. Obtain tactile-reader feedback where possible and revise the source or layout.

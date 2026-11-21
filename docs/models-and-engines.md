@@ -2,7 +2,7 @@
 
 This page distinguishes **trained model weights** from **runtime libraries**. The runtime libraries execute algorithms; model files contain learned parameters and vocabularies. They have different sizes, licenses, loading behavior, and failure modes.
 
-The file names below come from the checked-in `scripts/vendor.mjs`, `package.json`, and browser loader modules. The current source/build transition is incomplete: the server and vendor script target `app/`, while source modules are maintained under `src/`; see the [asset-path caveat](getting-started.md#asset-path-check).
+The file names below come from the checked-in `scripts/vendor.mjs`, `package.json`, and browser loader modules. The local server serves `src/` directly. Run `npm run vendor` to populate generated browser libraries in `src/vendor/` and model files in `src/models/`; see [Getting started](getting-started.md).
 
 ## At a glance
 
@@ -142,7 +142,7 @@ That is different from simply exporting Potrace's paths as the tactile graphic. 
 
 ## Download size and caching
 
-The project documentation has previously described the initial model download as roughly 90 MB, including the OCR and segmentation weights and supporting runtime assets. The exact transfer size depends on the selected files, compression, browser cache, and vendor-script revision. The vendor script skips a destination file when it already exists and has nonzero size. Browser caching can also reduce later downloads.
+The total setup transfer size depends on the exact model files, compression, and vendor-script revision. The vendor script downloads the required assets during setup and skips a destination file when it already exists and has nonzero size. Browser caching can reduce later loading; a corrupt but nonempty downloaded file may need to be removed manually before rerunning the vendor command.
 
 For a reproducible release, record exact model URLs/revisions, checksums, licenses, and measured uncompressed and transferred sizes. The current script pins some dependencies and uses versioned model paths, but it does not yet provide a complete generated model manifest with hashes.
 

@@ -35,6 +35,8 @@ markdown_extensions:
   - pymdownx.tabbed
 extra_css:
   - stylesheets/accessibility.css
+extra_css:
+  - stylesheets/accessibility.css
 extra_javascript:
   - https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js
   - javascripts/mermaid-init.js

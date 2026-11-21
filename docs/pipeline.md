@@ -83,7 +83,7 @@ The current method:
 7. Uses the far endpoint as an approximate point on the named part.
 
 ```mermaid
-flowchart LR
+flowchart TD
   A[OCR label box] --> C[Candidate line segments]
   B[Thin-stroke mask] --> C
   C --> D[Score by proximity and direction]

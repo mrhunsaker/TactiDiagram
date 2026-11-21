@@ -29,7 +29,7 @@ The vendor script is intended to prepare local browser assets: OpenCV.js, Tesser
 
 ### Asset path check
 
-**Important current source caveat:** the inspected `scripts/vendor.mjs` writes generated assets to `app/vendor` and `app/models`, while browser loaders in `src/js/libs.js` and `src/js/paddle.js` resolve assets relative to `src/` (under `src/vendor` and `src/models`). These paths do not currently agree in the checked-in source. Do not assume that a successful vendor command means the application can find every asset. This mismatch must be reconciled in code and verified before the clean-checkout setup can be considered reproducible.
+The vendor script writes generated libraries and models under `src/vendor/` and `src/models/`, matching the browser loaders. Potrace's ESM/WASM runtime and its GPL-2.0 notice are also copied to `src/vendor/potrace/`.
 
 ## Start the local application
 
@@ -55,7 +55,7 @@ Input files larger than 15 MB are rejected by the current UI. The app scales the
 
 Use the review rail to correct OCR text, merge split labels, or remove incorrect detections. Inspect the **Tactile graphic**, **What the AI saw**, and **vs. edge tracing** views. Check braille, part boundaries, line spacing, textures, and the key page. The relief tab requires WebGL.
 
-Current exports include the tactile SVG, key page SVG, print/PDF through the browser print dialog, and STL from the relief view. See [Review workflow](review-workflow.md), [Guidelines](guidelines.md), and [Printing](printing.md).
+Current exports include an editable tactile SVG, editable key-page SVG, print/PDF through the browser print dialog, and STL from the relief view. The SVGs use millimetre dimensions and named Inkscape layers. Open them in Inkscape (FOSS) for manual post-processing and QC, or use Illustrator, Affinity Designer, or another SVG editor. These external edits are not rechecked automatically: inspect braille, line spacing, clearances, layer visibility, page size, and tactile meaning again before production. See [Review workflow](review-workflow.md), [Guidelines](guidelines.md), and [Printing](printing.md).
 
 ## Evaluation and development checks
 

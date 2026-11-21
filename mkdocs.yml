@@ -38,6 +38,8 @@ nav:
   - How it works:
       - Architecture: architecture.md
       - Pipeline stages: pipeline.md
+      - Models and inference engines: models-and-engines.md
+      - Advanced model options (not implemented): advanced-model-options.md
       - Tactile layout and BANA guidelines: guidelines.md
       - Module reference: modules.md
   - Project:

@@ -413,8 +413,8 @@ $('#dl-stl').onclick = async () => {
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   } finally { btn.disabled = false; btn.textContent = 'Download STL for 3D printing'; }
 };
-$('#dl-svg').onclick = () => download(`${state.name}-tactile.svg`, renderTactile(state.layout));
-$('#dl-key').onclick = () => download(`${state.name}-key.svg`, renderKeyPage(state.layout, { preview: true }));
+$('#dl-svg').onclick = () => download(`${state.name}-tactile-editable.svg`, renderTactile(state.layout));
+$('#dl-key').onclick = () => download(`${state.name}-key-editable.svg`, renderKeyPage(state.layout, { preview: true }));
 $('#print').onclick = () => {
   const L = state.layout;
   const w = window.open('', '_blank');

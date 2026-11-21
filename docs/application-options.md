@@ -1,154 +1,95 @@
 # Application controls and options
 
-This page describes the controls in the current `src/index.html` and their behavior in `src/js/ui.js` and the layout/analysis modules. It is a reference for the controls as implemented, not a statement that every output is production-ready.
+This reference describes the controls implemented in `src/index.html`, `src/js/ui.js`, and the layout/analysis modules on the current main branch.
 
-## 1. Choose a diagram
+## Choose a diagram
 
-### Built-in samples
+The sample gallery provides heart, volcano, animal cell, mitochondrion, tooth, ear, earth layers, flower, and eye examples. Select a thumbnail to run it. Upload or drop a PNG, JPEG/JPG, or WebP image to use your own source. Files larger than 15 MiB are rejected. Transparent pixels are composited onto white; the longest image side is scaled to at most 1,400 pixels for analysis.
 
-Select a sample thumbnail in the left rail. The current sample gallery includes heart, volcano, animal cell, mitochondrion, tooth, ear, earth layers, flower, and eye. Samples are useful for learning the workflow and comparing settings. They are not a substitute for testing a representative source diagram from the actual transcription job.
+Use a clear labeled diagram where possible. Handwriting, rotated text, busy fills, overlapping leaders, and low-contrast lines can reduce recognition quality.
 
-### Upload or drop an image
-
-The file picker and drag-and-drop area accept:
-
-- PNG (`.png`)
-- JPEG/JPG (`.jpg`, `.jpeg`)
-- WebP (`.webp`)
-
-The UI rejects files larger than **15 MiB**. The app composites transparent pixels onto white and scales the image so its longest side is no more than **1,400 pixels** before analysis. The original-size file is not retained as the analysis raster; the normalized raster is used for inference and comparison.
-
-Use a clean, legible source with labels and leader lines where possible. Low-resolution scans, handwriting, rotated text, complex overlapping leaders, and labels on busy fills can reduce detection quality.
-
-## 2. Output options
-
-Options are in the left rail under **Output options**. Choose them before analysis when possible. Some options rerun the complete analysis; others rebuild only the tactile page from the existing analysis.
+## Output options
 
 ### Paper
 
-Select the physical page format used by the layout engine:
+| Choice | Physical dimensions |
+|---|---:|
+| Swell paper: Letter | 8.5 × 11 in (215.9 × 279.4 mm) |
+| Swell paper: Tabloid | 11 × 17 in (279.4 × 431.8 mm) |
+| Braille page | 11.5 × 11 in (292.1 × 279.4 mm) |
 
-| Choice | Physical size | Behavior |
-|---|---:|---|
-| Swell paper: Letter | 8.5 × 11 in (215.9 × 279.4 mm) | Default. |
-| Swell paper: Tabloid | 11 × 17 in (279.4 × 431.8 mm) | Larger page for diagrams that need more room. |
-| Braille page | 11.5 × 11 in (292.1 × 279.4 mm) | Square-ish braille production page; the layout does not automatically rotate this format for a landscape source. |
-
-For Letter and Tabloid, a source image with width/height ratio greater than 1.15 is laid out in landscape orientation. Otherwise it is portrait. The layout reserves a 15 mm page margin and fits the image into the remaining area while preserving its aspect ratio. A nonempty title reserves additional vertical space.
-
-Changing the page rebuilds the layout and checks; it does not rerun OCR or segmentation.
+Letter and Tabloid automatically use landscape when the source width/height ratio exceeds 1.15; otherwise they use portrait. Braille page does not auto-rotate. Layout preserves image aspect ratio and reserves a 15 mm margin. Changing paper rebuilds layout/checks, not OCR or segmentation.
 
 ### Outline style
 
-This controls how much source structure becomes raised line art:
+- **Detailed (like the original):** retains more source structure. It drops connected specks under 4 mm where possible, emphasizes edges associated with named-part masks, and retains other detail as finer lines. It can preserve useful internal anatomy but leave crowded regions for review.
+- **Simplified (3 mm spacing):** merges nearby lines at approximately the 3 mm scale, thins merged regions to centerlines, removes fragments shorter than 12.5 mm, and produces a cleaner structural layer. It can remove meaningful detail as well as noise.
 
-- **Detailed (like the original)** — preserves more of the traced source structure. The layout removes short specks under 4 mm where possible, emphasizes boundaries associated with named-part segmentation masks, and retains other detail as finer lines. This can preserve useful anatomy or internal structure, but can also leave more close lines and small details for the transcriber to review.
-- **Simplified (3 mm spacing)** — emphasizes major region boundaries and thin drawn strokes, closes gaps at approximately the 3 mm clearance scale, thins merged areas to centerlines, removes fragments shorter than 12.5 mm, and raises the resulting structural strokes to the nominal 1 mm line target. Use it when the detailed result is too crowded for touch.
-
-The 3 mm setting is a processing target, not a guarantee that every part of every output will pass physical tactile inspection. Compare both styles on the source and on a physical proof.
-
-Changing the style rebuilds the layout and checks; it does not rerun OCR or segmentation.
+This is a trade-off, not a quality ranking. Compare both styles on crowded diagrams. Changing style rebuilds layout/checks without rerunning OCR or segmentation.
 
 ### Use Autotrace (Potrace)
 
-**Off by default.** When enabled, the app runs the source raster through the locally vendored Potrace WebAssembly package, obtains an SVG reconstruction, rasterizes that SVG back to an image at the original normalized pixel dimensions, and then runs the normal OCR, leader, foreground, structural-line, and segmentation pipeline on that reconstructed image.
+Off by default. When enabled, the locally vendored Potrace WebAssembly package reconstructs the source as SVG; the app rasterizes that SVG at the normalized source dimensions and uses the reconstructed raster for OCR, leader detection, foreground/line analysis, and segmentation. The original remains available in the **Original** view.
 
-Use it when the source has noisy raster edges or you want to test whether a vector reconstruction produces cleaner contours. Do not assume it improves every image: tracing can remove small details, alter boundaries, or affect OCR. Compare the **Original** view with the analysis and tactile result. The original source is retained for comparison; the reconstructed raster is the analysis input.
-
-If Potrace cannot initialize or produces no visible contours, the analysis reports an error and restores the previous result. Turning this option on or off reruns the full analysis.
+Try it when raster edges are noisy, but compare carefully: reconstruction can simplify small details, alter boundaries, or affect OCR. If initialization fails or no visible contours are produced, the run reports an error and restores the previous result. Toggling Autotrace reruns the complete analysis.
 
 ### Use Indra OCR
 
-**Off by default; experimental.** When checked, the app tries Datalab Indra OCR v1.1.0 first. If Indra throws an error or returns no text, the pipeline tries PaddleOCR; if PaddleOCR cannot run, Tesseract.js is the final fallback. With the box unchecked, PaddleOCR is the first engine and Tesseract is the fallback.
+Off by default and experimental. When checked, Indra OCR v1.1.0 is attempted first; if it errors or returns no text, PaddleOCR is tried, then Tesseract.js if PaddleOCR cannot run. When unchecked, PaddleOCR is first and Tesseract is the fallback. This is sequential fallback, not an ensemble.
 
-This is a fallback chain, not an ensemble: the engines do not vote on every label. Indra's current browser port supports Latin-script recognition and omits the reference package's CJK/RTL/world recognizers, orientation/script classifiers, and language-model rescoring. It is therefore not the preferred setting for non-Latin scripts or difficult orientation cases.
-
-The checkbox requires the Indra model assets to have been prepared with `npm run vendor`. Enabling or disabling it reruns the full analysis because the OCR results can change. Check the **What the AI saw** view and correct every label against the source. See [OCR engines](ocr-engines.md) for model and validation details.
+The browser port currently supports Latin-script recognition only; the reference package's CJK/RTL/world recognizers, orientation/script classifiers, and language-model rescoring are not ported. Do not select it expecting multilingual OCR. Model assets must be prepared by `npm run vendor`. Toggling this option reruns all analysis. See [OCR engines](ocr-engines.md).
 
 ### Tracing sensitivity (0–100)
 
-The slider has a range of **0 to 100**, in steps of **5**, and starts at **55**.
+The slider moves in steps of 5 and defaults to 55. Lower values are more conservative and can suppress noise, but may miss pale or faint contours. Higher values lower detection thresholds and can recover lighter regions and strokes, but may add noise and unnecessary detail. Sensitivity affects foreground, edge, colour-region, and thin-stroke recovery; it does not disable physical layout or braille-clearance logic.
 
-- **Lower values** use more conservative thresholds. This can suppress weak/noisy contours but may miss faint lines, pale boundaries, or low-contrast strokes.
-- **Higher values** lower several detection thresholds and make the pipeline more willing to recover faint regions and strokes. This can reveal useful detail but may also introduce noise, extra contours, or clutter.
-
-Sensitivity affects foreground, edge, region, and thin-stroke recovery. It does **not** relax downstream physical layout rules such as braille clearance or tactile line-size handling. After changing the slider, the app updates tracing from the existing prepared image and reuses OCR and segmentation rather than rerunning those expensive stages. The status message confirms that OCR and segmentation were reused.
-
-There is no universally correct setting. Start at 55, inspect the **What the AI saw** overlay, and move in increments of 5–10 when faint structures are missed or noise is excessive. Recheck both the detailed and simplified tactile layouts after changing it.
+After the slider changes, tracing is recalculated from the current prepared image while OCR and segmentation are reused. Start at 55 and adjust by 5–10 after inspecting **What the AI saw**. There is no universally correct value.
 
 ### Title (in braille, optional)
 
-Enter a short title of up to **40 characters**. The title is encoded as uncontracted UEB Grade 1 braille and placed in the reserved title area at the top of the page. The field is optional; leave it blank if a title is not required or if it would consume space needed by the diagram.
-
-The current encoder is designed for short English labels. Proofread title spelling and braille; the field does not provide contracted braille or a full literary transcription workflow.
-
-Changing the title rebuilds the layout and checks, without rerunning OCR or segmentation.
+Enter up to 40 characters. The title is encoded in uncontracted UEB Grade 1 braille and placed in a reserved area above the diagram. Leave blank if not required or if page space is limited. Proofread the title and braille; this is not a full literary transcription tool. Changing it rebuilds layout/checks only.
 
 ### Fill parts with textures
 
-When checked, the layout assigns distinct fill patterns to up to **four** sufficiently large, non-dominant segmented parts. The patterns are inset from the part boundary and kept clear of structural line art where possible. Very large parts and small parts are not textured because a pattern can obscure the figure or become too dense to distinguish.
-
-When unchecked, parts use outlines and line hierarchy without these interior texture fills. Textures can help distinguish named regions when colour is unavailable to touch, but they should be checked on a physical proof; visually distinct patterns can merge when raised.
-
-Changing this option rebuilds the layout and checks, not OCR or segmentation.
+When enabled, the layout assigns distinct patterns to up to four sufficiently large, non-dominant segmented parts. Small parts and parts covering most of the figure are excluded; fills are inset from boundaries and kept clear of structural lines where possible. When disabled, the layout relies on outlines and line hierarchy. Textures can encode distinctions that colour cannot, but must be checked on a physical proof. Changing this option rebuilds layout/checks only.
 
 ### Use letter keys for every label
 
-When checked, every placed label uses a generated **two-letter alphabetic key** in braille instead of trying to fit the full word in braille beside the figure. A key page is then needed to map each two-letter key back to its full print label.
+When enabled, all labels that can be placed use unique two-letter alphabetic braille keys rather than full braille words. A key page maps each key to its full print label.
 
-When unchecked (default), the layout first attempts to place the full uncontracted braille label. If it cannot fit within the page or avoid other labels and drawing geometry, it falls back to a two-letter key for that label. Therefore, even with this option off, a key page can still be generated for labels that do not fit in full.
+When disabled, the layout first tries full uncontracted braille and uses a key only when the full label cannot be placed without collisions or leaving the page. Thus a key page may still be produced with this option off. Review key uniqueness and mapping. Changing it rebuilds layout/checks only.
 
-Keys are generated to be unique within the page and avoid selected ambiguous letter pairs. Review the key-to-label mapping and the braille on both pages. Changing this option rebuilds the layout and checks, not OCR or segmentation.
+## Result views
 
-## 3. Result views
+- **Tactile graphic:** layout preview. **Tactile** shows the page; **Overlay** places the original beneath the tactile drawing; **Original** shows the normalized source only.
+- **What the AI saw:** prepared analysis image with OCR boxes, leader estimates, segmentation masks, and anchors. If Autotrace is on, this view reflects the reconstructed image; use Original to compare with the upload.
+- **vs. edge tracing:** compares the label-guided output with a simple Canny edge-tracing baseline at the same page scale. The baseline is a diagnostic, not a competing complete transcription system.
+- **Key page:** shows the key legend when any labels use keys. If all labels fit in full braille, it reports that no key page is needed.
+- **3D relief:** interactive raised-geometry view. Drag to rotate and scroll to zoom. The moving-light control pauses/resumes raking light. WebGL is required for this view and STL export, not for SVG or print/PDF.
 
-After a successful analysis, the center stage provides five tabs:
+## Review labels
 
-- **Tactile graphic** — the production-oriented layout preview. Its sub-controls switch between Tactile, Overlay, and Original:
-  - **Tactile** shows the tactile page preview.
-  - **Overlay** places the original image beneath the tactile rendering to help compare alignment and retained structure.
-  - **Original** shows the normalized source image by itself.
-- **What the AI saw** — overlays detected label boxes, leader-line estimates, segmentation masks, and anchor points on the prepared analysis image. Use it to find OCR, leader, and mask errors. If Autotrace is enabled, the analysis image is the reconstructed raster; use the Original mode to compare with the uploaded source.
-- **vs. edge tracing** — compares TouchSight-NG's label-guided layout with a simple Canny edge-tracing baseline at the same page scale. It demonstrates why raw edge tracing can retain print and visual clutter; it is not a contest between two complete transcription systems.
-- **Key page** — displays the key-to-print-label page when one or more labels use keys. If all labels fit in full braille, the view explains that no key page is needed.
-- **3D relief** — displays raised geometry for inspection. Drag to rotate and scroll to zoom. The light control pauses or resumes the moving/raking light. WebGL is required; lack of WebGL does not prevent SVG or print/PDF export.
+Each detected entry shows text, braille preview, placement status (full braille or key), association status (leader traced or label sits on the part), segmentation status, and any automatic vocabulary correction.
 
-## 4. Review labels
+- **Edit text:** change the field and commit it (Enter or focus change). Braille and layout update; OCR is not rerun.
+- **Merge:** the up-arrow appends this entry to the entry immediately above and combines their bounding boxes. Use only when OCR split one multi-line label. It removes the lower entry; inspect the merged label and association.
+- **Remove / Undo:** exclude a false or irrelevant detected label, or restore it. This changes layout, not the analysis run.
 
-Each detected label entry shows its text, a braille preview, and status:
+The current interface cannot add a label that OCR missed entirely. Hovering an entry highlights its associated mask/label in supported views.
 
-- **full braille** or **key “xx”** describes how the label is represented in the current layout;
-- **leader traced** means the geometric leader detector found a candidate leader;
-- **label sits on the part** means no leader was assigned and the pipeline used an in-figure anchor;
-- **part segmented** means a segmentation mask was produced;
-- **no part found** means there is no usable mask for that label;
-- **auto-corrected** identifies vocabulary-based OCR changes that should still be checked.
+## Guideline check
 
-Available actions:
+The table reports residual print marks, braille placement, close-line area, short fragments, braille clearance, texture count, and diagnostic leader lengths alongside a Canny baseline. A neutral row may be diagnostic rather than pass/fail. These geometric measurements do not establish scientific correctness, semantic label-to-part accuracy, tactile discrimination, or compliance certification.
 
-- Edit the text field and commit the change (for example, press Enter or move focus). Braille and layout are rebuilt immediately. This corrects a detected label; it does not rerun OCR.
-- Use the merge control (up-arrow) to append the current label to the label immediately above it. This is intended for OCR that split one multi-line label into separate entries. It removes the lower entry and combines the bounding boxes; inspect the resulting association because a merge can also combine two genuinely separate labels if used incorrectly.
-- Use **Remove** to exclude a false or irrelevant label from the layout. Use **Undo** on that entry to restore it. Removing a label does not delete the source image or rerun analysis.
+## Export
 
-The current interface does not provide a general add-missing-label action. If OCR misses a required label entirely, it must be handled outside the current in-app label editor and documented as a limitation of the generated draft.
+- **Download editable tactile SVG:** saves vector geometry with millimetre page dimensions and named groups. Inkscape is the recommended FOSS editor; other SVG editors can be used.
+- **Key page:** downloads the key-page SVG.
+- **Print / PDF:** opens a print document containing the tactile page and automatically appends the key page when keys are present. Use Save as PDF or print at 100% / actual size; disable fit-to-page.
+- **Download STL for 3D printing:** available in the 3D relief tab; exports a plate model of raised lines, textures, and braille.
 
-Hovering a label entry highlights its corresponding mask/label in the analysis view or tactile view (where the view supports that highlight).
+Screen-only preview elements are not necessarily part of the production SVG. Preserve physical page dimensions and braille/line sizes when editing. Keep an untouched export and independently recheck edits; vector-editor changes do not update the app's automated report.
 
-## 5. Automated guideline check
+## Current limitations
 
-The check table reports TouchSight-NG measurements beside an edge-tracing baseline. It includes residual print-label marks, braille label placement, areas of narrow line gaps, short fragments, braille clearance, texture count, and leader lengths. Some rows are diagnostic rather than pass/fail; a neutral or blank status means the checker does not define a pass condition for that row.
-
-These are geometric checks on the generated layout. They cannot verify scientific correctness, semantic label-to-part relationships, tactile discrimination, physical swell height, or reader comprehension. Read [Tactile layout and BANA guidelines](guidelines.md) and perform professional review and physical proofing.
-
-## 6. Export and production
-
-- **Download editable tactile SVG** saves the tactile page as an SVG with millimetre dimensions and named vector groups. Open it in Inkscape (recommended FOSS editor) or another SVG editor for manual post-processing.
-- **Key page** downloads the key-page SVG. It is useful when the layout uses two-letter keys; the key page can still be downloaded, but may contain no useful entries if all labels fit in full braille.
-- **Print / PDF** opens a print-ready browser document. It includes the tactile page and automatically appends the key page when keys are present. Use the print dialog's Save as PDF or print at 100% / actual size; disable fit-to-page scaling.
-- **Download STL for 3D printing** is in the 3D relief tab. It exports a plate model of raised lines, textures, and braille. It is a separate fabrication route and does not validate swell-paper output.
-
-The editable SVG and print/PDF contain production geometry, not every screen-only preview element. Preserve page dimensions and braille/line sizes when editing. Keep an untouched copy of the original export and independently recheck any edits; a vector-editor change does not update the app's automated report. See [Printing and swell paper](printing.md) and [Review workflow](review-workflow.md).
-
-## 7. What the application does not currently do
-
-The current UI does not provide manual drawing tools for adding arbitrary contours, a freehand leader editor, a way to add a completely missed OCR label, contracted UEB, multilingual braille transcription, or automatic certification that a page meets every tactile standard. Larger vision-language and segmentation models described in [Advanced model options](advanced-model-options.md) are research candidates, not active controls.
+The app has no in-app freehand contour editor, freehand leader editor, add-missed-label control, contracted UEB, multilingual braille transcription, or automatic tactile-usability certification. Larger vision-language and segmentation models on the [research roadmap](advanced-model-options.md) are not current app options.

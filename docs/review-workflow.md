@@ -14,8 +14,10 @@ flowchart TD
   F --> G{Ready for production?}
   G -->|No| H[Correct text or revise/remove labels]
   H --> B
-  G -->|Yes| I[Export and produce proof]
-  I --> J[Physical QA and tactile-reader feedback]
+  G -->|Yes| I[Export editable layered SVG]
+  I --> J[Optional Inkscape / SVG-editor adjustment and QC]
+  J --> K[Physical proof and tactile QA]
+  K --> L[Tactile-reader feedback]
 ```
 
 ## Fixing labels

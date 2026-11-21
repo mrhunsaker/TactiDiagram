@@ -41,7 +41,9 @@ flowchart TD
   F --> L
   L --> M[Guideline checks]
   M --> N[Transcriber review]
-  N --> O[SVG, key page, print/PDF, STL]
+  N --> O[Editable layered SVG, key page, print/PDF, STL]
+  O --> P[Optional Inkscape or SVG-editor adjustment and QC]
+  P --> Q[Physical proof and tactile QA]
 ```
 
 The diagram shows conceptual dependencies. OCR, line analysis, and foreground analysis share the prepared source image; segmentation uses label anchors and an image embedding; layout consumes the analysis records.

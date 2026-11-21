@@ -17,7 +17,7 @@ The file names below come from the checked-in `scripts/vendor.mjs`, `package.jso
 | Transformers.js | `@huggingface/transformers@4.3.0` | Loads and runs SlimSAM in the browser | Segmentation |
 | ONNX Runtime Web | `onnxruntime-web` WASM and WebGPU-targeted bundle | Executes ONNX inference in the browser | PaddleOCR and SlimSAM |
 | three.js | `three@0.186.1` | 3D relief visualization and STL geometry support | Only when the relief view/export is used |
-| Potrace | `esm-potrace-wasm@^0.5.1` package dependency | Intended optional bitmap-to-vector preprocessing | Not called by the inspected main-branch pipeline |
+| Potrace | `esm-potrace-wasm@^0.5.1` package dependency | Optional raster reconstruction before OCR and analysis | When Autotrace is enabled |
 
 ## PaddleOCR: primary OCR
 
@@ -108,7 +108,7 @@ Potrace is a bitmap-to-vector tracer: it converts raster shapes into vector path
 
 The repository's package manifest includes `esm-potrace-wasm`, a browser-oriented WebAssembly package. The optional Autotrace control in `src/index.html` invokes `src/js/autotrace.js`. The vendor script copies the ESM/WASM runtime into `src/vendor/potrace/` and includes the GPL-2.0 notice beside it.
 
-The proposed Autotrace design is an optional upstream preprocessing pass:
+The implemented Autotrace control is an optional upstream preprocessing pass:
 
 1. Preserve the original uploaded raster.
 2. If Autotrace is enabled, run Potrace to reconstruct a cleaner representation.
@@ -116,7 +116,7 @@ The proposed Autotrace design is an optional upstream preprocessing pass:
 4. Run OCR, leader detection, foreground/structure analysis, and segmentation on the prepared image.
 5. Keep the original available for comparison and for the non-Autotrace path.
 
-That is different from simply exporting Potrace's paths as the tactile graphic. The tactile renderer still needs semantic parts, braille, physical spacing, line hierarchy, and production constraints. Potrace is an optional preprocessing stage, not the tactile renderer. Browser behavior and output quality still require validation against the sample set before production use.
+That is different from simply exporting Potrace's paths as the tactile graphic. The tactile renderer still needs semantic parts, braille, physical spacing, line hierarchy, and production constraints. Potrace is an optional preprocessing stage, not the tactile renderer. Potrace preprocessing and editable SVG output are separate stages. The SVG renderer exports vector paths and braille-dot circles in named Inkscape layers; it does not simply export the intermediate Potrace trace. The SVG can be edited in Inkscape (FOSS), Illustrator, Affinity Designer, or another compatible editor. External edits require renewed manual and physical QC.
 
 ## Download size and caching
 

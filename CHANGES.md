@@ -24,8 +24,8 @@ the release date and reads as a SemVer triple (`2026.11.22`).
   AppImage (`TouchSight-NG-x86_64.AppImage`) on Linux and a zipped,
   icon-embedded `touchsight-ng.exe` bundle on Windows, both serving the app
   without Node.js. A new `packaging/icon.svg` provides the app icon, and
-  `.github/workflows/desktop-packaging.yml` builds both artifacts on
-  build only on release tags. Tags use the `vYYYY.M.D` format (for example
+  `.github/workflows/desktop-packaging.yml` builds both artifacts only on
+  release tags. Tags use the `vYYYY.M.D` format (for example
   `v2026.11.22`); the workflow validates that format, stamps the date-derived
   version (`v2026.11.22` -> `2026.11.22`) into the packaged app so tag, build,
   and GitHub release agree, and attaches both artifacts to the release.

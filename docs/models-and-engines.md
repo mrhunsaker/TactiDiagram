@@ -14,7 +14,8 @@ The file names below come from the checked-in `scripts/vendor.mjs`, `package.jso
 | Tesseract.js | Tesseract.js 7 browser worker/core | Independent OCR fallback | Only if PaddleOCR fails |
 | Indra OCR (opt-in) | `det.onnx` + `rec.onnx` + `meta.json` (Datalab Indra v1.1.0) | Experimental alternative printed-text engine | Only when "Use Indra OCR" is checked, before the PaddleOCR default |
 | Tesseract language data | `eng.traineddata.gz` (4.0.0_best_int) | English LSTM character/language model | Tesseract fallback |
-| SlimSAM | `Xenova/slimsam-77-uniform` ONNX files | Segments the part indicated by a point prompt | After labels and anchors are found |
+| SlimSAM | `Xenova/slimsam-77-uniform` ONNX files | Default point-prompted segmentation backend | After labels and anchors are found |
+| SAM 2.1 Hiera Tiny (opt-in) | `onnx-community/sam2.1-hiera-tiny-ONNX` fp16 ONNX files and external tensor data | Experimental alternative point-prompted segmentation backend | Only when the SAM 2.1 checkbox is selected; requires WebGPU and a usable adapter |
 | Transformers.js | `@huggingface/transformers@4.3.0` | Loads and runs SlimSAM in the browser | Segmentation |
 | ONNX Runtime Web | `onnxruntime-web` WASM and WebGPU-targeted bundle | Executes ONNX inference in the browser | PaddleOCR and SlimSAM |
 | three.js | `three@0.186.1` | 3D relief visualization and STL geometry support | Only when the relief view/export is used |
@@ -103,7 +104,7 @@ The current loader uses Transformers.js with local-only model resolution and ONN
 
 ## Optional SAM 2.1 Hiera Tiny segmentation
 
-The UI checkbox selects SAM 2.1 Hiera Tiny for the next analysis. It requires WebGPU and is loaded only when selected; SlimSAM remains the default WASM backend. `npm run vendor` stages the pinned ONNX Community fp16 files and external tensor data locally (about 78 MB). This backend is experimental and should be compared on target browsers before routine use.
+The UI checkbox selects SAM 2.1 Hiera Tiny for the next analysis. It requires WebGPU and a usable adapter from `navigator.gpu.requestAdapter()` and is loaded only when selected; SlimSAM remains the default WASM backend. If adapter acquisition fails, the selected SAM 2.1 analysis fails with an error; there is no automatic fallback to SlimSAM. Uncheck the option to return to SlimSAM. `npm run vendor` stages the pinned ONNX Community fp16 files and external tensor data locally (about 78 MB). This backend is experimental and should be compared on target browsers before routine use.
 
 ### Transformers.js v4 prompt handling
 
@@ -134,7 +135,7 @@ The vendor script copies the pinned npm package build. `src/js/libs.js` first tr
 These are execution frameworks, not task-specific model weights.
 
 - **ONNX Runtime Web** executes ONNX graphs in the browser. The project vendors WASM runtime files and uses the WASM execution provider for PaddleOCR and SlimSAM.
-- **Transformers.js** provides the model-loading and preprocessing interface used for SlimSAM. The app disables remote model loading and sets a local model directory.
+- **Transformers.js** provides the model-loading and preprocessing interface used for SlimSAM and the optional SAM 2.1 backend. The app disables remote model loading and sets a local model directory.
 
 This separation matters when debugging: a model file can be present but still fail because the runtime bundle, WASM binary, preprocessing configuration, or expected model path is wrong.
 

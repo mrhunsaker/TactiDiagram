@@ -5,7 +5,7 @@ GitHub Pages publishes the documentation only. The browser application is run lo
 ## Requirements
 
 - Node.js 24 or newer (npm included).
-- A current desktop browser with JavaScript modules, WebAssembly, and Canvas support.
+- A current desktop browser with JavaScript modules, WebAssembly, and Canvas support. Packaged desktop builds additionally require Microsoft Edge WebView2 Runtime (Windows) or WebKitGTK (Linux); these runtimes are not bundled.
 - WebGL for the optional 3D relief view and STL export.
 - Internet access for dependency installation and initial asset preparation.
 - Enough memory for in-browser OCR, segmentation, and image processing.
@@ -67,8 +67,8 @@ This downloads Neutralino binaries into the ignored `desktop/neutralino/bin/` di
 
 **Or install a packaged build (no Node.js needed on the target machine):**
 
-- **Linux:** download `TouchSight-NG-x86_64.AppImage` from [Releases](https://github.com/mrhunsaker/touchsight-NG/releases), mark it executable (`chmod +x TouchSight-NG-x86_64.AppImage`), and run it. It ships an application menu entry and launcher icon; an AppImage integration tool (for example AppImageLauncher) installs it into the menu permanently.
-- **Windows:** download `TouchSight-NG-win-x64.zip` from Releases, extract it anywhere, and run `touchsight-ng.exe` (keep `resources.neu` next to it). The exe carries the application icon for Explorer and Start-menu shortcuts. Because the build is not code-signed, Windows SmartScreen may ask you to confirm the first launch.
+- **Linux x86_64:** download `TouchSight-NG-x86_64.AppImage` from [Releases](https://github.com/mrhunsaker/touchsight-NG/releases), mark it executable (`chmod +x TouchSight-NG-x86_64.AppImage`), and run it. It ships an application menu entry and launcher icon. A compatible WebKitGTK runtime must be installed by the distribution; the AppImage does not bundle the system webview.
+- **Windows x64:** download `TouchSight-NG-win-x64.zip` from Releases, extract it anywhere, and run `touchsight-ng.exe` (keep `resources.neu` next to it). Microsoft Edge WebView2 Runtime is required. The executable is unsigned, so Windows SmartScreen may warn at first launch.
 
 Packaged builds carry the same version as the `vYYYY.M.D` release tag and the GitHub release they are attached to. See [Desktop app and packaging](desktop-gui.md).
 

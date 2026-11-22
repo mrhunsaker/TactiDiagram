@@ -28,6 +28,7 @@ flowchart TD
   A[Source image] --> B[Decode, orient, resize, composite transparency]
   B --> C[OCR engines]
   C --> D[Word boxes and confidence]
+  C -. Indra selected: Paddle detection + Indra recognition .-> D
   D --> E[Filter, group into lines and labels]
   E --> F[Correct likely OCR slips]
   E --> G[Detect leader lines]

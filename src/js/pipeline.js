@@ -4,8 +4,8 @@ import { recognizeWords, mergeWordSets, filterWords, wordsToLines, linesToLabels
 import { thinStrokeMask, houghSegments, assignLeaders } from './leaders.js';
 import { embedImage, segmentPoint } from './segment.js';
 import { correctWord, correctPhrase } from './vocab.js';
-import { loadPaddle, detectText } from './paddle.js';
-import { loadIndra, detectText as detectTextIndra } from './indra.js';
+import { loadPaddle, detectText, detectTextRegions } from './paddle.js';
+import { loadIndra, detectText as detectTextIndra, recognizeTextRegions } from './indra.js';
 import { structureLines } from './lineart.js';
 import { DEFAULT_TRACING_SENSITIVITY, tracingConfig } from './tracing-config.js';
 
@@ -31,8 +31,22 @@ export async function analyze(imageData, { onStage = () => {}, sensitivity = DEF
     if (preferIndra) {
       try {
         await loadIndra({ proxy: true });
-        const indraWords = await detectTextIndra(imageData, { cv, level: 'word' });
-        if (indraWords.length) { console.info('OCR engine: indra'); ocrEngine = 'indra'; return indraWords; }
+        let indraWords;
+        try {
+          // Paddle supplies rotated text-region quads and perspective correction;
+          // Indra remains the recognizer selected by the user.
+          const regions = await detectTextRegions(imageData, { cv });
+          indraWords = await recognizeTextRegions(imageData, regions, { cv, level: 'word' });
+          console.info('Indra OCR: PaddleOCR detection + Indra recognition', { regions: regions.length });
+        } catch (e) {
+          console.warn('PaddleOCR-guided detection unavailable; trying Indra detection', e);
+          indraWords = await detectTextIndra(imageData, { cv, level: 'word' });
+        }
+        if (indraWords.length) {
+          console.info('OCR engine: indra (PaddleOCR-guided)');
+          ocrEngine = 'indra';
+          return indraWords;
+        }
         console.warn('Indra OCR found no text, falling back to PaddleOCR');
       } catch (e) {
         console.warn('Indra OCR unavailable, falling back to PaddleOCR', e);

@@ -28,10 +28,13 @@ flowchart TD
   B --> P[Foreground mask and structural line analysis]
   O --> Q[Point prompts]
   P --> Q
-  Q --> R[SlimSAM image embedding and mask candidates]
-  R --> S[Mask filtering and selection]
+  Q --> R{Segmentation backend}
+  R -->|Default| S[SlimSAM image embedding and mask candidates (WASM)]
+  R -->|Opt-in| S2[SAM 2.1 Hiera Tiny image embedding and mask candidates (WebGPU)]
+  S --> T[Mask filtering and selection]
+  S2 --> T
   P --> T[Detailed or Simplified line-art extraction]
-  S --> U[Label-guided line hierarchy]
+  T --> U[Label-guided line hierarchy]
   T --> U
   J --> V[Millimetre tactile layout]
   U --> V

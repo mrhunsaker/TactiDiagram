@@ -68,3 +68,7 @@ htmlcov/
 # Neutralino desktop shell (downloaded by "npx neu update")
 desktop/neutralino/bin/
 desktop/neutralino/.tmp/
+
+# Generated desktop icon assets
+packaging/icon.png
+packaging/icon.ico

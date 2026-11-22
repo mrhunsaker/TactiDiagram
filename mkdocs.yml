@@ -51,6 +51,7 @@ nav:
       - Models and inference engines: models-and-engines.md
       - OCR engines (Indra option): ocr-engines.md
       - Advanced model options (not implemented): advanced-model-options.md
+      - Fine exterior lines: fine-lines.md
       - Tactile layout and BANA guidelines: guidelines.md
       - Module reference: modules.md
   - Project:

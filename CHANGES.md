@@ -18,6 +18,20 @@ All notable changes to TouchSight-NG are documented in this file. The format is 
   notes; plus cross-references throughout the documentation and a changelog
   entry.
 
+## [Unreleased]
+
+### Added
+- Fine exterior-line recovery: two-scale thin-stroke extraction, stroke-width
+  classification, Zhang-Suen thinning and skeleton polyline tracing
+  (`src/js/fine-lines.js`), exposed as `analysis.detailLines` in the analysis
+  result with a `fine_lines` timing.
+- `scripts/fineline-recall.mjs`: fine-line recall metric against optional
+  hand annotations in `src/samples/fine_lines/<id>.png` (writes
+  `eval-out/fineline.md`).
+- `docs/fine-lines.md`: tracer architecture, metric usage, and a roadmap of
+  not-yet-implemented improvements (contrast-relative thresholds, SAM box
+  prompts on detail strokes, tactile weight for detail lines, CLAHE).
+
 ## [2026.11.20-beta] - 2026-11-20
 
 ### Added

@@ -33,7 +33,8 @@ pipeline.
 
 2. Start the app (`npm run serve`, open `http://localhost:5173`).
 3. Check **Use Indra OCR** under *Output options*. Changing the checkbox
-   re-runs the whole analysis. Leave it unchecked to keep PaddleOCR.
+   does not start anything; the engine is used the next time you press
+   **Start analysis**. Leave it unchecked to keep PaddleOCR.
 
 Because the engine change only affects label reading, leader detection,
 segmentation, layout, checking, and export behave identically either way.

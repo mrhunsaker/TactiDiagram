@@ -50,7 +50,7 @@ window.addEventListener('error', (event) => {
 window.addEventListener('unhandledrejection', (event) => sendTerminalLog('error', ['Unhandled promise rejection', event.reason]));
 
 const $ = (s) => document.querySelector(s);
-const state = { imageData: null, sourceImageData: null, original: null, analysis: null, layout: null, check: null, name: 'diagram', busy: false, mode: 'tactile', sensitivity: DEFAULT_TRACING_SENSITIVITY };
+const state = { imageData: null, sourceImageData: null, original: null, analysis: null, layout: null, check: null, name: 'diagram', busy: false, mode: 'tactile', sensitivity: DEFAULT_TRACING_SENSITIVITY, pending: null, optionsSnapshot: null };
 const MAX_SIDE = 1400; // keep in-browser inference fast
 const PAL = ['#e6194b', '#3cb44b', '#0082c8', '#f58230', '#911eb4', '#2fa8a8', '#f032e6', '#7f9d1f', '#008080', '#aa6e28', '#5a5aff', '#c0392b'];
 
@@ -88,7 +88,7 @@ async function loadSamples() {
       label.textContent = shortTitle(sample.title);
       button.append(image, label);
       button.title = `${sample.title || sample.id} — ${sample.author || 'Unknown author'}, ${sample.license || 'License unspecified'}`;
-      button.addEventListener('click', () => runSample(sample.id));
+      button.addEventListener('click', () => runSample(sample.id, false));
       grid.appendChild(button);
     }
     if (!grid.children.length) throw new Error('No usable sample entries were found in the manifest.');
@@ -100,13 +100,16 @@ async function loadSamples() {
 }
 await loadSamples();
 
-function runSample(id) {
+function runSample(id, autoRun = false) {
   const sample = byId[id];
   if (!sample) return setStatus(`Sample "${id}" is not present in the sample manifest.`, true);
   if (state.busy) return setStatus('Please wait for the current analysis to finish.', true);
   grid.querySelectorAll('.sample').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.id === id)));
-  console.info('Starting sample:', id, sample.file);
-  runFromURL(assetURL(`samples/${sample.file}`), shortTitle(sample.title), id);
+  console.info('Loading sample:', id, sample.file);
+  runFromURL(assetURL(`samples/${sample.file}`), shortTitle(sample.title), id).then(() => {
+    // Deep links (?sample=...) are used by demos and the evaluation harness.
+    if (autoRun) startAnalysis();
+  });
 }
 $('#try-heart').addEventListener('click', () => runSample('heart'));
 
@@ -164,7 +167,7 @@ function runFromFile(selected) {
   runFromURL(objectURL, '', selected.name.replace(/\.[^.]+$/, ''), true);
 }
 
-async function runFromURL(url, title, name, revokeUrl = false) {
+async function runFromURL(url, title, name, revokeUrl = false) { // loads only; see startAnalysis()
   if (state.busy) {
     if (revokeUrl) URL.revokeObjectURL(url);
     return setStatus('Please wait for the current analysis to finish.', true);
@@ -186,13 +189,69 @@ async function runFromURL(url, title, name, revokeUrl = false) {
     context.fillRect(0, 0, W, H);
     context.drawImage(img, 0, 0, W, H);
     const sourceImageData = context.getImageData(0, 0, W, H);
-    console.info('Image decoded; starting analysis:', { width: W, height: H, name: name || 'diagram' });
-    await run({ sourceImageData, original: canvas.toDataURL('image/jpeg', 0.85), name: name || 'diagram', title: title || '' });
+    // Only stage the image: analysis starts when the user presses the Start button,
+    // so settings can be reviewed first without waiting for a run in between.
+    state.pending = { sourceImageData, original: canvas.toDataURL('image/jpeg', 0.85), name: name || 'diagram', title: title || '' };
+    console.info('Image loaded; waiting for Start:', { width: W, height: H, name: state.pending.name });
+    setStatus(`${state.pending.name} loaded. Set the options on the left, then press Start analysis.`);
+    updateAnalyzeButton();
   } catch (error) {
     console.error('Could not load or decode image:', error);
     setStatus('Could not read that image. ' + (error.message || ''), true);
   } finally {
     if (revokeUrl) URL.revokeObjectURL(url);
+  }
+}
+
+// ---------- explicit start ----------
+// The Start button is the only thing that launches the full pipeline (besides a
+// sample deep link), so a user can load an image, set every option, and choose
+// when to spend the processing time.
+function currentPipelineOptions() {
+  return {
+    autotrace: $('#opt-autotrace')?.checked ?? false,
+    indra: $('#opt-indra')?.checked ?? false,
+    sam21: $('#opt-sam21')?.checked ?? false,
+    sensitivity: Number($('#opt-sensitivity')?.value ?? DEFAULT_TRACING_SENSITIVITY),
+  };
+}
+function updateAnalyzeButton() {
+  const btn = $('#btn-analyze');
+  if (!btn || state.busy) return;
+  const newImage = !!state.pending && state.pending.sourceImageData !== state.sourceImageData;
+  btn.disabled = !state.pending && !state.analysis;
+  if (newImage || !state.analysis) { btn.textContent = state.pending ? 'Start analysis' : 'Re-analyze'; return; }
+  const o = currentPipelineOptions(), s = state.optionsSnapshot;
+  const enginesDiffer = !s || o.autotrace !== s.autotrace || o.indra !== s.indra || o.sam21 !== s.sam21;
+  btn.textContent = enginesDiffer || o.sensitivity !== state.sensitivity ? 'Apply settings & re-analyze' : 'Re-run analysis';
+}
+async function startAnalysis() {
+  if (state.busy) return;
+  const o = currentPipelineOptions(), s = state.optionsSnapshot;
+  const enginesDiffer = !s || o.autotrace !== s.autotrace || o.indra !== s.indra || o.sam21 !== s.sam21;
+  if (state.pending || !state.analysis || enginesDiffer) return run(state.pending ?? {});
+  if (o.sensitivity !== state.sensitivity) {
+    // Same engines, only tracing sensitivity changed: reuse OCR and SAM masks.
+    state.busy = true;
+    document.querySelectorAll("#btn-analyze, #opt-autotrace, #opt-indra, #opt-sam21, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file").forEach((el) => { el.disabled = true; });
+    const btn = $('#btn-analyze'); if (btn) btn.disabled = true;
+    setStatus('Updating tracing sensitivity…');
+    try {
+      const cv = await loadOpenCV();
+      state.sensitivity = o.sensitivity;
+      updateTracing(cv, state.imageData, state.analysis, state.sensitivity);
+      state.optionsSnapshot = o;
+      await relayout();
+      setStatus('Tracing updated. Sensitivity ' + state.sensitivity + '/100; OCR and segmentation were reused.');
+    } catch (e) {
+      console.error(e);
+      setStatus('Could not update tracing: ' + (e.message || e), true);
+    } finally {
+      document.querySelectorAll("#btn-analyze, #opt-autotrace, #opt-indra, #opt-sam21, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file").forEach((el) => { el.disabled = false; });
+      if (btn) btn.disabled = false;
+      state.busy = false;
+      updateAnalyzeButton();
+    }
   }
 }
 
@@ -227,7 +286,7 @@ async function run(input = {}) {
   const previous = { imageData: state.imageData, sourceImageData: state.sourceImageData, original: state.original, analysis: state.analysis, layout: state.layout, check: state.check, name: state.name };
   state.busy = true;
   document.body.setAttribute('aria-busy', 'true');
-  document.querySelectorAll('#opt-autotrace, #opt-indra, #opt-sam21, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file').forEach((el) => { el.disabled = true; });
+  document.querySelectorAll('#btn-analyze, #opt-autotrace, #opt-indra, #opt-sam21, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file').forEach((el) => { el.disabled = true; });
   $('#empty').hidden = true;
   showLoading(true);
   setStatus('Working… everything runs on this device.');
@@ -236,6 +295,7 @@ async function run(input = {}) {
     const sourceImageData = input.sourceImageData ?? state.sourceImageData;
     if (!sourceImageData) throw new Error('No source image is available.');
     state.sensitivity = Number($('#opt-sensitivity')?.value ?? DEFAULT_TRACING_SENSITIVITY);
+    state.optionsSnapshot = currentPipelineOptions();
     let preparedImageData = sourceImageData;
     if ($('#opt-autotrace')?.checked) {
       setStep('engines', 'Reconstructing image with Potrace…');
@@ -270,8 +330,10 @@ async function run(input = {}) {
   } finally {
     showLoading(false);
     state.busy = false;
-    document.querySelectorAll('#opt-autotrace, #opt-indra, #opt-sam21, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file').forEach((el) => { el.disabled = false; });
+    state.pending = null;
+    document.querySelectorAll('#btn-analyze, #opt-autotrace, #opt-indra, #opt-sam21, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file').forEach((el) => { el.disabled = false; });
     document.body.removeAttribute('aria-busy');
+    updateAnalyzeButton();
   }
 }
 
@@ -480,40 +542,22 @@ $('#viewmode').addEventListener('click', (e) => {
 for (const id of ['#opt-page', '#opt-style', '#opt-textures', '#opt-keys', '#opt-title']) $(id).addEventListener('change', () => state.analysis && !state.busy && relayout());
 
 const autotraceInput = $('#opt-autotrace');
-autotraceInput?.addEventListener('change', () => {
-  if (!state.sourceImageData || state.busy) return;
-  run();
-});
+autotraceInput?.addEventListener('change', () => updateAnalyzeButton());
 
-// Switching the OCR engine changes which labels are found: rerun the whole pipeline.
+// Switching the OCR engine changes which labels are found: it needs the full
+// pipeline, which the Start button chooses via startAnalysis().
 const indraInput = $('#opt-indra');
-indraInput?.addEventListener('change', () => {
-  if (!state.sourceImageData || state.busy) return;
-  run();
-});
+indraInput?.addEventListener('change', () => updateAnalyzeButton());
 
 const sensitivityInput = $('#opt-sensitivity');
 const sensitivityValue = $('#opt-sensitivity-value');
 sensitivityInput?.addEventListener('input', () => { sensitivityValue.value = sensitivityInput.value; sensitivityValue.textContent = sensitivityInput.value; });
-sensitivityInput?.addEventListener('change', async () => {
-  if (!state.analysis || state.busy) return;
-  state.busy = true;
-  document.querySelectorAll('#opt-autotrace, #opt-indra, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file').forEach((el) => { el.disabled = true; });
-  setStatus('Updating tracing sensitivity…');
-  try {
-    const cv = await loadOpenCV();
-    state.sensitivity = Number(sensitivityInput.value);
-    updateTracing(cv, state.imageData, state.analysis, state.sensitivity);
-    await relayout();
-    setStatus(`Tracing updated · sensitivity ${state.sensitivity}/100 · OCR and segmentation were reused.`);
-  } catch (e) {
-    console.error(e);
-    setStatus('Could not update tracing: ' + (e.message || e), true);
-  } finally {
-    document.querySelectorAll('#opt-autotrace, #opt-indra, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file').forEach((el) => { el.disabled = false; });
-    state.busy = false;
-  }
+sensitivityInput?.addEventListener('change', () => {
+  sensitivityValue.value = sensitivityInput.value; sensitivityValue.textContent = sensitivityInput.value;
+  updateAnalyzeButton(); // applied via the Start button; same-engine changes reuse OCR and SAM masks
 });
+
+$('#btn-analyze')?.addEventListener('click', () => startAnalysis());
 
 // ---------- export ----------
 function download(name, text, type = 'image/svg+xml') {
@@ -555,7 +599,7 @@ if (params.get('sam') === 'sam2') $('#opt-sam21').checked = true;
 const deep = params.get('sample');
 if (deep && byId[deep]) {
   // Explicit sample deep links are used by demos and the evaluation harness.
-  runSample(deep);
+  runSample(deep, true);
 }
 // Normal app startup stays idle. The user chooses a sample or uploads an image.
 window.__touchsight = state; // read by scripts/eval.mjs

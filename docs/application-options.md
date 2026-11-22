@@ -4,7 +4,7 @@ This reference describes the controls implemented in `src/index.html`, `src/js/u
 
 ## Choose a diagram
 
-The sample gallery provides heart, volcano, animal cell, mitochondrion, tooth, ear, earth layers, flower, and eye examples. Select a thumbnail to run it. Upload or drop a PNG, JPEG/JPG, or WebP image to use your own source. Files larger than 15 MiB are rejected. Transparent pixels are composited onto white; the longest image side is scaled to at most 1,400 pixels for analysis.
+The sample gallery loads 16 choices from `src/samples/samples.json`: animal cell, heart, flower, eye, ear, mitochondrion, tooth, earth layers, volcano, Ohm's law circuit, pulley/lever, Australia states, solar system, plant cell, USGS water cycle, and skin layers. Selecting a sample starts its analysis; the app does not automatically analyze the heart on ordinary startup. Select a thumbnail to run it. Upload or drop a PNG, JPEG/JPG, or WebP image to use your own source. Files larger than 15 MiB are rejected. Transparent pixels are composited onto white; the longest image side is scaled to at most 1,400 pixels for analysis.
 
 Use a clear labeled diagram where possible. Handwriting, rotated text, busy fills, overlapping leaders, and low-contrast lines can reduce recognition quality.
 

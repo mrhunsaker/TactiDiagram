@@ -32,7 +32,7 @@ const grid = $('#samples');
 const shortTitle = (t) => t.replace(/^(Diagram of the |Schematic diagram of the )/i, '').replace(/^./, (c) => c.toUpperCase());
 for (const s of samples) {
   const b = document.createElement('button');
-  b.className = 'sample'; b.type = 'button'; b.dataset.id = id;
+  b.className = 'sample'; b.type = 'button'; b.dataset.id = s.id;
   b.setAttribute('role', 'listitem'); b.setAttribute('aria-pressed', 'false');
   b.innerHTML = `<img src="samples/${s.file}" alt="" loading="lazy"><span>${shortTitle(s.title)}</span>`;
   b.title = `${s.title} — ${s.author}, ${s.license}`;
@@ -48,7 +48,6 @@ $('#try-heart').onclick = () => runSample('heart');
 
 // ---------- input ----------
 const drop = $('#drop'), file = $('#file');
-drop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); file.click(); } });
 file.addEventListener('change', () => { if (file.files[0]) runFromFile(file.files[0]); file.value = ''; });
 $('#browse-file').addEventListener('click', () => file.click());
 ['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));

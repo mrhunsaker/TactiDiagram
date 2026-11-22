@@ -6,7 +6,7 @@ import { extractFineLines } from './fine-lines.js';
 import { embedImage, segmentPoint } from './segment.js';
 import { correctWord, correctPhrase } from './vocab.js';
 import { loadPaddle, detectText, detectTextRegions } from './paddle.js';
-import { loadIndra, detectText as detectTextIndra, recognizeTextRegions } from './indra.js';
+import { loadIndra, detectTextIndra, recognizeTextRegions } from './indra.js';
 import { structureLines } from './lineart.js';
 import { DEFAULT_TRACING_SENSITIVITY, tracingConfig } from './tracing-config.js';
 

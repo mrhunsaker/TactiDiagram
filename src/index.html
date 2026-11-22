@@ -200,6 +200,23 @@
 </main>
 
 <script type="importmap">{ "imports": { "three": "./vendor/three/three.module.js" } }</script>
+<script>
+(() => {
+  const report = (level, message, details = {}) => {
+    const entry = { level, detail: [message, details], page: location.pathname + location.search, time: new Date().toISOString() };
+    fetch('/__debug/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entry), keepalive: true })
+      .catch((error) => console.error('[terminal diagnostics unavailable]', error));
+  };
+  report('info', 'Application document loaded; waiting for JavaScript modules.');
+  window.addEventListener('error', (event) => report('error', event.message || 'Script loading error', {
+    filename: event.filename, line: event.lineno, column: event.colno,
+    stack: event.error?.stack || null
+  }));
+  window.addEventListener('unhandledrejection', (event) => report('error', 'Unhandled promise rejection', {
+    reason: event.reason?.stack || event.reason?.message || String(event.reason)
+  }));
+})();
+</script>
 <script type="module" src="js/ui.js"></script>
 </body>
 </html>

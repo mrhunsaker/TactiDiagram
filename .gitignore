@@ -2,6 +2,8 @@
 node_modules/
 app/vendor/
 app/models/
+arc/vendor/
+src/models/
 
 # Local environment and secrets. Commit safe templates such as .env.example.
 .env

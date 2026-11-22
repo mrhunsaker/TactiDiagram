@@ -115,7 +115,7 @@ Three interchangeable engines read the printed labels. They all expose the same 
 
 **How TouchSight-NG uses it:** `src/js/relief.js` turns the finished tactile layout into an extruded, height-differentiated 3D surface (bold structure, fine lines, textures, and braille dots at distinct heights), renders it for orbiting inspection, and exports the same geometry as an **STL** for 3D printing. A light "sweep" toggle helps a sighted reviewer read the relief by shading.
 
-**The benefit:** WebGPU/WASM inference in the browser without glue code; one shared runtime for every NN in the app, so the mental model and the audit surface (licenses, security, supply chain) stay small.
+**The benefit:** one WebGL scene with camera controls included, a hand-rolled `buildSTL` for the printer file, and a preview a teacher can judge by eye before committing a transcriber session.
 
 
 ## Neutralino (desktop application shell)

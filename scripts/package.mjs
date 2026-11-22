@@ -97,7 +97,7 @@ function stageResources() {
   if (!clientJs) {
     console.error('Missing ' + clientLib + '.');
     console.error('Run "npx neu update" inside desktop/neutralino first.');
-    process.exit(1);
+    throw new Error('Missing Neutralino client library: ' + clientLib + '. Run npx neu update in desktop/neutralino.');
   }
   rmSync(resDir, { recursive: true, force: true });
   mkdirSync(join(resDir, 'js'), { recursive: true });
@@ -264,9 +264,10 @@ async function buildWindowsPackage(binary, resources) {
 const backupRoot = mkdtempSync(join(tmpdir(), 'touchsight-package-'));
 const resourceBackup = join(backupRoot, 'resources');
 const hadResources = existsSync(resDir);
+if (hadResources) cpSync(resDir, resourceBackup, { recursive: true });
+mkdirSync(outDir, { recursive: true });
 try {
   run('npm', ['run', 'vendor'], { cwd: repoRoot });
-  if (hadResources) cpSync(resDir, resourceBackup, { recursive: true });
   stageResources();
   writeBuildConfig();
   const built = neuBuild();

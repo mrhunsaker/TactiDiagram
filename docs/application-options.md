@@ -4,7 +4,7 @@ This reference describes the controls implemented in `src/index.html`, `src/js/u
 
 ## Choose a diagram
 
-The sample gallery provides heart, volcano, animal cell, mitochondrion, tooth, ear, earth layers, flower, and eye examples. Select a thumbnail to run it. Upload or drop a PNG, JPEG/JPG, or WebP image to use your own source. Files larger than 15 MiB are rejected. Transparent pixels are composited onto white; the longest image side is scaled to at most 1,400 pixels for analysis.
+The sample gallery provides heart, volcano, animal cell, mitochondrion, tooth, ear, earth layers, flower, and eye examples. Selecting a thumbnail or uploading/dropping a PNG, JPEG/JPG, or WebP image only loads it; processing starts when you press **Start analysis**. This lets you load a document, review every option, and begin only when ready. Files larger than 15 MiB are rejected. Files larger than 15 MiB are rejected. Transparent pixels are composited onto white; the longest image side is scaled to at most 1,400 pixels for analysis.
 
 Use a clear labeled diagram where possible. Handwriting, rotated text, busy fills, overlapping leaders, and low-contrast lines can reduce recognition quality.
 
@@ -31,19 +31,23 @@ This is a trade-off, not a quality ranking. Compare both styles on crowded diagr
 
 Off by default. When enabled, the locally vendored Potrace WebAssembly package reconstructs the source as SVG; the app rasterizes that SVG at the normalized source dimensions and uses the reconstructed raster for OCR, leader detection, foreground/line analysis, and segmentation. The original remains available in the **Original** view.
 
-Try it when raster edges are noisy, but compare carefully: reconstruction can simplify small details, alter boundaries, or affect OCR. If initialization fails or no visible contours are produced, the run reports an error and restores the previous result. Toggling Autotrace reruns the complete analysis.
+Try it when raster edges are noisy, but compare carefully: reconstruction can simplify small details, alter boundaries, or affect OCR. If initialization fails or no visible contours are produced, the run reports an error and restores the previous result. Toggling Autotrace does not start processing on its own: the change is applied the next time you press the Start button (full pipeline, because the reconstructed image feeds OCR and segmentation).
+
+### Use experimental SAM 2.1 segmentation (WebGPU)
+
+Off by default and experimental. This backend uses SAM 2.1 Hiera Tiny (fp16 ONNX, staged by `npm run vendor`, ~78 MB) and requires WebGPU. SlimSAM on WASM remains the default because it runs everywhere. Applying the option via the Start button reruns the full pipeline. See [Models and inference engines](models-and-engines.md) for the Transformers.js v4 prompt-handling notes.
 
 ### Use Indra OCR
 
 Off by default and experimental. When checked, Indra OCR v1.1.0 is attempted first; if it errors or returns no text, PaddleOCR is tried, then Tesseract.js if PaddleOCR cannot run. When unchecked, PaddleOCR is first and Tesseract is the fallback. This is sequential fallback, not an ensemble.
 
-The browser port currently supports Latin-script recognition only; the reference package's CJK/RTL/world recognizers, orientation/script classifiers, and language-model rescoring are not ported. Do not select it expecting multilingual OCR. Model assets must be prepared by `npm run vendor`. Toggling this option reruns all analysis. See [OCR engines](ocr-engines.md).
+The browser port currently supports Latin-script recognition only; the reference package's CJK/RTL/world recognizers, orientation/script classifiers, and language-model rescoring are not ported. Do not select it expecting multilingual OCR. Model assets must be prepared by `npm run vendor`. Toggling this option does not start processing on its own: the engine change is applied the next time you press the Start button, which reruns the full pipeline. See [OCR engines](ocr-engines.md).
 
 ### Tracing sensitivity (0–100)
 
 The slider moves in steps of 5 and defaults to 55. Lower values are more conservative and can suppress noise, but may miss pale or faint contours. Higher values lower detection thresholds and can recover lighter regions and strokes, but may add noise and unnecessary detail. Sensitivity affects foreground, edge, colour-region, and thin-stroke recovery; it does not disable physical layout or braille-clearance logic.
 
-After the slider changes, tracing is recalculated from the current prepared image while OCR and segmentation are reused. Start at 55 and adjust by 5–10 after inspecting **What the AI saw**. There is no universally correct value.
+After the slider changes, press the Start button: tracing is recalculated from the current prepared image while OCR and segmentation are reused, so the update stays fast. The button label shows "Apply settings & re-analyze" when settings have changed. Start at 55 and adjust by 5–10 after inspecting **What the AI saw**. There is no universally correct value.
 
 ### Title (in braille, optional)
 

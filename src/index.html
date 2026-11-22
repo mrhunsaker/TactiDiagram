@@ -32,10 +32,10 @@
   <aside class="rail left" aria-label="Choose a diagram">
     <section class="card">
       <h2 class="ph"><span class="num">1</span> Choose a diagram</h2>
-      <div class="drop" id="drop" role="group" aria-label="Upload a diagram">
+      <div class="drop" id="drop" tabindex="0" role="group" aria-label="Upload a diagram" aria-describedby="upload-help">
         <input type="file" id="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" hidden>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0-4 4m4-4 4 4M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
-        <span><strong>Upload a labeled diagram</strong><br><small>or drop a PNG / JPG here</small></span>
+        <span id="upload-help"><strong>Upload a labeled diagram</strong><br><small>Click here or Browse files, or drop a PNG / JPG here</small></span>
         <button class="btn small" id="browse-file" type="button">Browse files</button>
       </div>
       <p class="hint">Best with labeled diagrams that use leader lines: biology, earth science, simple physics.</p>

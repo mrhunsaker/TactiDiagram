@@ -55,58 +55,142 @@ const MAX_SIDE = 1400; // keep in-browser inference fast
 const PAL = ['#e6194b', '#3cb44b', '#0082c8', '#f58230', '#911eb4', '#2fa8a8', '#f032e6', '#7f9d1f', '#008080', '#aa6e28', '#5a5aff', '#c0392b'];
 
 // ---------- samples ----------
-const samples = await fetch('samples/samples.json').then((r) => r.json()).catch(() => []);
-const byId = Object.fromEntries(samples.map((s) => [s.id, s]));
 const grid = $('#samples');
-const shortTitle = (t) => t.replace(/^(Diagram of the |Schematic diagram of the )/i, '').replace(/^./, (c) => c.toUpperCase());
-for (const s of samples) {
-  const b = document.createElement('button');
-  b.className = 'sample'; b.type = 'button'; b.dataset.id = s.id;
-  b.setAttribute('role', 'listitem'); b.setAttribute('aria-pressed', 'false');
-  b.innerHTML = `<img src="samples/${s.file}" alt="" loading="lazy"><span>${shortTitle(s.title)}</span>`;
-  b.title = `${s.title} — ${s.author}, ${s.license}`;
-  b.onclick = () => runSample(s.id);
-  grid.appendChild(b);
+const byId = Object.create(null);
+const assetURL = (path) => new URL(`../${path}`, import.meta.url).href;
+const shortTitle = (t) => String(t || 'Sample').replace(/^(Diagram of the |Schematic diagram of the )/i, '').replace(/^./, (c) => c.toUpperCase());
+
+async function loadSamples() {
+  grid.replaceChildren();
+  try {
+    const response = await fetch(assetURL('samples/samples.json'), { cache: 'no-cache' });
+    if (!response.ok) throw new Error(`Sample manifest request failed: HTTP ${response.status}`);
+    const samples = await response.json();
+    if (!Array.isArray(samples) || samples.length === 0) throw new Error('Sample manifest is empty or invalid.');
+    for (const sample of samples) {
+      if (!sample?.id || !sample?.file) {
+        console.warn('Skipping malformed sample manifest entry:', sample);
+        continue;
+      }
+      byId[sample.id] = sample;
+      const button = document.createElement('button');
+      button.className = 'sample';
+      button.type = 'button';
+      button.dataset.id = sample.id;
+      button.setAttribute('role', 'listitem');
+      button.setAttribute('aria-pressed', 'false');
+      const image = document.createElement('img');
+      image.src = assetURL(`samples/${sample.file}`);
+      image.alt = '';
+      image.loading = 'lazy';
+      image.addEventListener('error', () => console.error('Sample thumbnail failed to load:', sample.id, image.src));
+      const label = document.createElement('span');
+      label.textContent = shortTitle(sample.title);
+      button.append(image, label);
+      button.title = `${sample.title || sample.id} — ${sample.author || 'Unknown author'}, ${sample.license || 'License unspecified'}`;
+      button.addEventListener('click', () => runSample(sample.id));
+      grid.appendChild(button);
+    }
+    if (!grid.children.length) throw new Error('No usable sample entries were found in the manifest.');
+    console.info(`Loaded ${grid.children.length} sample choices.`);
+  } catch (error) {
+    console.error('Could not populate sample gallery:', error);
+    setStatus(`Sample gallery could not be loaded: ${error.message}`, true);
+  }
 }
+await loadSamples();
+
 function runSample(id) {
-  const s = byId[id]; if (!s || state.busy) return;
-  grid.querySelectorAll('.sample').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.id === id)));
-  runFromURL(`samples/${s.file}`, shortTitle(s.title), id);
+  const sample = byId[id];
+  if (!sample) return setStatus(`Sample "${id}" is not present in the sample manifest.`, true);
+  if (state.busy) return setStatus('Please wait for the current analysis to finish.', true);
+  grid.querySelectorAll('.sample').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.id === id)));
+  console.info('Starting sample:', id, sample.file);
+  runFromURL(assetURL(`samples/${sample.file}`), shortTitle(sample.title), id);
 }
-$('#try-heart').onclick = () => runSample('heart');
+$('#try-heart').addEventListener('click', () => runSample('heart'));
 
 // ---------- input ----------
-const drop = $('#drop'), file = $('#file');
-file.addEventListener('change', () => { if (file.files[0]) runFromFile(file.files[0]); file.value = ''; });
-$('#browse-file').addEventListener('click', () => file.click());
-['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));
-['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
-drop.addEventListener('drop', (e) => { const f = e.dataTransfer.files[0]; if (f) runFromFile(f); });
+const drop = $('#drop');
+const file = $('#file');
+function openFilePicker() {
+  if (state.busy) return setStatus('Please wait for the current analysis to finish.', true);
+  file.disabled = false;
+  console.debug('Opening image file picker.');
+  try {
+    if (typeof file.showPicker === 'function') file.showPicker();
+    else file.click();
+  } catch (error) {
+    console.warn('showPicker() unavailable; falling back to input.click():', error);
+    file.click();
+  }
+}
+$('#browse-file').addEventListener('click', (event) => {
+  event.stopPropagation();
+  openFilePicker();
+});
+drop.addEventListener('click', (event) => {
+  if (event.target.closest('#browse-file')) return;
+  openFilePicker();
+});
+drop.addEventListener('keydown', (event) => {
+  if (event.target === drop && (event.key === 'Enter' || event.key === ' ')) {
+    event.preventDefault();
+    openFilePicker();
+  }
+});
+file.addEventListener('change', () => {
+  const selected = file.files?.[0];
+  console.info('File picker selection:', selected ? { name: selected.name, type: selected.type, size: selected.size } : 'no file selected');
+  if (selected) runFromFile(selected);
+  file.value = '';
+});
+['dragenter', 'dragover'].forEach((type) => drop.addEventListener(type, (event) => { event.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach((type) => drop.addEventListener(type, (event) => { event.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', (event) => {
+  const selected = event.dataTransfer?.files?.[0];
+  if (selected) runFromFile(selected);
+});
 
-function runFromFile(f) {
-  const ext = f.name.split('.').pop()?.toLowerCase();
-  const supported = /^image\/(png|jpeg|webp)$/.test(f.type) || ['png', 'jpg', 'jpeg', 'webp'].includes(ext);
+function runFromFile(selected) {
+  const extension = selected.name.split('.').pop()?.toLowerCase();
+  const supported = /^image\/(png|jpeg|webp)$/i.test(selected.type) || ['png', 'jpg', 'jpeg', 'webp'].includes(extension);
   if (!supported) return setStatus('Please choose a PNG, JPG or WebP image.', true);
-  if (f.size > 15 * 1024 * 1024) return setStatus('That image is over 15 MB. Please use a smaller file.', true);
-  grid.querySelectorAll('.sample').forEach((x) => x.setAttribute('aria-pressed', 'false'));
-  runFromURL(URL.createObjectURL(f), '', f.name.replace(/\.[^.]+$/, ''), true);
+  if (selected.size > 15 * 1024 * 1024) return setStatus('That image is over 15 MB. Please use a smaller file.', true);
+  if (state.busy) return setStatus('Please wait for the current analysis to finish.', true);
+  grid.querySelectorAll('.sample').forEach((button) => button.setAttribute('aria-pressed', 'false'));
+  const objectURL = URL.createObjectURL(selected);
+  console.info('Reading uploaded image:', { name: selected.name, type: selected.type, size: selected.size });
+  runFromURL(objectURL, '', selected.name.replace(/\.[^.]+$/, ''), true);
 }
 
 async function runFromURL(url, title, name, revokeUrl = false) {
-  if (state.busy) return;
+  if (state.busy) {
+    if (revokeUrl) URL.revokeObjectURL(url);
+    return setStatus('Please wait for the current analysis to finish.', true);
+  }
   try {
-    const img = new Image(); img.src = url; await img.decode();
+    console.debug('Decoding image:', url);
+    const img = new Image();
+    img.src = url;
+    await img.decode();
     let W = img.naturalWidth, H = img.naturalHeight;
-    const k = Math.min(1, MAX_SIDE / Math.max(W, H));
-    W = Math.round(W * k); H = Math.round(H * k);
-    const c = document.createElement('canvas'); c.width = W; c.height = H;
-    const ctx = c.getContext('2d', { willReadFrequently: true });
-    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.drawImage(img, 0, 0, W, H);
-    const sourceImageData = ctx.getImageData(0, 0, W, H);
-    await run({ sourceImageData, original: c.toDataURL('image/jpeg', 0.85), name: name || 'diagram', title: title || '' });
-  } catch (e) {
-    console.error(e);
-    setStatus('Could not read that image. ' + (e.message || ''), true);
+    if (!W || !H) throw new Error('The selected image has no usable dimensions.');
+    const scale = Math.min(1, MAX_SIDE / Math.max(W, H));
+    W = Math.round(W * scale); H = Math.round(H * scale);
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    if (!context) throw new Error('This browser could not create a 2D canvas context.');
+    context.fillStyle = '#fff';
+    context.fillRect(0, 0, W, H);
+    context.drawImage(img, 0, 0, W, H);
+    const sourceImageData = context.getImageData(0, 0, W, H);
+    console.info('Image decoded; starting analysis:', { width: W, height: H, name: name || 'diagram' });
+    await run({ sourceImageData, original: canvas.toDataURL('image/jpeg', 0.85), name: name || 'diagram', title: title || '' });
+  } catch (error) {
+    console.error('Could not load or decode image:', error);
+    setStatus('Could not read that image. ' + (error.message || ''), true);
   } finally {
     if (revokeUrl) URL.revokeObjectURL(url);
   }

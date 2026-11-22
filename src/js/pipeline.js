@@ -10,14 +10,14 @@ import { loadIndra, detectText as detectTextIndra, recognizeTextRegions } from '
 import { structureLines } from './lineart.js';
 import { DEFAULT_TRACING_SENSITIVITY, tracingConfig } from './tracing-config.js';
 
-export async function analyze(imageData, { onStage = () => {}, sensitivity = DEFAULT_TRACING_SENSITIVITY, preferIndra = false } = {}) {
+export async function analyze(imageData, { onStage = () => {}, sensitivity = DEFAULT_TRACING_SENSITIVITY, preferIndra = false, segmentationBackend = 'slimsam' } = {}) {
   const timings = {};
   const timed = async (k, f) => { const t0 = performance.now(); const r = await f(); timings[k] = Math.round(performance.now() - t0); return r; };
   const W = imageData.width, H = imageData.height;
   sensitivity = tracingConfig(sensitivity).sensitivity;
 
   onStage('engines', 'Loading on-device models…');
-  const [cv, sam] = await timed('load', () => Promise.all([loadOpenCV(), loadSAM(), loadPaddle({ proxy: true }).catch(() => null)]));
+  const [cv, sam] = await timed('load', () => Promise.all([loadOpenCV(), loadSAM({ backend: segmentationBackend }), loadPaddle({ proxy: true }).catch(() => null)]));
 
   onStage('ocr', 'Reading the printed labels…');
   const canvas = toCanvas(imageData);
@@ -132,7 +132,7 @@ export async function analyze(imageData, { onStage = () => {}, sensitivity = DEF
     }
   });
   src.delete(); gray.delete();
-  return { W, H, labels, words: good, fg, lineArt, regions, edges, detailLines, timings, device: sam.device, ocrEngine, sensitivity };
+  return { W, H, labels, words: good, fg, lineArt, regions, edges, detailLines, timings, device: sam.device, ocrEngine, sensitivity, segmentationBackend: sam.backend };
 }
 
 // Non-background pixels minus text and thin strokes (leader lines), holes filled.

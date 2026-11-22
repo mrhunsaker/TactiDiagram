@@ -20,9 +20,10 @@ In a second terminal:
 ```bash
 npm run eval
 node scripts/recall.mjs
+npm run compare-segmentation
 ```
 
-The server serves `src/`; `npm run vendor` prepares `src/vendor/` and `src/models/`. Generated evaluation output is written under `eval-out/`.
+The server serves `src/`; `npm run vendor` prepares `src/vendor/` and `src/models/`. Generated evaluation output is written under `eval-out/`. `npm run compare-segmentation` runs every sample with both backends and writes JSON, CSV, Markdown, and per-label mask PNGs under `eval-out/segmentation-comparison/`. Paired-model IoU measures agreement, not accuracy; reviewed reference masks are needed for ground-truth IoU and boundary metrics.
 
 Other repository scripts include `scripts/ocrbench.mjs` (OCR benchmarking), `scripts/lab.mjs`, `scripts/la.mjs`, and `scripts/edge.mjs` (analysis/line-art/edge investigation), `scripts/qa.mjs` (QA automation), `scripts/record.mjs`, `scripts/shot.mjs`, `scripts/shot3d.mjs`, and `scripts/thumb.mjs` (recording and screenshots), `scripts/gallery.mjs` and `scripts/tsvg.mjs` (gallery/SVG tooling), and `scripts/desktop.mjs` (Neutralino launcher). These are developer tools; not all are npm commands. Inspect each script before use.
 

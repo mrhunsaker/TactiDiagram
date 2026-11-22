@@ -101,6 +101,10 @@ The vision encoder creates an image embedding once. The prompt encoder and mask 
 
 The current loader uses Transformers.js with local-only model resolution and ONNX Runtime WASM. It explicitly selects `device: 'wasm'`; the code comments say WebGPU is not considered sufficiently tested across the target hardware. The ONNX WASM proxy is enabled for the segmentation loader so inference does not block the UI thread.
 
+## Optional SAM 2.1 Hiera Tiny segmentation
+
+The UI checkbox selects SAM 2.1 Hiera Tiny for the next analysis. It requires WebGPU and is loaded only when selected; SlimSAM remains the default WASM backend. `npm run vendor` stages the pinned ONNX Community fp16 files and external tensor data locally (about 78 MB). This backend is experimental and should be compared on target browsers before routine use.
+
 ## OpenCV.js: classical computer vision
 
 OpenCV.js is a browser build of OpenCV. It is not a trained AI model. It supplies image-processing operations used to make the pipeline deterministic and explainable:

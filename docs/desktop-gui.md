@@ -116,7 +116,10 @@ node scripts/package.mjs --target linux --version 2026.11.22 --out dist
    (`enableServer: true`, `url: "/"`), then runs `neu build --release`.
    It locates the target x86_64 binary and `resources.neu` by filename anywhere
    under Neutralino's `dist/` output and verifies they are siblings.
-4. Assembles artifacts in the selected output directory (default `dist/`):
+4. Assembles artifacts in the selected output directory (default `dist/`).
+   The `--out` option accepts a relative or absolute directory; `PACKAGE_OUT`
+   is also supported as an environment-variable override. Automatic target
+   selection is supported only on Linux and Windows.
    - **Linux:** `TouchSight-NG-x86_64.AppImage`, built with `appimagetool`
      (downloaded on first run; executed with `--appimage-extract-and-run` so
      FUSE is not required). The AppImage includes an `AppRun`, a

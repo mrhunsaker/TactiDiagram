@@ -6,7 +6,9 @@ TouchSight-NG helps a braille transcriber turn a labeled textbook or instruction
 
 The transcriber remains responsible for the finished graphic. TouchSight-NG is an assistive production tool, not an autonomous replacement for professional transcription, accessibility review, or testing with tactile readers.
 
-- **Application:** Run locally; the application is not hosted on GitHub Pages.
+- **Application:** Run it directly from the repository, or install a packaged
+  desktop build from [Releases](https://github.com/mrhunsaker/touchsight-NG/releases).
+  It is not hosted on GitHub Pages.
 - **User and technical documentation:** https://mrhunsaker.github.io/touchsight-NG/
 - **Getting started:** [docs/getting-started.md](docs/getting-started.md)
 - **Every application setting and action:** [docs/application-options.md](docs/application-options.md)
@@ -98,13 +100,25 @@ npm run serve
 
 The vendor step copies browser libraries into `src/vendor/` and downloads model assets into `src/models/`, including the optional SAM 2.1 model files (about 78 MB). SAM 2.1 requires a browser/device with a working WebGPU adapter; SlimSAM remains the default and uses WebAssembly. The local server serves `src/` directly at http://localhost:5173 by default. Keep the terminal open while using the app.
 
-By default the application runs in a browser tab. An optional desktop window
-(neutralino, using the operating system webview instead of a bundled Chromium)
-is also available; see [Desktop GUI](docs/desktop-gui.md).
+There are three ways to run TouchSight-NG:
 
-```bash
-npm run desktop
-```
+1. **Browser tab** (`npm run serve`, above): the simplest; everything runs in
+   your browser at http://localhost:5173.
+2. **Desktop window from the repository** (no installation):
+
+   ```bash
+   npx neu update
+   npm run desktop
+   ```
+
+   This opens the same app in an application window with a taskbar/dock icon
+   and no browser chrome, using the operating system webview instead of a
+   bundled Chromium.
+3. **Install a packaged desktop build** (no Node.js on the target machine):
+   download the AppImage (Linux) or the Windows zip from
+   [Releases](https://github.com/mrhunsaker/touchsight-NG/releases), make it
+   executable (Linux) or extract and run `touchsight-ng.exe` (Windows).
+   See [Desktop app and packaging](docs/desktop-gui.md).
 
 To run the automated evaluation harness:
 
@@ -132,7 +146,7 @@ src/                  browser application
   fonts/              self-hosted fonts
 scripts/              vendor build, local server, evaluation and QA tooling
 docs/                 user and technical documentation (MkDocs)
-.github/workflows/    documentation-only deployment automation
+.github/workflows/    documentation deployment (Pages) and desktop release builds
 ```
 
 Key implementation modules are documented in [docs/modules.md](docs/modules.md). The processing sequence is described in [docs/pipeline.md](docs/pipeline.md).

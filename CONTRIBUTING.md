@@ -38,6 +38,12 @@ npm run serve    # http://localhost:5173
 - Open the PR against `main` with a short description and, where useful, screenshots (tactile view, relief view) or evaluation output.
 - New sample diagrams are welcome if their license permits redistribution; include the credit in `src/samples/CREDITS.md`.
 
+## Releases
+
+Releases use calendar versioning. Tag `main` as `v` + the release date (`vYYYY.M.D`, for example `v2026.11.22`, a valid SemVer triple). Pushing a matching tag runs `.github/workflows/desktop-packaging.yml`, which validates the tag, stamps the date-derived version into the packaged builds, builds the Linux AppImage and the Windows bundle, and attaches both to the matching GitHub release. Tags outside the `vYYYY.M.D` format fail the build, and the workflow does not run on ordinary pushes.
+
+Before tagging: move the `CHANGES.md` `[Unreleased]` entries under a heading named for the tag and dated, and set the same version in `package.json`.
+
 ## Licensing
 
 By contributing, you agree that your contributions are licensed under the GPL-3.0-or-later (the repository's license).

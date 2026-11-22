@@ -39,4 +39,8 @@ mkdocs build --site-dir _site
 
 ## Run the application
 
-The application is separate from the documentation deployment. To run it locally, follow [Getting started](getting-started.md). The Pages workflow does not host, publish, or update an application instance.
+The application is separate from the documentation deployment. To run it locally, follow [Getting started](getting-started.md); to install it as a desktop application, follow [Desktop app and packaging](desktop-gui.md). The Pages workflow does not host, publish, or update an application instance.
+
+## Application releases
+
+Application distribution happens through [GitHub Releases](https://github.com/mrhunsaker/touchsight-NG/releases), not Pages. Release tags use the `vYYYY.M.D` format (releases are dated, for example `v2026.11.22`), and `.github/workflows/desktop-packaging.yml` builds the desktop artifacts only on those tags, stamping the tag-derived version into the builds and attaching them to the release. Everything else on the site remains documentation only.

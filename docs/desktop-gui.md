@@ -94,6 +94,13 @@ npx neu update                  # once per machine
 npm run package:desktop         # linux -> AppImage, windows -> zipped exe
 ```
 
+The version can be stamped into the build so it matches the git tag and the
+GitHub release (the release workflow does this automatically):
+
+```bash
+node scripts/package.mjs --target linux --version 2026.11.22
+```
+
 `scripts/package.mjs`:
 
 1. Runs `npm run vendor` so the runtime asset bundle is complete.
@@ -125,9 +132,21 @@ Neutralino icon, and the window has no custom taskbar icon.
 
 ### CI builds
 
-`.github/workflows/desktop-packaging.yml` builds both artifacts on
-`workflow_dispatch` and on `v*` tag pushes, uploads them as workflow
-artifacts, and attaches them to the matching GitHub release.
+`.github/workflows/desktop-packaging.yml` runs **only on release tags**; it
+does not build on every push and has no manual dispatch. The tag must follow
+the `vYYYY.M.D` format (for example `v2026.11.22`); anything else fails the
+build. On a matching tag the workflow:
+
+1. validates the tag and derives the version (`v2026.11.22` -> `2026.11.22`,
+   which is a valid SemVer triple);
+2. stamps that version into the packaged builds (`neutralino.config.json`
+   and `resources/version.json`);
+3. builds the Linux AppImage and the Windows bundle and attaches both to the
+   matching GitHub release.
+
+To release: move the `CHANGES.md` `[Unreleased]` entries under a heading named
+for the tag and dated, set the same version in `package.json`, tag `vYYYY.M.D`,
+and push the tag.
 
 ### Limitations
 

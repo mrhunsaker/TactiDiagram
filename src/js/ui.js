@@ -7,6 +7,18 @@ import { renderTactile, renderKeyPage, TEXTURES } from './render.js';
 import { checkAll } from './check.js';
 import { toUnicode } from './braille.js';
 
+// ---------- desktop shell (Neutralino) ----------
+// The packaged desktop app runs in a WebView that blocks blob-URL downloads and
+// window.open, so file saves and printing go through Neutralino native APIs.
+// In a plain browser this stays null and the normal download/open path is used.
+let desktop = null;
+try {
+  await import('./neutralino.js');
+  if (window.NL_PORT && window.Neutralino) {
+    Neutralino.init();
+    desktop = window.Neutralino;
+  }
+} catch { /* plain browser tab: no Neutralino client here */ }
 let reliefMod = null, relief = null, reliefFor = null;
 async function showRelief() {
   try {
@@ -565,11 +577,29 @@ $('#btn-analyze')?.addEventListener('click', () => startAnalysis());
 
 // ---------- export ----------
 function download(name, text, type = 'image/svg+xml') {
+  // Browser path (run from a repo checkout).
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([text], { type }));
   a.download = name; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
+
+// Desktop path: native Save dialog, then the real file is written to disk.
+async function saveAs(name, content, type = 'image/svg+xml') {
+  if (!desktop) return download(name, content, type);
+  const path = await desktop.os.showSaveDialog('Save as', { defaultPath: name });
+  if (!path) return; // user cancelled
+  const buf = content instanceof Blob
+    ? await content.arrayBuffer()
+    : new TextEncoder().encode(content).buffer;
+  try {
+    await desktop.filesystem.writeFile(path, buf);
+  } catch {
+    await desktop.filesystem.writeBinaryFile(path, buf); // older Neutralino clients
+  }
+  setStatus('Saved to ' + path);
+}
+
 $('#relief-light').onclick = (e) => {
   if (!relief) return;
   relief.sweep = !relief.sweep;
@@ -581,20 +611,43 @@ $('#dl-stl').onclick = async () => {
   try {
     reliefMod ??= await import('./relief.js');
     const blob = await reliefMod.buildSTL(state.layout);
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${state.name}-tactile.stl`; a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    await saveAs(`${state.name}-tactile.stl`, blob, 'model/stl');
   } finally { btn.disabled = false; btn.textContent = 'Download STL for 3D printing'; }
 };
-$('#dl-svg').onclick = () => download(`${state.name}-tactile-editable.svg`, renderTactile(state.layout));
-$('#dl-key').onclick = () => download(`${state.name}-key.svg`, renderKeyPage(state.layout, { preview: true }));
-$('#print').onclick = () => {
+$('#dl-svg').onclick = () => saveAs(`${state.name}-tactile-editable.svg`, renderTactile(state.layout));
+$('#dl-key').onclick = () => saveAs(`${state.name}-key.svg`, renderKeyPage(state.layout, { preview: true }));
+function printHTML(L, pages) {
+  return `<!doctype html><title>${state.name} — tactile</title><style>@page{size:${L.pageW}mm ${L.pageH}mm;margin:0}body{margin:0}svg{display:block;width:${L.pageW}mm;height:${L.pageH}mm;page-break-after:always}</style>${pages.join('')}<script>onload=()=>print()<\/script>`;
+}
+$('#print').onclick = async () => {
   const L = state.layout;
-  const w = window.open('', '_blank');
-  if (!w) return setStatus('Allow pop-ups to print.', true);
   const pages = [renderTactile(L)];
   if (L.keyEntries.length) pages.push(renderKeyPage(L, { preview: true }));
-  w.document.write(`<!doctype html><title>${state.name} — tactile</title><style>@page{size:${L.pageW}mm ${L.pageH}mm;margin:0}body{margin:0}svg{display:block;width:${L.pageW}mm;height:${L.pageH}mm;page-break-after:always}</style>${pages.join('')}<script>onload=()=>print()<\/script>`);
-  w.document.close();
+  const html = printHTML(L, pages);
+  if (!desktop) {
+    // Browser: a new tab is the only way to print the bare page-sized SVGs.
+    const w = window.open('', '_blank');
+    if (!w) return setStatus('Allow pop-ups to print.', true);
+    w.document.write(html);
+    w.document.close();
+    return;
+  }
+  // Desktop: the WebView blocks window.open (pop-up blocker), so write the print
+  // page to a temporary file and open it in the system browser, where printing
+  // and Save as PDF work normally.
+  try {
+    const tempDir = await desktop.os.getPath('temp');
+    const sep = tempDir.endsWith('/') ? '' : tempDir.endsWith(BS) ? '' : '/';
+    const dir = tempDir + sep + 'touchsight-ng';
+    try { await desktop.filesystem.mkdir(dir); } catch {}
+    const path = dir + '/' + 'print-' + Date.now() + '.html';
+    await desktop.filesystem.writeFile(path, html);
+    await desktop.os.open(path);
+    setStatus('The print view opened in your browser; choose Print there to print or save as PDF.');
+  } catch (e) {
+    console.error(e);
+    setStatus('Could not open the print view: ' + (e.message || e), true);
+  }
 };
 
 // Deep link: ?sample=heart runs a sample straight away (demos and the eval harness).

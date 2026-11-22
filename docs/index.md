@@ -10,7 +10,15 @@ TouchSight-NG is a working tool in daily use by a braille transcriber, not a dem
 - **Educators** who want material ready for review and final cleanup rather than a blank starting point.
 - **Anyone** producing tactile diagrams who prefers a private, offline-capable tool.
 
-## Using the application\n\nStart with [Getting started](getting-started.md). The [Application controls and options](application-options.md) reference explains every current setting, result view, review action, and export.\n\n## Why it exists
+## Using the application
+
+Start with [Getting started](getting-started.md). The [Application controls and options](application-options.md) reference explains every current setting, result view, review action, and export.
+
+## Desktop distribution
+
+Packaged releases currently provide an x86_64 Linux AppImage and an unsigned Windows ZIP. Both use the operating system's WebView runtime. See [Desktop app and packaging](desktop-gui.md) for platform prerequisites and limitations.
+
+## Why it exists
 
 Each textbook diagram has to be redrawn by hand as a *tactile graphic*: clutter removed, print replaced with braille, lines spaced at least 3 mm apart so fingers can tell them apart, only a few distinguishable textures. A science assignment with graphics can take up to 10 hours to transcribe ([Jordan School District, 2024](https://jam.jordandistrict.org/2024/10/03/transcription-services-for-the-visually-impaired/)), and a 2023 survey found almost half of the teachers making tactile graphics had never been trained to do so ([British Journal of Visual Impairment](https://experts.arizona.edu/en/publications/creating-tactile-graphics-in-school-settings-a-survey-of-training/)).
 

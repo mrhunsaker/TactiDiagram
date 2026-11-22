@@ -37,11 +37,11 @@ import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import {
   existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync,
-  rmSync, copyFileSync, chmodSync, statSync,
+  rmSync, copyFileSync, chmodSync, statSync, cpSync, mkdtempSync,
 } from 'node:fs';
-import { join, resolve, basename } from 'node:path';
+import { join, resolve, basename, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { homedir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const neuDir = join(repoRoot, 'desktop', 'neutralino');
@@ -54,13 +54,20 @@ const run = (cmd, args, opts = {}) => {
 const isDir = (p) => { try { return statSync(p).isDirectory(); } catch { return false; } };
 
 // ---- arguments -------------------------------------------------------------
-let target = process.platform === 'win32' ? 'win' : 'linux';
+let target = process.platform === 'win32' ? 'win' : process.platform === 'linux' ? 'linux' : null;
 let versionArg = null;
+let outArg = process.env.PACKAGE_OUT || 'dist';
 const argv = process.argv.slice(2);
-const tIdx = argv.indexOf('--target');
-if (tIdx >= 0) target = argv[tIdx + 1];
-const vIdx = argv.indexOf('--version');
-if (vIdx >= 0) versionArg = argv[vIdx + 1];
+function option(name) {
+  const i = argv.indexOf(name);
+  if (i < 0) return null;
+  if (!argv[i + 1] || argv[i + 1].startsWith('--')) throw new Error(name + ' requires a value.');
+  return argv[i + 1];
+}
+target = option('--target') || target;
+versionArg = option('--version');
+outArg = option('--out') || outArg;
+if (!target) throw new Error('Automatic target selection supports Linux and Windows only; use --target linux or --target win.');
 if (!['linux', 'win'].includes(target)) {
   console.error('Unsupported target: ' + target + '. Use --target linux or --target win.');
   process.exit(1);
@@ -71,7 +78,7 @@ if (versionArg && !SEMVER.test(versionArg)) {
   process.exit(1);
 }
 
-const outDir = resolve(repoRoot, process.env.PACKAGE_OUT || 'dist');
+const outDir = resolve(repoRoot, outArg);
 
 // ---- 2. stage resources ----------------------------------------------------
 const resDir = join(neuDir, 'resources');
@@ -120,31 +127,30 @@ function writeBuildConfig() {
 
 // ---- 4. neu build ----------------------------------------------------------
 function walk(dir) {
-  const acc = [];
+  const files = [];
   for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    if (isDir(p)) acc.push(...walk(p).map((rel) => join(name, rel)));
-    else acc.push(name);
+    const path = join(dir, name);
+    if (isDir(path)) files.push(...walk(path));
+    else files.push(path);
   }
-  return acc;
+  return files;
 }
 function neuBuild() {
   run('npx', ['neu', 'build', '--release'], { cwd: neuDir });
   const distRoot = join(neuDir, 'dist');
-  const namedDir = readdirSync(distRoot).find((n2) => n2 !== 'touchsight-ng-release');
-  const buildDir = join(distRoot, namedDir || '');
-  const files = walk(buildDir);
-  const rel = (f) => join(buildDir, f);
-  const binary = target === 'win'
-    ? files.find((f) => f.endsWith('.exe') && f.includes('win'))
-    : files.find((f) => f.includes('linux_') && !f.endsWith('.zip'));
-  const resources = files.find((f) => f === 'resources.neu');
+  if (!isDir(distRoot)) throw new Error('Neutralino did not create ' + distRoot);
+  const files = walk(distRoot);
+  const resources = files.find((path) => basename(path) === 'resources.neu');
+  const binaryPattern = target === 'win' ? /win_x64\\.exe$/i : /linux_x64$/i;
+  const binary = files.find((path) => binaryPattern.test(basename(path)));
   if (!binary || !resources) {
-    console.error('Could not find built artifacts in ' + buildDir + ':');
-    console.error(files.join('\n'));
-    process.exit(1);
+    throw new Error('Could not find target x86_64 binary and resources.neu under ' + distRoot +
+      '. Found:\\n' + files.join('\\n'));
   }
-  return { binary: rel(binary), resources: rel(resources) };
+  if (dirname(binary) !== dirname(resources)) {
+    throw new Error('Neutralino binary and resources.neu are not in the same directory.');
+  }
+  return { binary, resources };
 }
 
 // ---- 5. package: Linux AppImage -------------------------------------------
@@ -170,6 +176,7 @@ function resolveAppImageTool() {
   if (existsSync(cached)) return cached;
   console.log('Downloading appimagetool (first run only)...');
   const url = 'https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage';
+  mkdirSync(dirname(cached), { recursive: true });
   const r = spawnSync('curl', ['-fL', '-o', cached, url], { stdio: 'inherit' });
   if (r.status !== 0 || !existsSync(cached)) {
     console.error('Could not download appimagetool. Set APPIMAGETOOL to a local copy and re-run.');
@@ -254,23 +261,24 @@ async function buildWindowsPackage(binary, resources) {
 }
 
 // ---- main ------------------------------------------------------------------
+const backupRoot = mkdtempSync(join(tmpdir(), 'touchsight-package-'));
+const resourceBackup = join(backupRoot, 'resources');
+const hadResources = existsSync(resDir);
 try {
-  // 1. vendor runtime assets
   run('npm', ['run', 'vendor'], { cwd: repoRoot });
-
+  if (hadResources) cpSync(resDir, resourceBackup, { recursive: true });
   stageResources();
   writeBuildConfig();
-  let built;
-  try {
-    built = neuBuild();
-  } finally {
-    writeFileSync(cfgPath, originalCfg); // restore the dev configuration
-  }
-
+  const built = neuBuild();
   if (target === 'linux') buildAppImage(built.binary, built.resources);
   else await buildWindowsPackage(built.binary, built.resources);
   console.log('Done.');
 } catch (err) {
   console.error(err.message || err);
-  process.exit(1);
+  process.exitCode = 1;
+} finally {
+  writeFileSync(cfgPath, originalCfg);
+  rmSync(resDir, { recursive: true, force: true });
+  if (hadResources) cpSync(resourceBackup, resDir, { recursive: true });
+  rmSync(backupRoot, { recursive: true, force: true });
 }

@@ -36,8 +36,11 @@ flowchart TD
   F --> I[Foreground and structure analysis]
   H --> J[Point prompts for named parts]
   I --> J
-  J --> K[SlimSAM masks]
-  K --> L[Line hierarchy and tactile layout]
+  J --> K{Segmentation backend}
+  K -->|Default| S[SlimSAM masks (WASM)]
+  K -->|Opt-in| S2[SAM 2.1 Hiera Tiny masks (WebGPU)]
+  S --> L[Line hierarchy and tactile layout]
+  S2 --> L
   I --> L
   F --> L
   L --> M[Guideline checks]
@@ -69,7 +72,8 @@ This is a hybrid system: learned models handle text recognition and part segment
 | PaddleOCR detector + recognizer | Primary printed-text detection and recognition | ONNX Runtime Web, WASM |
 | Indra OCR det + rec (opt-in) | Experimental alternative printed-text engine, Latin script | ONNX Runtime Web, WASM |
 | Tesseract.js + English traineddata | Fallback OCR when PaddleOCR cannot load or run | WebAssembly |
-| SlimSAM | Point-prompted segmentation of labeled parts | Transformers.js + ONNX Runtime WASM |
+| SlimSAM | Default point-prompted segmentation of labeled parts | Transformers.js + ONNX Runtime WASM |
+| SAM 2.1 Hiera Tiny (opt-in) | Experimental alternative point-prompted segmentation | Transformers.js + ONNX Runtime WebGPU; requires a usable GPU adapter |
 | ONNX Runtime Web | Executes OCR and segmentation ONNX models | WebAssembly |
 | three.js | Interactive 3D relief preview | WebGL |
 | Potrace WASM | Opt-in raster preprocessing through the Autotrace control; its SVG result is rasterized before normal analysis | Locally vendored WebAssembly package |
@@ -101,7 +105,7 @@ Generated vendor libraries and model weights are not committed as application so
 | `src/js/paddle.js` | PaddleOCR detector and recognizer using ONNX Runtime Web |
 | `src/js/ocr.js` | Word filtering, line grouping, multi-line label grouping |
 | `src/js/leaders.js` | Thin-stroke masks, probabilistic Hough segments, leader assignment and chaining |
-| `src/js/segment.js` | SlimSAM image embeddings and point-prompted masks |
+| `src/js/segment.js` | SlimSAM and SAM 2.1 image embeddings and point-prompted masks |
 | `src/js/libs.js` | Lazy loaders for OpenCV, Tesseract, Transformers.js, and ONNX Runtime |
 | `src/js/lineart.js` | Colour-region boundaries and thin structural strokes |
 | `src/js/tactile.js` | Physical page layout, textures, braille placement, clearance |
@@ -112,7 +116,7 @@ Generated vendor libraries and model weights are not committed as application so
 
 ## Design trade-offs
 
-- **WASM over mandatory GPU inference:** improves compatibility but constrains model size and speed.
+- **WASM default over mandatory GPU inference:** improves compatibility; optional SAM 2.1 offers an experimental WebGPU path for compatible hardware.
 - **Small specialist models over one large multimodal model:** keeps downloads and inference requirements manageable; the trade-off is explicit hand-offs between OCR, geometry, and segmentation.
 - **Label-guided segmentation over whole-image segmentation:** narrows the task to named parts, but errors in OCR or leader detection propagate downstream.
 - **Physical units over pixel-only layout:** tactile spacing is a physical constraint.

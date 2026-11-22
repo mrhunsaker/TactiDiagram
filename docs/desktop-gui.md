@@ -13,11 +13,13 @@ The [Neutralino](https://neutralino.js.org/) wrapper in this repository does
 not ship or bundle a browser engine. It opens the existing operating-system
 webview:
 
-- **Windows:** WebView2 (provided by Microsoft, preinstalled on current
-  versions of Windows 10 and 11)
-- **macOS:** WKWebView (part of the operating system)
-- **Linux:** WebKitGTK (from the distribution, typically installed with the
-  desktop environment)
+- **Windows:** Microsoft Edge WebView2 Runtime. It is preinstalled on most
+  current Windows 10/11 systems; managed, LTSC, or stripped-down images may
+  need the [Evergreen WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
+- **macOS:** WKWebView, provided by the operating system. macOS is not a
+  packaged release target at present.
+- **Linux:** WebKitGTK, which must be installed from the distribution's
+  packages (commonly named webkit2gtk or webkit2gtk-4.1).
 
 The wrapper itself is a few megabytes. Nothing like the 150+ MB of Chromium
 that a full Electron bundle would carry is downloaded or installed, and no
@@ -98,7 +100,7 @@ The version can be stamped into the build so it matches the git tag and the
 GitHub release (the release workflow does this automatically):
 
 ```bash
-node scripts/package.mjs --target linux --version 2026.11.22
+node scripts/package.mjs --target linux --version 2026.11.22 --out dist
 ```
 
 `scripts/package.mjs`:
@@ -141,8 +143,9 @@ build. On a matching tag the workflow:
    which is a valid SemVer triple);
 2. stamps that version into the packaged builds (`neutralino.config.json`
    and `resources/version.json`);
-3. builds the Linux AppImage and the Windows bundle and attaches both to the
-   matching GitHub release.
+3. builds the Linux AppImage and Windows ZIP independently, uploads both as
+   workflow artifacts, then one release job attaches both after both builds
+   succeed.
 
 To release: move the `CHANGES.md` `[Unreleased]` entries under a heading named
 for the tag and dated, set the same version in `package.json`, tag `vYYYY.M.D`,
@@ -150,9 +153,9 @@ and push the tag.
 
 ### Limitations
 
-- Windows distribution is a zip, not a signed installer; Windows SmartScreen
-  will warn about unsigned executables, and code signing (a certificate plus
-  eventually an MSIX/NSIS installer) is a separate, later step.
+- Windows distribution is an unsigned ZIP with a portable executable and
+  resources.neu, not an installer. SmartScreen may warn at first launch. The
+  target machine needs Microsoft Edge WebView2 Runtime.
 - The AppImage is x86_64 only; aarch64 builds would need ARM Neutralino
   binaries and `aarch64` `appimagetool`.
 - The packaged app has the same security posture as the browser app
@@ -161,9 +164,11 @@ and push the tag.
 
 ## If you later want an installable desktop app: Tauri
 
-Neutralino is intentionally minimal: no packaging, signing, or auto-update
-machinery. If the project ever wants distributable installers (an .msi, a
-signed .dmg, an AppImage) with the same system-webview, no-Chromium design,
+Neutralino remains intentionally minimal. This repository now provides a
+basic x86_64 Linux AppImage and portable unsigned Windows ZIP, but not signed
+installers, automatic updates, or a managed installer experience. If the
+project later wants more complete installer, signing, and update machinery
+with the same system-webview, no-Chromium design,
 [Tauri 2](https://v2.tauri.app/) is the natural next step and the migration is
 small because the architecture is identical (stub shell + local static server):
 

@@ -116,6 +116,36 @@ $('#try-heart').addEventListener('click', () => runSample('heart'));
 // ---------- input ----------
 const drop = $('#drop');
 const file = $('#file');
+const uploadPreview = $('#upload-preview');
+function formatFileSize(bytes) {
+  if (!Number.isFinite(bytes) || bytes < 0) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+function showUploadPreview({ src, name, width, height, size }) {
+  $('#upload-preview-image').src = src;
+  $('#upload-preview-name').textContent = name;
+  $('#upload-preview-meta').textContent =
+    `${width} × ${height} px · ${formatFileSize(size)}`;
+  uploadPreview.hidden = false;
+  drop.classList.add('has-upload');
+}
+function clearUploadPreview() {
+  uploadPreview.hidden = true;
+  $('#upload-preview-image').removeAttribute('src');
+  $('#upload-preview-name').textContent = '';
+  $('#upload-preview-meta').textContent = '';
+  drop.classList.remove('has-upload');
+  state.pending = null;
+  updateAnalyzeButton();
+}
+$('#upload-clear').addEventListener('click', (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  clearUploadPreview();
+  setStatus('Selected upload removed. Choose another diagram or select a sample.');
+});
 function openFilePicker() {
   if (state.busy) return setStatus('Please wait for the current analysis to finish.', true);
   file.disabled = false;
@@ -133,7 +163,7 @@ $('#browse-file').addEventListener('click', (event) => {
   openFilePicker();
 });
 drop.addEventListener('click', (event) => {
-  if (event.target.closest('#browse-file')) return;
+  if (event.target.closest('#browse-file, #upload-clear')) return;
   openFilePicker();
 });
 drop.addEventListener('keydown', (event) => {
@@ -164,10 +194,10 @@ function runFromFile(selected) {
   grid.querySelectorAll('.sample').forEach((button) => button.setAttribute('aria-pressed', 'false'));
   const objectURL = URL.createObjectURL(selected);
   console.info('Reading uploaded image:', { name: selected.name, type: selected.type, size: selected.size });
-  runFromURL(objectURL, '', selected.name.replace(/\.[^.]+$/, ''), true);
+  runFromURL(objectURL, '', selected.name.replace(/\.[^.]+$/, ''), true, { size: selected.size });
 }
 
-async function runFromURL(url, title, name, revokeUrl = false) { // loads only; see startAnalysis()
+async function runFromURL(url, title, name, revokeUrl = false, fileInfo = null) { // loads only; see startAnalysis()
   if (state.busy) {
     if (revokeUrl) URL.revokeObjectURL(url);
     return setStatus('Please wait for the current analysis to finish.', true);
@@ -191,7 +221,13 @@ async function runFromURL(url, title, name, revokeUrl = false) { // loads only; 
     const sourceImageData = context.getImageData(0, 0, W, H);
     // Only stage the image: analysis starts when the user presses the Start button,
     // so settings can be reviewed first without waiting for a run in between.
-    state.pending = { sourceImageData, original: canvas.toDataURL('image/jpeg', 0.85), name: name || 'diagram', title: title || '' };
+    const previewDataURL = canvas.toDataURL('image/jpeg', 0.82);
+    state.pending = { sourceImageData, original: previewDataURL, name: name || 'diagram', title: title || '' };
+    if (fileInfo) {
+      showUploadPreview({ src: previewDataURL, name: name || 'Uploaded image', width: W, height: H, size: fileInfo.size });
+    } else {
+      clearUploadPreview();
+    }
     console.info('Image loaded; waiting for Start:', { width: W, height: H, name: state.pending.name });
     setStatus(`${state.pending.name} loaded. Set the options on the left, then press Start analysis.`);
     updateAnalyzeButton();

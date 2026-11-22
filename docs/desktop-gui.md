@@ -195,3 +195,20 @@ Tauri requires a Rust toolchain for builds, which is why it is documented as an
 option here rather than wired into the repository now. The
 [sidecar and embedded-server patterns](https://v2.tauri.app/develop/sidecar/)
 are covered in the Tauri documentation.
+
+### Saving and printing in the desktop app
+
+The desktop shell runs the app in a WebView, which does not support browser-style
+downloads or pop-up windows. In the packaged app:
+
+- **Save SVG / key page / STL** opens the system Save As dialog and writes the real
+  file where you choose.
+- **Print / PDF** writes a page-sized print view to a temporary HTML file and opens
+  it in your default browser. Print or Save as PDF from there; the browser is not
+  restricted by the app's WebView.
+
+When running from a repo checkout in a normal browser, the standard download links
+and new-tab printing are used instead. This works because the packaged build enables
+Neutralino's native API with a restricted allow list (`enableNativeAPI: true` plus a
+`nativeAllowList` limited to dialogs, file I/O and opening files); the script in
+`scripts/package.mjs` sets this up in the build config automatically.

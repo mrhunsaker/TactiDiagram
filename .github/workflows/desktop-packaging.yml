@@ -56,7 +56,7 @@ jobs:
         shell: bash
         run: |
           TAG="${GITHUB_REF_NAME}"
-          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]{4}\\.[0-9]+\\.[0-9]+$'; then
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]{4}\.[0-9]+\.[0-9]+$'; then
             echo "::error::Tag must match vYYYY.M.D."
             exit 1
           fi

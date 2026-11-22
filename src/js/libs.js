@@ -82,27 +82,31 @@ export function loadSAM({ backend = 'slimsam' } = {}) {
     T.env.localModelPath = base + 'models/';
     T.env.backends.onnx.wasm.wasmPaths = base + 'vendor/ort/';
     T.env.backends.onnx.wasm.proxy = true; // run inference in a worker so the page stays responsive
-    // WASM everywhere: the WebGPU path is untested across judges' GPUs and the
-    // CPU embed only costs a few seconds for this distilled model.
-    const device = 'wasm';
-    void hasWebGPU;
+
     if (backend === 'sam2') {
-      if (!navigator.gpu || !(await hasWebGPU())) throw new Error('SAM 2.1 requires WebGPU. Uncheck its option to use SlimSAM.');
+      if (!navigator.gpu || !(await hasWebGPU())) {
+        const reason = 'WebGPU is unavailable or this device has no compatible GPU adapter';
+        console.warn(`SAM 2.1 unavailable (${reason}); falling back to SlimSAM.`);
+        return { ...(await loadSlimSAM(T)), fallbackReason: reason };
+      }
       if (typeof T.Sam2Model !== 'function') throw new Error('Installed Transformers.js does not expose Sam2Model.');
       const id = 'onnx-community/sam2.1-hiera-tiny-ONNX';
       const model = await T.Sam2Model.from_pretrained(id, { dtype: 'fp16', device: 'webgpu' });
       const processor = await T.AutoProcessor.from_pretrained(id);
       return { T, model, processor, device: 'webgpu', backend: 'sam2' };
     }
-    const id = 'Xenova/slimsam-77-uniform';
-    const model = await T.SamModel.from_pretrained(id, { dtype: 'fp32', device });
-    const processor = await T.AutoProcessor.from_pretrained(id);
-    return { T, model, processor, device, backend: 'slimsam' };
+    return loadSlimSAM(T);
   })().catch(error => { samPromises.delete(backend); throw error; });
   samPromises.set(backend, promise);
   return promise;
 }
 
+async function loadSlimSAM(T) {
+  const id = 'Xenova/slimsam-77-uniform';
+  const model = await T.SamModel.from_pretrained(id, { dtype: 'fp32', device: 'wasm' });
+  const processor = await T.AutoProcessor.from_pretrained(id);
+  return { T, model, processor, device: 'wasm', backend: 'slimsam' };
+}
 async function hasWebGPU() {
   try {
     if (!navigator.gpu) return false;

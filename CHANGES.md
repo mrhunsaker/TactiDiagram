@@ -17,6 +17,12 @@ All notable changes to TouchSight-NG are documented in this file. The format is 
   code is excluded from CodeQL scanning.
 
 ### Added
+- Explicit start: loading an image or sample and changing options no longer
+  starts processing on its own. A "Start analysis" button in the Output
+  options panel begins the pipeline when the user is ready; after a run, the
+  same button reads "Apply settings & re-analyze" when settings changed.
+  Sensitivity-only changes still reuse OCR and segmentation. Sample deep
+  links (?sample=...) keep auto-running for demos and the evaluation harness.
 - Optional Indra OCR engine (Datalab, v1.1.0): detector and recognizer ONNX
   models vendored from the official Hugging Face repository (pinned commit)
   and run in the browser on onnxruntime-web. Opt-in via a "Use Indra OCR"

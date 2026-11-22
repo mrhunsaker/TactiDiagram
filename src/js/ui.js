@@ -26,19 +26,17 @@ const MAX_SIDE = 1400; // keep in-browser inference fast
 const PAL = ['#e6194b', '#3cb44b', '#0082c8', '#f58230', '#911eb4', '#2fa8a8', '#f032e6', '#7f9d1f', '#008080', '#aa6e28', '#5a5aff', '#c0392b'];
 
 // ---------- samples ----------
-const DEMO_ORDER = ['heart', 'volcano', 'animal-cell', 'mitochondrion', 'tooth', 'ear', 'earth-layers', 'flower', 'eye'];
 const samples = await fetch('samples/samples.json').then((r) => r.json()).catch(() => []);
 const byId = Object.fromEntries(samples.map((s) => [s.id, s]));
 const grid = $('#samples');
 const shortTitle = (t) => t.replace(/^(Diagram of the |Schematic diagram of the )/i, '').replace(/^./, (c) => c.toUpperCase());
-for (const id of DEMO_ORDER) {
-  const s = byId[id]; if (!s) continue;
+for (const s of samples) {
   const b = document.createElement('button');
   b.className = 'sample'; b.type = 'button'; b.dataset.id = id;
   b.setAttribute('role', 'listitem'); b.setAttribute('aria-pressed', 'false');
   b.innerHTML = `<img src="samples/${s.file}" alt="" loading="lazy"><span>${shortTitle(s.title)}</span>`;
   b.title = `${s.title} — ${s.author}, ${s.license}`;
-  b.onclick = () => runSample(id);
+  b.onclick = () => runSample(s.id);
   grid.appendChild(b);
 }
 function runSample(id) {
@@ -51,19 +49,22 @@ $('#try-heart').onclick = () => runSample('heart');
 // ---------- input ----------
 const drop = $('#drop'), file = $('#file');
 drop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); file.click(); } });
-file.addEventListener('change', () => file.files[0] && runFromFile(file.files[0]));
+file.addEventListener('change', () => { if (file.files[0]) runFromFile(file.files[0]); file.value = ''; });
+$('#browse-file').addEventListener('click', () => file.click());
 ['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));
 ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
 drop.addEventListener('drop', (e) => { const f = e.dataTransfer.files[0]; if (f) runFromFile(f); });
 
 function runFromFile(f) {
-  if (!/^image\/(png|jpeg|webp)$/.test(f.type)) return setStatus('Please choose a PNG, JPG or WebP image.', true);
+  const ext = f.name.split('.').pop()?.toLowerCase();
+  const supported = /^image\/(png|jpeg|webp)$/.test(f.type) || ['png', 'jpg', 'jpeg', 'webp'].includes(ext);
+  if (!supported) return setStatus('Please choose a PNG, JPG or WebP image.', true);
   if (f.size > 15 * 1024 * 1024) return setStatus('That image is over 15 MB. Please use a smaller file.', true);
   grid.querySelectorAll('.sample').forEach((x) => x.setAttribute('aria-pressed', 'false'));
-  runFromURL(URL.createObjectURL(f), '', f.name.replace(/\.[^.]+$/, ''));
+  runFromURL(URL.createObjectURL(f), '', f.name.replace(/\.[^.]+$/, ''), true);
 }
 
-async function runFromURL(url, title, name) {
+async function runFromURL(url, title, name, revokeUrl = false) {
   if (state.busy) return;
   try {
     const img = new Image(); img.src = url; await img.decode();
@@ -78,6 +79,8 @@ async function runFromURL(url, title, name) {
   } catch (e) {
     console.error(e);
     setStatus('Could not read that image. ' + (e.message || ''), true);
+  } finally {
+    if (revokeUrl) URL.revokeObjectURL(url);
   }
 }
 

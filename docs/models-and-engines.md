@@ -76,7 +76,7 @@ Tesseract is a mature OCR engine. In this project it is the fallback when Paddle
 
 The vendor script copies:
 
-- `tesseract.esm.min.js`, `tesseract.min.js`, and `worker.min.js`: browser-side library and worker code.
+- `tesseract.esm.min.js`, `tesseract.min.js`, and `worker.min.js`: browser-side library and worker code. Right after copying, the vendor script rewrites the bundle's single `Math.random()` task-ID generator (Tesseract.js worker-scheduler module 70) with a deterministic counter, so the committed bundle contains no insecure-randomness pattern for Code scanning; the identifiers it mints are non-cryptographic debug/log IDs.
 - The Tesseract.js Core LSTM WebAssembly builds: the OCR engine runtime.
 - `eng.traineddata.gz`: English trained data, version path `4.0.0_best_int`.
 
@@ -104,6 +104,17 @@ The current loader uses Transformers.js with local-only model resolution and ONN
 ## Optional SAM 2.1 Hiera Tiny segmentation
 
 The UI checkbox selects SAM 2.1 Hiera Tiny for the next analysis. It requires WebGPU and is loaded only when selected; SlimSAM remains the default WASM backend. `npm run vendor` stages the pinned ONNX Community fp16 files and external tensor data locally (about 78 MB). This backend is experimental and should be compared on target browsers before routine use.
+
+### Transformers.js v4 prompt handling
+
+With Transformers.js 4.3.0, every `SamProcessor` call runs the full image preprocess (the processor no longer supports the v3 pattern of passing `null` as the image to get point-prompt-only inputs). `src/js/segment.js` therefore builds the SAM 2.1 point-prompt tensors directly from the cached embed-step dimensions:
+
+- `processor.reshape_input_points(...)` rescales the [x, y] prompts into the model's reshaped input coordinates using the stored `original_sizes` / `reshaped_input_sizes`.
+- Labels are wrapped as an `int64` tensor shaped like the points tensor.
+- `reshaped_input_sizes` is passed to `post_process_masks`, which the v4 API requires to remove padding when upscaling masks back to original resolution.
+- The multi-level image embeddings (`image_embeddings.0..N`) are cached after the first decode, so the prompt encoder/mask decoder runs alone for each subsequent label instead of rerunning the WebGPU vision encoder.
+
+Passing `processor(null, ...)` throws "Cannot read properties of null (reading 'size')"; if a future Transformers.js upgrade reintroduces an inputs-only call, prefer that over manual tensor construction.
 
 ## OpenCV.js: classical computer vision
 

@@ -1,6 +1,6 @@
 # Advanced model options (research roadmap)
 
-> **Status: research options only. None of the larger models described here is currently integrated into the TouchSight-NG application.** They are candidates for experiments after the existing OCR, leader detection, segmentation, and Potrace work are stable. Adding them would require implementation, browser/runtime compatibility work, licensing review, measured download size, and evaluation on the project's diagram set.
+> **Status: research options only, with one exception.** SAM 2.1 Hiera Tiny (ONNX Community, fp16, WebGPU) is already integrated as an experimental, opt-in checkbox backend; it stores nothing remotely and is not yet the default. All other larger models described here are not integrated and are candidates for experiments after the existing OCR, leader detection, segmentation, and Potrace work are stable. Adding them would require implementation, browser/runtime compatibility work, licensing review, measured download size, and evaluation on the project's diagram set.
 
 The goal should not be to use the largest model available. It should be to improve a specific failure mode while preserving privacy, predictable tactile geometry, and a workflow that a transcriber can inspect.
 
@@ -19,7 +19,7 @@ Errors propagate. A missed label means no anchor; a wrong leader tip means a wro
 
 | Candidate | Potential role | Why evaluate it | Main trade-offs |
 |---|---|---|---|
-| SAM 2 / SAM 2.1 | Higher-capacity promptable segmentation | More capable masks and prompt handling than a tiny distilled segmenter; useful for ambiguous or intricate regions | Larger weights, more memory/compute, more complex runtime integration |
+| SAM 2 / SAM 2.1 | Higher-capacity promptable segmentation | More capable masks and prompt handling than a tiny distilled segmenter; useful for ambiguous or intricate regions | Larger weights, more memory/compute, more complex runtime integration. Status: SAM 2.1 Hiera Tiny (tiny fp16, pinned ONNX Community files) is implemented experimentally behind a WebGPU checkbox; point prompts are built directly via `reshape_input_points` because Transformers.js v4 preprocesses the image on every processor call |
 | SAM 3 | Concept- and prompt-conditioned segmentation | Text/concept prompts could help select a named part without relying exclusively on a single point | Newer model/runtime requirements, access and license review, substantial deployment cost |
 | Grounding DINO | Open-vocabulary object grounding / bounding boxes | Could take a phrase such as “left ventricle” and propose a region or box before segmentation | It returns boxes, not final tactile-ready masks; specialist diagram terminology may be out of distribution |
 | Florence-2 | OCR, captioning, phrase grounding, and visual task prompting | A multi-task vision model could provide a second opinion on text regions and part localization | Must benchmark OCR fidelity and coordinate accuracy; may overlap with existing specialist OCR |
@@ -57,7 +57,7 @@ A model should propose, not silently decide. Every proposed label, box, point, o
 
 ### 1. Improve segmentation before replacing the whole pipeline
 
-Compare SlimSAM with SAM 2.1 on the same label-derived point prompts. Measure mask overlap against manually reviewed part masks, boundary accuracy, latency, peak memory, and download size. Do not compare models using only their own confidence scores.
+Compare SlimSAM with SAM 2.1 on the same label-derived point prompts. Measure mask overlap against manually reviewed part masks, boundary accuracy, latency, peak memory, and download size. Do not compare models using only their own confidence scores. The experimental SAM 2.1 checkbox (`src/js/segment.js`, `src/js/libs.js`) already implements this comparison path: cached multi-level embeddings with per-label prompt decoding, area/confidence candidate filtering identical to the SlimSAM logic, and `npm run compare-segmentation` as the harness.
 
 ### 2. Add phrase grounding as a candidate generator
 

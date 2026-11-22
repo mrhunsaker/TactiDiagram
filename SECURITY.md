@@ -15,3 +15,5 @@ TouchSight-NG is a static, client-only application, which keeps the attack surfa
 ## Dependency notes
 
 Model weights and browser libraries are fetched at build time by `scripts/vendor.mjs` from pinned upstream locations (Hugging Face, ModelScope/RapidOCR, npm packages) and served from the site itself; no user data is sent to those sources at runtime. Report concerns about a vendored component via any of the routes above.
+
+Vendored code and model assets (`src/vendor/**`, `src/models/**`), plus generated precomputed diagrams, are excluded from Code scanning via `.github/codeql-config.yml`; findings in those dependency sources should be raised with the upstream project or via the routes above. The vendor script also patches out the one `Math.random()` usage in the vendored Tesseract.js bundle (a non-cryptographic task-ID generator); the patch reruns on every `npm run vendor`.

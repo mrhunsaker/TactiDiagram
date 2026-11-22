@@ -20,6 +20,35 @@ async function showRelief() {
   }
 }
 
+// Forward browser diagnostics to the local development server terminal.
+const browserLogLevel = new URLSearchParams(location.search).get('log') || 'info';
+const logLevels = { debug: 10, info: 20, warn: 30, error: 40 };
+function sendTerminalLog(level, args) {
+  if ((logLevels[level] ?? 20) < (logLevels[browserLogLevel] ?? 20)) return;
+  const detail = args.map((value) => {
+    if (value instanceof Error) return { name: value.name, message: value.message, stack: value.stack };
+    try { return JSON.parse(JSON.stringify(value)); } catch { return String(value); }
+  });
+  fetch('/__debug/log', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ level, detail, page: location.pathname + location.search, time: new Date().toISOString() }),
+    keepalive: true,
+  }).catch(() => {});
+}
+for (const level of ['debug', 'info', 'warn', 'error']) {
+  const original = console[level]?.bind(console);
+  if (!original) continue;
+  console[level] = (...args) => {
+    original(...args);
+    sendTerminalLog(level, args);
+  };
+}
+window.addEventListener('error', (event) => {
+  sendTerminalLog('error', [event.message, { filename: event.filename, line: event.lineno, column: event.colno, error: event.error }]);
+});
+window.addEventListener('unhandledrejection', (event) => sendTerminalLog('error', ['Unhandled promise rejection', event.reason]));
+
 const $ = (s) => document.querySelector(s);
 const state = { imageData: null, sourceImageData: null, original: null, analysis: null, layout: null, check: null, name: 'diagram', busy: false, mode: 'tactile', sensitivity: DEFAULT_TRACING_SENSITIVITY };
 const MAX_SIDE = 1400; // keep in-browser inference fast

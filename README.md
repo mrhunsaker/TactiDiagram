@@ -115,9 +115,9 @@ There are three ways to run TouchSight-NG:
    and no browser chrome, using the operating system webview instead of a
    bundled Chromium.
 3. **Install a packaged desktop build** (no Node.js on the target machine):
-   download the AppImage (Linux) or the Windows zip from
-   [Releases](https://github.com/mrhunsaker/touchsight-NG/releases), make it
-   executable (Linux) or extract and run `touchsight-ng.exe` (Windows).
+   download the x86_64 Linux AppImage or unsigned Windows x64 ZIP from
+   [Releases](https://github.com/mrhunsaker/touchsight-NG/releases). Linux
+   requires system WebKitGTK; Windows requires Microsoft Edge WebView2 Runtime.
    See [Desktop app and packaging](docs/desktop-gui.md).
 
 To run the automated evaluation harness:

@@ -29,21 +29,21 @@ flowchart TD
   O --> Q[Point prompts]
   P --> Q
   Q --> R{Segmentation backend}
-  R -->|Default| S[SlimSAM image embedding and mask candidates (WASM)]
-  R -->|Opt-in| S2[SAM 2.1 Hiera Tiny image embedding and mask candidates (WebGPU)]
+  R -->|Default| S[SlimSAM embedding and mask candidates (WASM)]
+  R -->|Opt-in| S2[SAM 2.1 Hiera Tiny embedding and mask candidates (WebGPU)]
   S --> T[Mask filtering and selection]
   S2 --> T
-  P --> T[Detailed or Simplified line-art extraction]
-  T --> U[Label-guided line hierarchy]
-  T --> U
-  J --> V[Millimetre tactile layout]
+  P --> U[Detailed or Simplified line-art extraction]
+  T --> V[Label-guided line hierarchy]
   U --> V
-  V --> W[Braille, keys, textures, knockouts]
-  W --> X[Automated guideline checks]
-  X --> Y[Transcriber review and correction]
-  Y --> Z[Editable layered SVG / key page / print-PDF / STL]
-  Z --> AA[Optional Inkscape or other SVG editor: manual correction and QC]
-  AA --> AB[Physical proof and tactile QA]
+  J --> W[Millimetre tactile layout]
+  V --> W
+  W --> X[Braille, keys, textures, knockouts]
+  X --> Y[Automated guideline checks]
+  Y --> Z[Transcriber review and correction]
+  Z --> AA[Editable layered SVG / key page / print-PDF / STL]
+  AA --> AB[Optional Inkscape or other SVG editor: manual correction and QC]
+  AB --> AC[Physical proof and tactile QA]
 ```
 
 ## 1. Input normalization

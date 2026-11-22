@@ -35,7 +35,9 @@ flowchart TD
     C --> D["Label grouping and text correction"]
     D --> E["Leader-line detection and tracing"]
     E --> F["Point prompts from leader tips or in-figure labels"]
-    F --> G["SlimSAM segmentation<br/>named diagram parts"]
+    F --> G{"Segmentation backend"}
+    G -->|Default| S["SlimSAM segmentation<br/>WASM"]
+    G -->|Opt-in checkbox| S2["SAM 2.1 Hiera Tiny<br/>WebGPU"]
     B --> H["Foreground and contour analysis"]
     S --> I["Label-guided line hierarchy"]
     S2 --> I

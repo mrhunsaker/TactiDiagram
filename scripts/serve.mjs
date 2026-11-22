@@ -24,6 +24,30 @@ const types = {
 };
 
 createServer(async (req, res) => {
+  if (req.method === 'POST' && new URL(req.url, 'http://localhost').pathname === '/__debug/log') {
+    let body = '';
+    req.setEncoding('utf8');
+    req.on('data', (chunk) => {
+      body += chunk;
+      if (body.length > 65536) req.destroy();
+    });
+    req.on('end', () => {
+      try {
+        const entry = JSON.parse(body);
+        const level = ['debug', 'info', 'warn', 'error'].includes(entry.level) ? entry.level : 'info';
+        const prefix = `[browser:${level}] ${entry.time || new Date().toISOString()} ${entry.page || ''}`;
+        const output = JSON.stringify(entry.detail ?? []);
+        console[level === 'debug' ? 'log' : level](prefix, output);
+        res.writeHead(204);
+        res.end();
+      } catch (error) {
+        console.warn('[browser:log] Invalid diagnostic payload:', error.message);
+        res.writeHead(400);
+        res.end('invalid log payload');
+      }
+    });
+    return;
+  }
   try {
     let p = normalize(
       decodeURIComponent(new URL(req.url, 'http://localhost').pathname)

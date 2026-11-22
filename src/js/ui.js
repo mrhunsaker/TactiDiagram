@@ -20,25 +20,52 @@ async function showRelief() {
   }
 }
 
+// Forward browser diagnostics to the local development server terminal.
+const browserLogLevel = new URLSearchParams(location.search).get('log') || 'info';
+const logLevels = { debug: 10, info: 20, warn: 30, error: 40 };
+function sendTerminalLog(level, args) {
+  if ((logLevels[level] ?? 20) < (logLevels[browserLogLevel] ?? 20)) return;
+  const detail = args.map((value) => {
+    if (value instanceof Error) return { name: value.name, message: value.message, stack: value.stack };
+    try { return JSON.parse(JSON.stringify(value)); } catch { return String(value); }
+  });
+  fetch('/__debug/log', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ level, detail, page: location.pathname + location.search, time: new Date().toISOString() }),
+    keepalive: true,
+  }).catch(() => {});
+}
+for (const level of ['debug', 'info', 'warn', 'error']) {
+  const original = console[level]?.bind(console);
+  if (!original) continue;
+  console[level] = (...args) => {
+    original(...args);
+    sendTerminalLog(level, args);
+  };
+}
+window.addEventListener('error', (event) => {
+  sendTerminalLog('error', [event.message, { filename: event.filename, line: event.lineno, column: event.colno, error: event.error }]);
+});
+window.addEventListener('unhandledrejection', (event) => sendTerminalLog('error', ['Unhandled promise rejection', event.reason]));
+
 const $ = (s) => document.querySelector(s);
 const state = { imageData: null, sourceImageData: null, original: null, analysis: null, layout: null, check: null, name: 'diagram', busy: false, mode: 'tactile', sensitivity: DEFAULT_TRACING_SENSITIVITY };
 const MAX_SIDE = 1400; // keep in-browser inference fast
 const PAL = ['#e6194b', '#3cb44b', '#0082c8', '#f58230', '#911eb4', '#2fa8a8', '#f032e6', '#7f9d1f', '#008080', '#aa6e28', '#5a5aff', '#c0392b'];
 
 // ---------- samples ----------
-const DEMO_ORDER = ['heart', 'volcano', 'animal-cell', 'mitochondrion', 'tooth', 'ear', 'earth-layers', 'flower', 'eye'];
 const samples = await fetch('samples/samples.json').then((r) => r.json()).catch(() => []);
 const byId = Object.fromEntries(samples.map((s) => [s.id, s]));
 const grid = $('#samples');
 const shortTitle = (t) => t.replace(/^(Diagram of the |Schematic diagram of the )/i, '').replace(/^./, (c) => c.toUpperCase());
-for (const id of DEMO_ORDER) {
-  const s = byId[id]; if (!s) continue;
+for (const s of samples) {
   const b = document.createElement('button');
-  b.className = 'sample'; b.type = 'button'; b.dataset.id = id;
+  b.className = 'sample'; b.type = 'button'; b.dataset.id = s.id;
   b.setAttribute('role', 'listitem'); b.setAttribute('aria-pressed', 'false');
   b.innerHTML = `<img src="samples/${s.file}" alt="" loading="lazy"><span>${shortTitle(s.title)}</span>`;
   b.title = `${s.title} — ${s.author}, ${s.license}`;
-  b.onclick = () => runSample(id);
+  b.onclick = () => runSample(s.id);
   grid.appendChild(b);
 }
 function runSample(id) {
@@ -50,20 +77,22 @@ $('#try-heart').onclick = () => runSample('heart');
 
 // ---------- input ----------
 const drop = $('#drop'), file = $('#file');
-drop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); file.click(); } });
-file.addEventListener('change', () => file.files[0] && runFromFile(file.files[0]));
+file.addEventListener('change', () => { if (file.files[0]) runFromFile(file.files[0]); file.value = ''; });
+$('#browse-file').addEventListener('click', () => file.click());
 ['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));
 ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
 drop.addEventListener('drop', (e) => { const f = e.dataTransfer.files[0]; if (f) runFromFile(f); });
 
 function runFromFile(f) {
-  if (!/^image\/(png|jpeg|webp)$/.test(f.type)) return setStatus('Please choose a PNG, JPG or WebP image.', true);
+  const ext = f.name.split('.').pop()?.toLowerCase();
+  const supported = /^image\/(png|jpeg|webp)$/.test(f.type) || ['png', 'jpg', 'jpeg', 'webp'].includes(ext);
+  if (!supported) return setStatus('Please choose a PNG, JPG or WebP image.', true);
   if (f.size > 15 * 1024 * 1024) return setStatus('That image is over 15 MB. Please use a smaller file.', true);
   grid.querySelectorAll('.sample').forEach((x) => x.setAttribute('aria-pressed', 'false'));
-  runFromURL(URL.createObjectURL(f), '', f.name.replace(/\.[^.]+$/, ''));
+  runFromURL(URL.createObjectURL(f), '', f.name.replace(/\.[^.]+$/, ''), true);
 }
 
-async function runFromURL(url, title, name) {
+async function runFromURL(url, title, name, revokeUrl = false) {
   if (state.busy) return;
   try {
     const img = new Image(); img.src = url; await img.decode();
@@ -78,6 +107,8 @@ async function runFromURL(url, title, name) {
   } catch (e) {
     console.error(e);
     setStatus('Could not read that image. ' + (e.message || ''), true);
+  } finally {
+    if (revokeUrl) URL.revokeObjectURL(url);
   }
 }
 
@@ -439,7 +470,8 @@ const params = new URLSearchParams(location.search);
 if (params.get('sam') === 'sam2') $('#opt-sam21').checked = true;
 const deep = params.get('sample');
 if (deep && byId[deep]) {
-  if (DEMO_ORDER.includes(deep)) runSample(deep);
-  else runFromURL(`samples/${byId[deep].file}`, byId[deep].title, deep);
+  runSample(deep);
+} else {
+  runSample('heart');
 }
 window.__touchsight = state; // read by scripts/eval.mjs

@@ -141,7 +141,7 @@ function neuBuild() {
   if (!isDir(distRoot)) throw new Error('Neutralino did not create ' + distRoot);
   const files = walk(distRoot);
   const resources = files.find((path) => basename(path) === 'resources.neu');
-  const binaryPattern = target === 'win' ? /win_x64\\.exe$/i : /linux_x64$/i;
+  const binaryPattern = target === 'win' ? /win_x64\.exe$/i : /linux_x64$/i;
   const binary = files.find((path) => binaryPattern.test(basename(path)));
   if (!binary || !resources) {
     throw new Error('Could not find target x86_64 binary and resources.neu under ' + distRoot +
@@ -180,7 +180,7 @@ function resolveAppImageTool() {
   const r = spawnSync('curl', ['-fL', '-o', cached, url], { stdio: 'inherit' });
   if (r.status !== 0 || !existsSync(cached)) {
     console.error('Could not download appimagetool. Set APPIMAGETOOL to a local copy and re-run.');
-    process.exit(1);
+    throw new Error('Could not download appimagetool. Set APPIMAGETOOL to a local copy and re-run.');
   }
   return cached;
 }

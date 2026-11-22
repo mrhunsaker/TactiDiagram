@@ -17,6 +17,7 @@
     "vendor": "node scripts/vendor.mjs",
     "serve": "node scripts/serve.mjs",
     "desktop": "node scripts/desktop.mjs",
+    "package:desktop": "node scripts/package.mjs",
     "eval": "node scripts/eval.mjs",
     "compare-segmentation": "node scripts/compare-segmentation.mjs"
   },

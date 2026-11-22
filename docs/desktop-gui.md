@@ -82,6 +82,64 @@ than Chromium. If a transcriber relies on a specific browser's assistive
 technology integration, running the app in that browser remains fully
 supported; the Neutralino window is an option, not a replacement.
 
+## Packaging a distributable desktop app
+
+The Neutralino shell can also be packaged into real, double-clickable
+distributables - no Node.js required on the target machine, and the packaged
+app serves its own resources instead of depending on localhost:5173.
+
+```bash
+npm ci
+npx neu update                  # once per machine
+npm run package:desktop         # linux -> AppImage, windows -> zipped exe
+```
+
+`scripts/package.mjs`:
+
+1. Runs `npm run vendor` so the runtime asset bundle is complete.
+2. Stages `src/` (except `src/dev/`) into `desktop/neutralino/resources/`.
+3. Rewrites the Neutralino configuration for a standalone build
+   (`enableServer: true`, `url: "/"`), then runs `neu build --release`.
+4. Assembles the artifacts in `dist/`:
+   - **Linux:** `TouchSight-NG-x86_64.AppImage`, built with `appimagetool`
+     (downloaded on first run; executed with `--appimage-extract-and-run` so
+     FUSE is not required). The AppImage includes an `AppRun`, a
+     `touchsight-ng.desktop` entry and the app icon, so it can be marked
+     executable and launched directly or integrated into application menus
+     with an AppImage launcher.
+   - **Windows:** `TouchSight-NG-win-x64.zip` containing
+     `touchsight-ng.exe` + `resources.neu` (keep the two files together).
+     When `packaging/icon.ico` exists and `rcedit` is installed, the
+     application icon is embedded in the exe, so Explorer and the Start menu
+     show TouchSight-NG's icon after extraction or shortcut creation.
+
+### App icon
+
+`packaging/icon.svg` is the icon source of truth. The CI workflow rasterizes
+it; locally you can generate `packaging/icon.png` with ImageMagick
+(`convert -background none -density 300 packaging/icon.svg -resize 256x256 packaging/icon.png`)
+and, on Windows, `packaging/icon.ico` with
+`npm i --no-save sharp png-to-ico && node scripts/win-icon.cjs`.
+Without an icon, the package still builds; the exe keeps the stock
+Neutralino icon and the window keeps no taskbar icon file.
+
+### CI builds
+
+`.github/workflows/desktop-packaging.yml` builds both artifacts on
+`workflow_dispatch` and on `v*` tag pushes, uploads them as workflow
+artifacts, and attaches them to the matching GitHub release.
+
+### Limitations
+
+- Windows distribution is a zip, not a signed installer; Windows SmartScreen
+  will warn about unsigned executables, and code signing (a certificate plus
+  eventually an MSIX/NSIS installer) is a separate, later step.
+- The AppImage is x86_64 only; aarch64 builds would need ARM Neutralino
+  binaries and `aarch64` `appimagetool`.
+- The packaged app has the same security posture as the browser app
+  (`enableNativeAPI: false`); it can reach the network the same way the
+  web app does.
+
 ## If you later want an installable desktop app: Tauri
 
 Neutralino is intentionally minimal: no packaging, signing, or auto-update

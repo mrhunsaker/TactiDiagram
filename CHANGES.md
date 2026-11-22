@@ -17,6 +17,13 @@ All notable changes to TouchSight-NG are documented in this file. The format is 
   code is excluded from CodeQL scanning.
 
 ### Added
+- Desktop packaging: `npm run package:desktop` (`scripts/package.mjs`)
+  builds the existing Neutralino shell into distributable artifacts - an
+  AppImage (`TouchSight-NG-x86_64.AppImage`) on Linux and a zipped,
+  icon-embedded `touchsight-ng.exe` bundle on Windows, both serving the app
+  without Node.js. A new `packaging/icon.svg` provides the app icon, and
+  `.github/workflows/desktop-packaging.yml` builds both artifacts on
+  `workflow_dispatch` and attaches them to `v*` tag releases.
 - Explicit start: loading an image or sample and changing options no longer
   starts processing on its own. A "Start analysis" button in the Output
   options panel begins the pipeline when the user is ready; after a run, the

@@ -57,5 +57,6 @@ nav:
   - Project:
       - Evaluation and benchmarks: evaluation.md
       - Deployment (GitHub Pages): deployment.md
+      - Desktop app and packaging: desktop-gui.md
       - Contributing: contributing.md
       - Changelog: changelog.md

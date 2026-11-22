@@ -355,10 +355,14 @@ async function run(input = {}) {
 
 async function showPrecomputed(id) {
   try {
-    const svg = await fetch(`precomputed/${id}.svg`).then((r) => (r.ok ? r.text() : null));
-    if (!svg) return false;
+    // Render the precomputed SVG as an image, never as inline markup: fetched
+    // document text must not run as active HTML inside this page.
+    const img = new Image();
+    img.alt = 'Tactile graphic computed earlier with the same pipeline';
+    img.src = assetURL(`precomputed/${encodeURIComponent(id)}.svg`);
+    await img.decode();
     $('#views').hidden = false;
-    $('#tactile').innerHTML = svg;
+    $('#tactile').replaceChildren(img);
     return true;
   } catch { return false; }
 }
@@ -617,7 +621,10 @@ $('#dl-stl').onclick = async () => {
 $('#dl-svg').onclick = () => saveAs(`${state.name}-tactile-editable.svg`, renderTactile(state.layout));
 $('#dl-key').onclick = () => saveAs(`${state.name}-key.svg`, renderKeyPage(state.layout, { preview: true }));
 function printHTML(L, pages) {
-  return `<!doctype html><title>${state.name} — tactile</title><style>@page{size:${L.pageW}mm ${L.pageH}mm;margin:0}body{margin:0}svg{display:block;width:${L.pageW}mm;height:${L.pageH}mm;page-break-after:always}</style>${pages.join('')}<script>onload=()=>print()<\/script>`;
+  // The document is written into a fresh browsing context (or a temp file), so
+  // its markup must contain no user-controlled data, such as the diagram name.
+  // The title is set safely via document.title after the document loads.
+  return `<!doctype html><title>TouchSight tactile graphic</title><style>@page{size:${L.pageW}mm ${L.pageH}mm;margin:0}body{margin:0}svg{display:block;width:${L.pageW}mm;height:${L.pageH}mm;page-break-after:always}</style>${pages.join('')}<script>onload=()=>print()<\/script>`;
 }
 $('#print').onclick = async () => {
   const L = state.layout;
@@ -630,6 +637,7 @@ $('#print').onclick = async () => {
     if (!w) return setStatus('Allow pop-ups to print.', true);
     w.document.write(html);
     w.document.close();
+    w.document.title = state.name; // safe textContent-style assignment
     return;
   }
   // Desktop: the WebView blocks window.open (pop-up blocker), so write the print

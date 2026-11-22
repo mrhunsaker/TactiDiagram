@@ -4,6 +4,7 @@
 export async function embedImage(sam, imageData) {
   const { T, model, processor } = sam;
   const raw = new T.RawImage(imageData.data, imageData.width, imageData.height, 4).rgb();
+  if (sam.backend === 'sam2') return { raw, inputs: await processor(raw), width: imageData.width, height: imageData.height, imageEmbeddings: null };
   const inputs = await processor(raw);
   const embeddings = await model.get_image_embeddings(inputs);
   return { inputs, embeddings, width: imageData.width, height: imageData.height };
@@ -13,6 +14,17 @@ export async function embedImage(sam, imageData) {
 // `positives` is a list of [x, y] image points that should all be inside the part.
 export async function segmentPoint(sam, emb, positives, { minFrac = 0.0008, maxFrac = 0.45, negatives = [] } = {}) {
   const { T, model, processor } = sam;
+  if (sam.backend === 'sam2') {
+    const pts=[...positives,...negatives], pointLabels=[...positives.map(()=>1),...negatives.map(()=>0)];
+    const prompt=await processor(null,{input_points:[[pts]],input_labels:[[pointLabels]],original_sizes:emb.inputs.original_sizes});
+    const inputs=emb.imageEmbeddings?{...prompt,image_embeddings:emb.imageEmbeddings}:{...emb.inputs,...prompt};
+    const out=await model(inputs); emb.imageEmbeddings ??= out.image_embeddings;
+    const masks=await processor.post_process_masks(out.pred_masks,emb.inputs.original_sizes);
+    const dims=masks[0].dims,plane=emb.width*emb.height,count=dims[dims.length-3]||3,data=masks[0].data,scores=out.iou_scores.data,cands=[];
+    for(let k=0;k<count;k++){const d=data.subarray(k*plane,(k+1)*plane);let area=0;for(let i=0;i<plane;i++)area+=d[i]>0?1:0;const frac=area/plane;if(frac>=minFrac&&frac<=maxFrac)cands.push({data:d,area,score:scores[k]??0});}
+    if(!cands.length)return null;const top=Math.max(...cands.map(x=>x.score)),best=cands.filter(x=>x.score>=top-0.06).sort((a,b)=>a.area-b.area)[0];
+    const mask=new Uint8Array(plane);for(let i=0;i<plane;i++)mask[i]=best.data[i]>0?1:0;return{mask,score:best.score,area:best.area};
+  }
   const [rh, rw] = emb.inputs.reshaped_input_sizes[0];
   const sx = rw / emb.width, sy = rh / emb.height;
   const pts = [...positives, ...negatives].map(([x, y]) => [x * sx, y * sy]);

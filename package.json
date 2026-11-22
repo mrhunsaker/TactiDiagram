@@ -17,7 +17,8 @@
     "vendor": "node scripts/vendor.mjs",
     "serve": "node scripts/serve.mjs",
     "desktop": "node scripts/desktop.mjs",
-    "eval": "node scripts/eval.mjs"
+    "eval": "node scripts/eval.mjs",
+    "compare-segmentation": "node scripts/compare-segmentation.mjs"
   },
   "license": "GPL-3.0-or-later",
   "dependencies": {

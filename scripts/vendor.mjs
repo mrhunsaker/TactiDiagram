@@ -100,6 +100,11 @@ for (const f of ['config.json', 'preprocessor_config.json', 'onnx/vision_encoder
   await fetchTo(hf + f, join(root, 'src', 'models', 'Xenova', 'slimsam-77-uniform', f), `SlimSAM model asset: ${f}`);
 }
 
+// Optional SAM 2.1 Hiera Tiny ONNX model (loaded only when selected in the UI).
+section('8/8 — Optional SAM 2.1 Hiera Tiny segmentation model','Experimental WebGPU backend. Stage the pinned ONNX model and its external tensor data locally; the browser does not load it unless selected.');
+const sam2='https://huggingface.co/onnx-community/sam2.1-hiera-tiny-ONNX/resolve/814a066/';
+for(const f of ['config.json','preprocessor_config.json','processor_config.json','onnx/vision_encoder_fp16.onnx','onnx/vision_encoder_fp16.onnx_data','onnx/prompt_encoder_mask_decoder_fp16.onnx','onnx/prompt_encoder_mask_decoder_fp16.onnx_data']) await fetchTo(sam2+f,join(root,'src','models','onnx-community','sam2.1-hiera-tiny-ONNX',f),`SAM 2.1 Hiera Tiny asset: ${f}`);
+
 // PaddleOCR text detector + English recognizer (ONNX conversions by RapidOCR, Apache-2.0),
 // run by src/js/paddle.js on the WebGPU build of ORT, which loads the asyncify WASM above.
 console.log('');

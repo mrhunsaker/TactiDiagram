@@ -1,110 +1,30 @@
-// Paired SlimSAM / SAM 2.1 diagnostic run. Reference-mask accuracy is reported only
-// when reviewed annotations are supplied; cross-model agreement is not ground truth.
 import { chromium } from 'playwright';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { basename } from 'node:path';
-
-const base = process.env.BASE || 'http://localhost:5173';
-const samples = JSON.parse(await (await import('node:fs/promises')).readFile('src/samples/samples.json', 'utf8'));
-const selected = process.argv.slice(2);
-const chosen = selected.length ? samples.filter(s => selected.includes(s.id)) : samples;
-const out = 'eval-out/segmentation-comparison';
-await mkdir(out, { recursive: true });
-const browser = await chromium.launch();
-const results = [];
-const csv = ['sample,backend,status,labels,mask_count,mean_score,mean_area_fraction,load_ms,embed_ms,segment_ms,wall_ms,downloaded_bytes'];
-const enc = (x) => (x ?? '').replaceAll('"','""');
-
-async function run(sample, backend) {
-  const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
-  let downloaded = 0;
-  page.on('response', async response => {
-    try { if (response.request().resourceType() === 'fetch' || response.request().resourceType() === 'xhr') {
-      const h = await response.allHeaders(); downloaded += Number(h['content-length'] || 0);
-    }} catch {}
-  });
-  const started = Date.now();
-  try {
-    await page.goto(`${base}/?sample=${encodeURIComponent(sample.id)}&sam=${backend === 'sam2' ? 'sam2' : 'slimsam'}`);
-    await page.waitForFunction(() => /Done in|Something went wrong|could not run/.test(document.querySelector('#status')?.textContent || ''), null, { timeout: 360000 });
-    const data = await page.evaluate(() => {
-      const s = window.__touchsight, a = s?.analysis;
-      if (!a) return { error: document.querySelector('#status')?.textContent || 'No analysis state' };
-      const labels = a.labels.map((L, i) => {
-        const mask = L.mask;
-        let area = 0, png = null;
-        if (mask) {
-          for (let j = 0; j < mask.length; j++) area += mask[j] ? 1 : 0;
-          const c = document.createElement('canvas'); c.width = a.W; c.height = a.H;
-          const ctx = c.getContext('2d'), im = ctx.createImageData(a.W, a.H);
-          for (let j = 0; j < mask.length; j++) { const v = mask[j] ? 255 : 0; const k = j * 4; im.data[k]=im.data[k+1]=im.data[k+2]=v; im.data[k+3]=255; }
-          ctx.putImageData(im, 0, 0); png = c.toDataURL('image/png').split(',')[1];
-        }
-        return { index:i, text:L.text, score:L.maskScore ?? 0, area, areaFraction: area/(a.W*a.H), png };
-      });
-      return { width:a.W,height:a.H,backend:a.segmentationBackend,device:a.device,timings:a.timings,labels,
-        status:document.querySelector('#status')?.textContent || '',
-        memoryBytes:performance.memory?.usedJSHeapSize ?? null };
-    });
-    for (const label of data.labels || []) if (label.png) {
-      await writeFile(`${out}/${sample.id}-${backend}-${String(label.index).padStart(2,'0')}.png`, Buffer.from(label.png,'base64'));
-      delete label.png;
-    }
-    const row = { sample:sample.id,backend,wallMs:Date.now()-started,downloadedBytes:downloaded,...data };
-    results.push(row);
-    csv.push([sample.id,backend,data.error?'error':'ok',(data.labels||[]).length,(data.labels||[]).filter(x=>x.area).length,
-      mean((data.labels||[]).map(x=>x.score)),mean((data.labels||[]).map(x=>x.areaFraction)),
-      data.timings?.load ?? '',data.timings?.sam_embed ?? '',data.timings?.sam_parts ?? '',row.wallMs,downloaded].join(','));
-    console.log(JSON.stringify({sample:sample.id,backend,status:data.error||'ok',labels:(data.labels||[]).length,
-      meanScore:mean((data.labels||[]).map(x=>x.score)),timings:data.timings,wallMs:row.wallMs,downloadedBytes:downloaded}));
-  } catch (error) {
-    const row={sample:sample.id,backend,error:String(error?.stack||error),wallMs:Date.now()-started};
-    results.push(row); csv.push([sample.id,backend,'error'].join(',')); console.error(JSON.stringify(row));
-  } finally { await page.close(); }
-}
-function mean(xs){return xs.length?xs.reduce((a,b)=>a+b,0)/xs.length:null;}
-
-for (const sample of chosen) {
-  await run(sample,'slimsam');
-  await run(sample,'sam2');
-}
-
-// Compare paired masks for corresponding labels. This is agreement, not accuracy.
-const byKey = new Map(results.map(r=>[r.sample+'|'+r.backend,r]));
-for (const sample of chosen) {
-  const a=byKey.get(sample.id+'|slimsam'), b=byKey.get(sample.id+'|sam2');
-  if (!a?.labels || !b?.labels || a.error || b.error) continue;
-  const paired=[];
-  for (const x of a.labels) {
-    const y=b.labels.find(z=>z.text.trim().toLowerCase()===x.text.trim().toLowerCase());
-    if (!x.area || !y?.area) continue;
-    const px=`${out}/${sample.id}-slimsam-${String(x.index).padStart(2,'0')}.png`;
-    const py=`${out}/${sample.id}-sam2-${String(y.index).padStart(2,'0')}.png`;
-    // Pixel-level overlap is calculated in Chromium to avoid adding a PNG dependency.
-    const page=await browser.newPage();
-    const iou=await page.evaluate(async ([u,v])=>{
-      const load=src=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=src;});
-      const [a,b]=await Promise.all([load(u),load(v)]), c=document.createElement('canvas');c.width=a.width;c.height=a.height;
-      const x=c.getContext('2d');x.drawImage(a,0,0);const p=x.getImageData(0,0,c.width,c.height).data;
-      x.clearRect(0,0,c.width,c.height);x.drawImage(b,0,0);const q=x.getImageData(0,0,c.width,c.height).data;
-      let inter=0,union=0;for(let k=0;k<p.length;k+=4){const A=p[k]>127,B=q[k]>127;if(A&&B)inter++;if(A||B)union++;}
-      return union?inter/union:null;
-    },[await (await import('node:fs/promises')).readFile(px).then(x=>'data:image/png;base64,'+x.toString('base64')),
-       await (await import('node:fs/promises')).readFile(py).then(x=>'data:image/png;base64,'+x.toString('base64'))]);
-    await page.close(); paired.push({label:x.text,iou});
-  }
-  a.modelAgreement=paired;
-  b.modelAgreement=paired;
-}
-await browser.close();
-const summary={generatedAt:new Date().toISOString(),sampleCount:chosen.length,models:{
-  slimsam:'Xenova/slimsam-77-uniform',sam2:'onnx-community/sam2.1-hiera-tiny-ONNX'
-},note:'Mask IoU is paired-model agreement, not ground-truth accuracy. Add manually reviewed reference masks before using IoU/boundary metrics as an accuracy claim.',results};
-await writeFile(`${out}/comparison.json`,JSON.stringify(summary,null,2));
-await writeFile(`${out}/comparison.csv`,csv.join('\n')+'\n');
-const lines=['# Segmentation backend comparison','',summary.note,'','| Sample | Backend | Labels | Masks | Mean score | Mean mask area | Embed ms | Segment ms | Wall ms | Download bytes |','|---|---|---:|---:|---:|---:|---:|---:|---:|---:|'];
-for(const r of results) lines.push(`| ${r.sample} | ${r.backend} | ${r.labels?.length??'—'} | ${r.labels?.filter(x=>x.area).length??'—'} | ${mean((r.labels||[]).map(x=>x.score))?.toFixed(3)??'—'} | ${mean((r.labels||[]).map(x=>x.areaFraction))?.toFixed(4)??'—'} | ${r.timings?.sam_embed??'—'} | ${r.timings?.sam_parts??'—'} | ${r.wallMs??'—'} | ${r.downloadedBytes??'—'} |`);
-lines.push('','## Paired-mask agreement','','IoU values compare corresponding SlimSAM and SAM 2.1 masks by normalized label text. They do not indicate which mask is correct.','');
-for(const r of results.filter(x=>x.modelAgreement)) lines.push(`### ${r.sample}`,...r.modelAgreement.map(x=>`- ${x.label}: IoU ${x.iou?.toFixed(4)??'n/a'}`),'');
-await writeFile(`${out}/comparison.md`,lines.join('\n'));
-console.log(`Wrote ${out}/comparison.json, comparison.csv, comparison.md and per-label PNG masks.`);
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { spawn } from 'node:child_process';
+const base=process.env.BASE||'http://127.0.0.1:5173', samples=JSON.parse(await readFile('src/samples/samples.json','utf8'));
+const ids=process.argv.slice(2), chosen=ids.length?samples.filter(s=>ids.includes(s.id)):samples;
+if(!chosen.length)throw Error('No matching sample IDs.');
+const dir='eval-out/segmentation-comparison';await mkdir(dir,{recursive:true});
+let server;if(!process.env.BASE){server=spawn(process.execPath,['scripts/serve.mjs'],{stdio:['ignore','pipe','inherit']});await new Promise((resolve,reject)=>{const t=setTimeout(()=>reject(Error('Server startup timeout')),15000);server.stdout.on('data',d=>{if(String(d).includes('serving src/')){clearTimeout(t);resolve();}});server.once('error',reject);});}
+const browser=await chromium.launch(),rows=[],mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null,clean=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+async function one(sample,backend){const page=await browser.newPage({viewport:{width:1400,height:1000}}),t=Date.now();try{
+ await page.goto(base+'/?sample='+encodeURIComponent(sample.id)+'&sam='+(backend==='sam2'?'sam2':'slimsam'));
+ await page.waitForFunction(()=>{const s=window.__touchsight,txt=document.querySelector('#status')?.textContent||'';return !!s&&!s.busy&&(!!s.analysis||/could not|failed|went wrong|error/i.test(txt));},null,{timeout:600000});
+ const x=await page.evaluate(()=>{const s=window.__touchsight,a=s?.analysis;if(!a)return{error:document.querySelector('#status')?.textContent||'No analysis result'};const labels=a.labels.map((L,index)=>{if(!L.mask)return{index,text:L.text,score:L.maskScore||0,area:0,bits:null,png:null};const b=new Uint8Array(L.mask.length);let area=0;for(let i=0;i<b.length;i++){b[i]=L.mask[i]?1:0;area+=b[i];}const c=document.createElement('canvas');c.width=a.W;c.height=a.H;const q=c.getContext('2d'),im=q.createImageData(a.W,a.H);for(let i=0;i<b.length;i++){const k=i*4,v=b[i]?255:0;im.data[k]=im.data[k+1]=im.data[k+2]=v;im.data[k+3]=255;}q.putImageData(im,0,0);return{index,text:L.text,score:L.maskScore||0,area,areaFraction:area/(a.W*a.H),bits:btoa(String.fromCharCode(...b)),png:c.toDataURL('image/png')};});const resources=performance.getEntriesByType('resource');return{width:a.W,height:a.H,backend:a.segmentationBackend||'slimsam',device:a.device,timings:a.timings,labels,status:document.querySelector('#status')?.textContent||'',modelTransferBytes:resources.filter(r=>/models\\//i.test(r.name)).reduce((n,r)=>n+(r.transferSize||r.encodedBodySize||0),0),heapBytes:performance.memory?.usedJSHeapSize??null};});
+ if(x.error)throw Error(x.error);if(x.backend!==backend)throw Error('Backend mismatch: expected '+backend+', got '+x.backend);
+ for(const l of x.labels)if(l.png){await writeFile(dir+'/'+sample.id+'-'+backend+'-'+String(l.index).padStart(2,'0')+'.png',Buffer.from(l.png.split(',')[1],'base64'));delete l.png;}
+ const r={sample:sample.id,category:sample.category,backend,wallMs:Date.now()-t,...x};rows.push(r);console.log(JSON.stringify({sample:r.sample,backend,status:'ok',labels:r.labels.length,masks:r.labels.filter(l=>l.area).length,meanScore:mean(r.labels.map(l=>l.score)),timings:r.timings,wallMs:r.wallMs,modelTransferBytes:r.modelTransferBytes,heapBytes:r.heapBytes}));
+ }catch(e){const r={sample:sample.id,category:sample.category,backend,error:String(e?.stack||e),wallMs:Date.now()-t};rows.push(r);console.error(JSON.stringify(r));}finally{await page.close();}}
+try{for(const s of chosen){await one(s,'slimsam');await one(s,'sam2');}}finally{await browser.close();if(server)server.kill();}
+const map=new Map(rows.map(r=>[r.sample+'|'+r.backend,r])),agreement=[];
+for(const s of chosen){const a=map.get(s.id+'|slimsam'),b=map.get(s.id+'|sam2');if(!a?.labels||!b?.labels||a.error||b.error)continue;for(const x of a.labels){const y=b.labels.find(z=>clean(z.text)===clean(x.text));if(!x.bits||!y?.bits)continue;const A=Buffer.from(x.bits,'base64'),B=Buffer.from(y.bits,'base64');let i=0,u=0;for(let k=0;k<Math.min(A.length,B.length);k++){if(A[k]&&B[k])i++;if(A[k]||B[k])u++;}agreement.push({sample:s.id,label:x.text,iou:u?i/u:null,slimsamArea:x.area,sam2Area:y.area});}}
+const assets=[];for(const p of ['vision_encoder_fp16.onnx','vision_encoder_fp16.onnx_data','prompt_encoder_mask_decoder_fp16.onnx','prompt_encoder_mask_decoder_fp16.onnx_data']){const path='src/models/onnx-community/sam2.1-hiera-tiny-ONNX/onnx/'+p;try{assets.push({path,bytes:(await stat(path)).size});}catch{assets.push({path,missing:true});}}
+const result={generatedAt:new Date().toISOString(),sampleCount:chosen.length,models:{slimsam:'Xenova/slimsam-77-uniform',sam2:'onnx-community/sam2.1-hiera-tiny-ONNX'},assets,caveat:'Paired mask IoU is model agreement, not accuracy. Reviewed ground-truth masks are needed for actual IoU, boundary F-score, false inclusion and missed-part rates.',results:rows,pairedMaskAgreement:agreement};
+await writeFile(dir+'/comparison.json',JSON.stringify(result,null,2));
+const cols=['sample','backend','status','labels','masks','mean_score','mean_area_fraction','load_ms','embed_ms','segment_ms','wall_ms','model_transfer_bytes','heap_bytes'],csv=[cols.join(',')],cell=v=>'"'+String(v??'').replaceAll('"','""')+'"';
+for(const r of rows)csv.push([r.sample,r.backend,r.error?'error':'ok',r.labels?.length??'',r.labels?.filter(x=>x.area).length??'',mean(r.labels?.map(x=>x.score)||[])??'',mean(r.labels?.map(x=>x.areaFraction)||[])??'',r.timings?.load??'',r.timings?.sam_embed??'',r.timings?.sam_parts??'',r.wallMs??'',r.modelTransferBytes??'',r.heapBytes??''].map(cell).join(','));
+await writeFile(dir+'/comparison.csv',csv.join('\n')+'\n');
+const md=['# Segmentation comparison','','Paired mask IoU is model agreement, not ground-truth accuracy.','', '| Sample | Backend | Labels | Masks | Mean score | Embed ms | Segment ms | Wall ms | Model transfer bytes |','|---|---|---:|---:|---:|---:|---:|---:|---:|'];
+for(const r of rows)md.push(`| ${r.sample} | ${r.backend} | ${r.labels?.length??'—'} | ${r.labels?.filter(x=>x.area).length??'—'} | ${mean(r.labels?.map(x=>x.score)||[])?.toFixed(3)??'—'} | ${r.timings?.sam_embed??'—'} | ${r.timings?.sam_parts??'—'} | ${r.wallMs??'—'} | ${r.modelTransferBytes??'—'} |`);
+md.push('','## Paired mask agreement','');for(const a of agreement)md.push(`- ${a.sample} / ${a.label}: IoU ${a.iou?.toFixed(4)??'n/a'}`);md.push('','## Model assets','');for(const a of assets)md.push(`- ${a.path}: ${a.bytes??'missing'} bytes`);
+await writeFile(dir+'/comparison.md',md.join('\n')+'\n');console.log('\n'+md.join('\n'));console.log('\nWrote JSON, CSV, Markdown and per-label PNG masks to '+dir);if(rows.some(r=>r.error))process.exitCode=1;

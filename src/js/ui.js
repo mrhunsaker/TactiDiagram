@@ -112,7 +112,7 @@ async function run(input = {}) {
   const previous = { imageData: state.imageData, sourceImageData: state.sourceImageData, original: state.original, analysis: state.analysis, layout: state.layout, check: state.check, name: state.name };
   state.busy = true;
   document.body.setAttribute('aria-busy', 'true');
-  document.querySelectorAll('#opt-autotrace, #opt-indra, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file').forEach((el) => { el.disabled = true; });
+  document.querySelectorAll('#opt-autotrace, #opt-indra, #opt-sam21, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file').forEach((el) => { el.disabled = true; });
   $('#empty').hidden = true;
   showLoading(true);
   setStatus('Working… everything runs on this device.');
@@ -128,6 +128,7 @@ async function run(input = {}) {
     }
     const analysis = await analyze(preparedImageData, { sensitivity: state.sensitivity,
       preferIndra: $('#opt-indra')?.checked ?? false,
+      segmentationBackend: $('#opt-sam21')?.checked ? 'sam2' : 'slimsam',
       onStage: (k, msg) => setStep(k, k === 'engines' ? 'Loading on-device models… (first run only)' : msg),
     });
     state.sourceImageData = sourceImageData;
@@ -434,7 +435,9 @@ $('#print').onclick = () => {
 };
 
 // Deep link: ?sample=heart runs a sample straight away (demos and the eval harness).
-const deep = new URLSearchParams(location.search).get('sample');
+const params = new URLSearchParams(location.search);
+if (params.get('sam') === 'sam2') $('#opt-sam21').checked = true;
+const deep = params.get('sample');
 if (deep && byId[deep]) {
   if (DEMO_ORDER.includes(deep)) runSample(deep);
   else runFromURL(`samples/${byId[deep].file}`, byId[deep].title, deep);

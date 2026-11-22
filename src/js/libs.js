@@ -72,9 +72,10 @@ export function loadOCR(onProgress) {
   return ocrPromise;
 }
 
-let samPromise;
-export function loadSAM() {
-  samPromise ??= (async () => {
+const samPromises = new Map();
+export function loadSAM({ backend = 'slimsam' } = {}) {
+  if (samPromises.has(backend)) return samPromises.get(backend);
+  const promise = (async () => {
     const T = await import(base + 'vendor/transformers/transformers.min.js');
     T.env.allowRemoteModels = false;
     T.env.allowLocalModels = true;
@@ -85,12 +86,21 @@ export function loadSAM() {
     // CPU embed only costs a few seconds for this distilled model.
     const device = 'wasm';
     void hasWebGPU;
+    if (backend === 'sam2') {
+      if (!navigator.gpu || !(await hasWebGPU())) throw new Error('SAM 2.1 requires WebGPU. Uncheck its option to use SlimSAM.');
+      if (typeof T.Sam2Model !== 'function') throw new Error('Installed Transformers.js does not expose Sam2Model.');
+      const id = 'onnx-community/sam2.1-hiera-tiny-ONNX';
+      const model = await T.Sam2Model.from_pretrained(id, { dtype: 'fp16', device: 'webgpu' });
+      const processor = await T.AutoProcessor.from_pretrained(id);
+      return { T, model, processor, device: 'webgpu', backend: 'sam2' };
+    }
     const id = 'Xenova/slimsam-77-uniform';
     const model = await T.SamModel.from_pretrained(id, { dtype: 'fp32', device });
     const processor = await T.AutoProcessor.from_pretrained(id);
-    return { T, model, processor, device };
-  })();
-  return samPromise;
+    return { T, model, processor, device, backend: 'slimsam' };
+  })().catch(error => { samPromises.delete(backend); throw error; });
+  samPromises.set(backend, promise);
+  return promise;
 }
 
 async function hasWebGPU() {

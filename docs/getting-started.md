@@ -5,7 +5,7 @@ GitHub Pages publishes the documentation only. The browser application is run lo
 ## Requirements
 
 - Node.js 24 or newer (npm included).
-- A current desktop browser with JavaScript modules, WebAssembly, and Canvas support.
+- A current desktop browser with JavaScript modules, WebAssembly, and Canvas support. Packaged desktop builds additionally require Microsoft Edge WebView2 Runtime (Windows) or WebKitGTK (Linux); these runtimes are not bundled.
 - WebGL for the optional 3D relief view and STL export.
 - Internet access for dependency installation and initial asset preparation.
 - Enough memory for in-browser OCR, segmentation, and image processing.
@@ -42,7 +42,6 @@ The static server serves the tracked `src/` directory. Its default address is `h
 
 Choose a built-in sample or upload/drop a PNG, JPEG/JPG, or WebP image no larger than 15 MiB. The UI composites transparency onto white and scales the longest side to at most 1,400 pixels.
 
-Set paper and outline style. Leave optional Autotrace, Indra OCR, and SAM 2.1 off for a baseline run; SlimSAM is the default segmentation backend. SAM 2.1 requires a usable WebGPU adapter, not merely a browser that implements the WebGPU API. If the SAM 2.1 option reports that no adapter is available, uncheck it and rerun with SlimSAM. Begin with tracing sensitivity 55. Optionally add a braille title, texture fills, or force letter keys. The processing stages are image/model preparation, OCR, leader detection, segmentation, tactile layout, and guideline checks.
 Loading a sample or your own scan only stages it. Set paper and outline style first, leave optional Autotrace and Indra OCR off for a baseline run, begin with tracing sensitivity 55, then press **Start analysis**. Changing analysis-affecting options (Autotrace, Indra OCR, SAM 2.1) after a run requires pressing the button again; the label shows "Apply settings & re-analyze" when settings differ from the last run. Optionally add a braille title, texture fills, or force letter keys. The processing stages are image/model preparation, OCR, leader detection, segmentation, tactile layout, and guideline checks.
 
 Read [Application controls and options](application-options.md) for the exact effect of every control, tab, review action, and export.
@@ -53,9 +52,11 @@ Correct every detected label against the source. Inspect **What the AI saw** for
 
 Exports are editable tactile SVG, key-page SVG, browser Print/PDF, and STL from the 3D relief tab. For swell paper, print at 100% / actual size, photocopy onto swell paper, and follow the fuser manufacturer's procedure. See [Printing and swell paper](printing.md).
 
-## Optional desktop window
+## Desktop windows and installation
 
-After npm installation and asset preparation:
+Two desktop options are available after npm installation and asset preparation.
+
+**Run from the repository (no installation):**
 
 ```bash
 npx neu update
@@ -63,6 +64,13 @@ npm run desktop
 ```
 
 This downloads Neutralino binaries into the ignored `desktop/neutralino/bin/` directory and opens the same local app in the operating system webview. See [Desktop GUI](desktop-gui.md).
+
+**Or install a packaged build (no Node.js needed on the target machine):**
+
+- **Linux x86_64:** download `TouchSight-NG-x86_64.AppImage` from [Releases](https://github.com/mrhunsaker/touchsight-NG/releases), mark it executable (`chmod +x TouchSight-NG-x86_64.AppImage`), and run it. It ships an application menu entry and launcher icon. A compatible WebKitGTK runtime must be installed by the distribution; the AppImage does not bundle the system webview.
+- **Windows x64:** download `TouchSight-NG-win-x64.zip` from Releases, extract it anywhere, and run `touchsight-ng.exe` (keep `resources.neu` next to it). Microsoft Edge WebView2 Runtime is required. The executable is unsigned, so Windows SmartScreen may warn at first launch.
+
+Packaged builds carry the same version as the `vYYYY.M.D` release tag and the GitHub release they are attached to. See [Desktop app and packaging](desktop-gui.md).
 
 ## Evaluation
 

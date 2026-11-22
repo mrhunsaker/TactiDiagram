@@ -36,7 +36,11 @@ export function loadIndra({ proxy = false } = {}) {
     const meta = metaResponse;
     const vocab = loadVocab(meta);
     const recHeight = Number(meta.rec_height || meta.recHeight || LINE_HEIGHT);
-    if (!Number.isInteger(recHeight) || recHeight < 8) throw new Error('Indra meta.json has an invalid rec_height');
+    const recWindow = Number(meta.rec_window || 1);
+    if (!Number.isInteger(recHeight) || recHeight < 8 || !Number.isInteger(recWindow) || recWindow < 1) {
+      throw new Error('Indra meta.json has invalid rec_height or rec_window');
+    }
+    const recInputHeight = recHeight * recWindow;
     const rec = await ort.InferenceSession.create(recBuf, {
       executionProviders: ['wasm'], graphOptimizationLevel: 'all',
     });
@@ -47,7 +51,7 @@ export function loadIndra({ proxy = false } = {}) {
     for (const name of ['ids', 'conf', 'lengths']) {
       if (!rec.outputNames.includes(name)) throw new Error(`Indra recognizer is missing expected output "${name}"`);
     }
-    return { ort, rec, vocab, recHeight };
+    return { ort, rec, vocab, recHeight, recWindow, recInputHeight };
   })().catch(error => {
     // A failed initialization must not poison subsequent attempts.
     indraPromise = null;
@@ -81,10 +85,12 @@ export async function recognizeTextRegions(imageData, boxes, { cv = window.cv, l
     const xs = pts.map(p => Number(p[0])), ys = pts.map(p => Number(p[1]));
     const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
     const h = Math.max(1, y1 - y0);
+    const verticalPad = (I.recWindow * (1 + 2 * PAD_Y) - 1) / 2;
     const ix0 = Math.floor(x0 - PAD_X * h), ix1 = Math.ceil(x1 + PAD_X * h);
-    const iy0 = Math.floor(y0 - PAD_Y * h), iy1 = Math.ceil(y1 + PAD_Y * h);
+    const iy0 = Math.floor(y0 - verticalPad * h), iy1 = Math.ceil(y1 + verticalPad * h);
     const cw = Math.max(1, ix1 - ix0), ch = Math.max(1, iy1 - iy0);
-    const crop = new Uint8Array(cw * ch).fill(255);
+    const dark = isLightTextOnDark(gray, imageData.width, imageData.height, x0, y0, x1, y1);
+    const crop = new Uint8Array(cw * ch).fill(dark ? 0 : 255);
     const sx0 = Math.max(0, ix0), sx1 = Math.min(imageData.width, ix1);
     const sy0 = Math.max(0, iy0), sy1 = Math.min(imageData.height, iy1);
     for (let y = sy0; y < sy1; y++) {
@@ -92,14 +98,14 @@ export async function recognizeTextRegions(imageData, boxes, { cv = window.cv, l
       const dstOff = (y - iy0) * cw + (sx0 - ix0);
       crop.set(gray.subarray(srcOff + sx0, srcOff + sx1), dstOff);
     }
-    const outW = Math.max(WIDTH_MULTIPLE, Math.min(4096, Math.round(cw * I.recHeight / ch)));
+    const outW = Math.max(WIDTH_MULTIPLE, Math.min(4096, Math.round(cw * I.recInputHeight / ch)));
     const src = cv.matFromArray(ch, cw, cv.CV_8UC1, crop);
     const resized = new cv.Mat();
-    cv.resize(src, resized, new cv.Size(outW, I.recHeight), 0, 0,
-      ch > I.recHeight ? cv.INTER_AREA : cv.INTER_LINEAR);
+    cv.resize(src, resized, new cv.Size(outW, I.recInputHeight), 0, 0,
+      ch > I.recInputHeight ? cv.INTER_AREA : cv.INTER_LINEAR);
     src.delete();
-    const ink = new Float32Array(I.recHeight * outW);
-    for (let p = 0; p < ink.length; p++) ink[p] = 1 - resized.data[p] / 255;
+    const ink = new Float32Array(I.recInputHeight * outW);
+    for (let p = 0; p < ink.length; p++) ink[p] = dark ? resized.data[p] / 255 : 1 - resized.data[p] / 255;
     resized.delete();
     jobs.push({ ink, width: outW, box: { x0, y0, x1, y1 }, cropX: ix0, cropWidth: cw, sourceWidth: imageData.width });
   }
@@ -108,17 +114,17 @@ export async function recognizeTextRegions(imageData, boxes, { cv = window.cv, l
   for (let i = 0; i < jobs.length; i += REC_BATCH) {
     const batch = jobs.slice(i, i + REC_BATCH);
     const paddedWidth = Math.ceil(Math.max(...batch.map(j => j.width)) / WIDTH_MULTIPLE) * WIDTH_MULTIPLE;
-    const x = new Float32Array(batch.length * I.recHeight * paddedWidth);
+    const x = new Float32Array(batch.length * I.recInputHeight * paddedWidth);
     const widths = new BigInt64Array(batch.length);
     batch.forEach((job, n) => {
       widths[n] = BigInt(job.width);
-      const plane = I.recHeight * paddedWidth;
-      for (let y = 0; y < I.recHeight; y++) {
+      const plane = I.recInputHeight * paddedWidth;
+      for (let y = 0; y < I.recInputHeight; y++) {
         x.set(job.ink.subarray(y * job.width, (y + 1) * job.width), n * plane + y * paddedWidth);
       }
     });
     const out = await I.rec.run({
-      x: new I.ort.Tensor('float32', x, [batch.length, 1, I.recHeight, paddedWidth]),
+      x: new I.ort.Tensor('float32', x, [batch.length, 1, I.recInputHeight, paddedWidth]),
       widths: new I.ort.Tensor('int64', widths, [batch.length]),
     });
     const ids = out.ids, conf = out.conf, lengths = out.lengths;
@@ -163,6 +169,23 @@ export async function recognizeTextRegions(imageData, boxes, { cv = window.cv, l
     };
   }).filter(Boolean);
   return level === 'line' ? lines : linesToWords(lines);
+}
+
+function isLightTextOnDark(gray, width, height, x0, y0, x1, y1) {
+  const left = Math.max(0, Math.floor(x0)), right = Math.min(width, Math.ceil(x1));
+  const top = Math.max(0, Math.floor(y0)), bottom = Math.min(height, Math.ceil(y1));
+  if (right <= left || bottom <= top) return false;
+  const values = [];
+  // Subsample deterministically; percentile estimates are sufficient for the
+  // upstream light-on-dark decision and avoid sorting every pixel in large boxes.
+  const step = Math.max(1, Math.floor(Math.sqrt(((right-left)*(bottom-top))/4096)));
+  for (let y = top; y < bottom; y += step) for (let x = left; x < right; x += step) {
+    values.push(gray[y * width + x]);
+  }
+  values.sort((a,b) => a-b);
+  const percentile = q => values[Math.min(values.length-1, Math.floor(q * (values.length-1)))];
+  const lo = percentile(0.02), med = percentile(0.5), hi = percentile(0.98);
+  return hi - med > 2 * (med - lo) + 8;
 }
 
 function grayscalePage(imageData) {

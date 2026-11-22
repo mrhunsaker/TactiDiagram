@@ -36,6 +36,15 @@
         <input type="file" id="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" hidden>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0-4 4m4-4 4 4M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
         <span id="upload-help"><strong>Upload a labeled diagram</strong><br><small>Click here or Browse files, or drop a PNG / JPG here</small></span>
+        <div class="upload-preview" id="upload-preview" hidden aria-live="polite">
+          <img id="upload-preview-image" alt="Preview of the selected upload">
+          <div class="upload-preview-copy">
+            <strong id="upload-preview-name"></strong>
+            <small id="upload-preview-meta"></small>
+            <span class="upload-ready">Ready for analysis</span>
+          </div>
+          <button class="upload-clear" id="upload-clear" type="button" aria-label="Remove selected upload" title="Remove selected upload">×</button>
+        </div>
         <button class="btn small" id="browse-file" type="button">Browse files</button>
       </div>
       <p class="hint">Best with labeled diagrams that use leader lines: biology, earth science, simple physics.</p>

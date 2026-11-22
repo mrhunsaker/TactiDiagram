@@ -26,14 +26,16 @@ that a full Electron bundle would carry is downloaded or installed, and no
 Google services, updater, or telemetry components are involved because no
 Chromium is shipped at all.
 
-TouchSight-NG's own static server (scripts/serve.mjs) still serves `src/` on
-http://localhost:5173/. The Neutralino window is simply a shell pointed at that
-local URL; all application code, models, and data stay on the user's machine.
+For repository development, scripts/serve.mjs serves http://localhost:5173/
+and the npm run desktop launcher points Neutralino at that server. Packaged
+builds instead embed the application in resources.neu and enable Neutralino's
+own resource server; they do not start or depend on the development server.
 
 ## Setup
 
-Requirements are the same as running the app in a browser (Node.js 24+), plus
-one small dev dependency that is already declared in `package.json`.
+Repository-launched development requires Node.js 24+, npm dependencies,
+vendored browser assets, and the platform webview. Packaged end users do not
+need Node.js or npm, but still need WebView2 (Windows) or WebKitGTK (Linux).
 
 1. Install dependencies and vendor the model assets as usual:
 
@@ -97,7 +99,8 @@ npm run package:desktop         # linux -> AppImage, windows -> zipped exe
 ```
 
 The version can be stamped into the build so it matches the git tag and the
-GitHub release (the release workflow does this automatically):
+GitHub release. The release workflow verifies that `package.json` matches
+the tag-derived version before building:
 
 ```bash
 node scripts/package.mjs --target linux --version 2026.11.22 --out dist
@@ -106,10 +109,14 @@ node scripts/package.mjs --target linux --version 2026.11.22 --out dist
 `scripts/package.mjs`:
 
 1. Runs `npm run vendor` so the runtime asset bundle is complete.
-2. Stages `src/` (except `src/dev/`) into `desktop/neutralino/resources/`.
+2. Backs up the existing Neutralino resources directory, stages `src/`
+   (except `src/dev/`) into `desktop/neutralino/resources/`, then restores
+   the original resources and development configuration even if packaging fails.
 3. Rewrites the Neutralino configuration for a standalone build
    (`enableServer: true`, `url: "/"`), then runs `neu build --release`.
-4. Assembles the artifacts in `dist/`:
+   It locates the target x86_64 binary and `resources.neu` by filename anywhere
+   under Neutralino's `dist/` output and verifies they are siblings.
+4. Assembles artifacts in the selected output directory (default `dist/`):
    - **Linux:** `TouchSight-NG-x86_64.AppImage`, built with `appimagetool`
      (downloaded on first run; executed with `--appimage-extract-and-run` so
      FUSE is not required). The AppImage includes an `AppRun`, a
@@ -134,13 +141,14 @@ Neutralino icon, and the window has no custom taskbar icon.
 
 ### CI builds
 
-`.github/workflows/desktop-packaging.yml` runs **only on release tags**; it
-does not build on every push and has no manual dispatch. The tag must follow
+`.github/workflows/desktop-packaging.yml` validates packaging scripts and
+builds the documentation on relevant pull requests. Desktop artifacts are
+built only on release tags; there is no manual release dispatch. The tag must follow
 the `vYYYY.M.D` format (for example `v2026.11.22`); anything else fails the
 build. On a matching tag the workflow:
 
-1. validates the tag and derives the version (`v2026.11.22` -> `2026.11.22`,
-   which is a valid SemVer triple);
+1. validates the tag format and verifies `package.json` matches the tag-derived
+   version (`v2026.11.22` -> `2026.11.22`);
 2. stamps that version into the packaged builds (`neutralino.config.json`
    and `resources/version.json`);
 3. builds the Linux AppImage and Windows ZIP independently, uploads both as

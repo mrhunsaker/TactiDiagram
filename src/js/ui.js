@@ -441,7 +441,8 @@ const params = new URLSearchParams(location.search);
 if (params.get('sam') === 'sam2') $('#opt-sam21').checked = true;
 const deep = params.get('sample');
 if (deep && byId[deep]) {
-  if (DEMO_ORDER.includes(deep)) runSample(deep);
-  else runFromURL(`samples/${byId[deep].file}`, byId[deep].title, deep);
+  runSample(deep);
+} else {
+  runSample('heart');
 }
 window.__touchsight = state; // read by scripts/eval.mjs

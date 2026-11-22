@@ -105,34 +105,51 @@ export async function analyze(imageData, { onStage = () => {}, sensitivity = DEF
   const { lineArt, regions, edges } = await timed('lineart', () => lineArtMask(cv, src, labels, fg, sensitivity));
 
   onStage('segment', 'Segmenting each labeled part…');
-  const emb = await timed('sam_embed', () => embedImage(sam, imageData));
   const fgDil = dilateMask(cv, fg, W, H, 5);
-  await timed('sam_parts', async () => {
-    for (const L of labels) {
-      let pts;
-      if (L.leader) {
-        const { x1, y1, x2, y2 } = L.leader;
-        const d = Math.hypot(x2 - x1, y2 - y1) || 1;
-        const nudge = Math.max(3, 0.004 * Math.hypot(W, H)); // step just inside the part
-        const cand = [[x2 + ((x2 - x1) / d) * nudge, y2 + ((y2 - y1) / d) * nudge], [x2, y2]];
-        pts = [cand.find(([x, y]) => fgAt(fg, W, H, x, y)) ?? nearestFg(fg, W, H, x2, y2, 14) ?? cand[0]];
-      } else {
-        // Points just around the text (the text itself is not the part).
-        const h = L.y1 - L.y0, cx = (L.x0 + L.x1) / 2, cy = (L.y0 + L.y1) / 2;
-        pts = [[L.x0 - 0.5 * h, cy], [L.x1 + 0.5 * h, cy], [cx, L.y0 - 0.5 * h], [cx, L.y1 + 0.5 * h]]
-          .filter(([x, y]) => fgAt(fg, W, H, x, y));
-        if (!pts.length) pts = [[cx, cy]];
+  const segmentAll = async (engine) => {
+    const emb = await timed(engine.backend === 'sam2' ? 'sam_embed' : 'sam_embed_fallback', () => embedImage(engine, imageData));
+    await timed(engine.backend === 'sam2' ? 'sam_parts' : 'sam_parts_fallback', async () => {
+      for (const L of labels) {
+        let pts;
+        if (L.leader) {
+          const { x1, y1, x2, y2 } = L.leader;
+          const d = Math.hypot(x2 - x1, y2 - y1) || 1;
+          const nudge = Math.max(3, 0.004 * Math.hypot(W, H)); // step just inside the part
+          const cand = [[x2 + ((x2 - x1) / d) * nudge, y2 + ((y2 - y1) / d) * nudge], [x2, y2]];
+          pts = [cand.find(([x, y]) => fgAt(fg, W, H, x, y)) ?? nearestFg(fg, W, H, x2, y2, 14) ?? cand[0]];
+        } else {
+          // Points just around the text (the text itself is not the part).
+          const h = L.y1 - L.y0, cx = (L.x0 + L.x1) / 2, cy = (L.y0 + L.y1) / 2;
+          pts = [[L.x0 - 0.5 * h, cy], [L.x1 + 0.5 * h, cy], [cx, L.y0 - 0.5 * h], [cx, L.y1 + 0.5 * h]]
+            .filter(([x, y]) => fgAt(fg, W, H, x, y));
+          if (!pts.length) pts = [[cx, cy]];
+        }
+        pts = pts.map(([x, y]) => [clamp(x, 0, W - 1), clamp(y, 0, H - 1)]);
+        L.anchor = pts[0];
+        const r = await segmentPoint(engine, emb, pts);
+        if (r) for (let i = 0; i < r.mask.length; i++) r.mask[i] &= fgDil[i]; // parts never include the page background
+        L.mask = r?.mask ?? null;
+        L.maskScore = r?.score ?? 0;
       }
-      pts = pts.map(([x, y]) => [clamp(x, 0, W - 1), clamp(y, 0, H - 1)]);
-      L.anchor = pts[0];
-      const r = await segmentPoint(sam, emb, pts);
-      if (r) for (let i = 0; i < r.mask.length; i++) r.mask[i] &= fgDil[i]; // parts never include the page background
-      L.mask = r?.mask ?? null;
-      L.maskScore = r?.score ?? 0;
-    }
-  });
+    });
+  };
+  let segmentationFallbackReason = sam.fallbackReason ?? null;
+  try {
+    await segmentAll(sam);
+  } catch (error) {
+    if (sam.backend !== 'sam2') throw error;
+    // A WebGPU adapter can be available even when a particular ONNX operator
+    // (for example Pad) cannot compile in that browser's WebGPU implementation.
+    // Discard any partial SAM 2 masks and rerun the complete set with SlimSAM.
+    segmentationFallbackReason = error?.message || String(error);
+    console.warn('SAM 2.1 inference failed; retrying segmentation with SlimSAM.', error);
+    onStage('segment', 'SAM 2.1 WebGPU failed; retrying segmentation with SlimSAM…');
+    sam = await loadSAM({ backend: 'slimsam' });
+    for (const L of labels) { L.mask = null; L.maskScore = 0; }
+    await segmentAll(sam);
+  }
   src.delete(); gray.delete();
-  return { W, H, labels, words: good, fg, lineArt, regions, edges, detailLines, timings, device: sam.device, ocrEngine, sensitivity, segmentationBackend: sam.backend, segmentationFallbackReason: sam.fallbackReason ?? null };
+  return { W, H, labels, words: good, fg, lineArt, regions, edges, detailLines, timings, device: sam.device, ocrEngine, sensitivity, segmentationBackend: sam.backend, segmentationFallbackReason };
 }
 
 // Non-background pixels minus text and thin strokes (leader lines), holes filled.

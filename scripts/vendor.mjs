@@ -117,14 +117,13 @@ for (const f of ['PP-OCRv6/det/PP-OCRv6_det_small.onnx', 'PP-OCRv5/rec/en_PP-OCR
   await fetchTo(rapid + f, join(root, 'src', 'models', 'paddleocr', f.split('/').pop()), `PaddleOCR model: ${f}`);
 }
 
-// Indra OCR v1.1.0 (Datalab) - experimental alternative text engine, run by
-// src/js/indra.js. Latin detector + CTC recognizer in plain ONNX plus the meta.json
-// character vocabulary. Pinned to the v1.1.0 commit so the recognizer and its
-// vocabulary always match. Requires onnxruntime-web, already vendored above.
+// Indra OCR v1.1.0 (Datalab) - experimental recognizer used with PaddleOCR's
+// detector. The CTC recognizer and meta.json vocabulary are pinned to the same
+// model revision. Requires onnxruntime-web, already vendored above.
 section('7/7 — Indra OCR experimental alternative',
-  'Indra is an optional, experimental Latin-script OCR engine. Its detector finds text regions, its recognizer reads them, and meta.json supplies the matching character vocabulary. These files are pinned to one repository revision so the recognizer and vocabulary stay compatible. ONNX Runtime is provided in the earlier runtime step.');
+  'Indra is an optional, experimental Latin-script recognizer. PaddleOCR supplies text-region geometry; Indra reads those crops, and meta.json supplies the matching character vocabulary and input settings. The recognizer and metadata are pinned to one repository revision. ONNX Runtime is provided in the earlier runtime step.');
 const indra = 'https://huggingface.co/datalab-to/indra-ocr/resolve/bd02167/';
-for (const f of ['det.onnx', 'rec.onnx', 'meta.json', 'LICENSE']) {
+for (const f of ['rec.onnx', 'meta.json', 'LICENSE']) {
   await fetchTo(indra + f, join(root, 'src', 'models', 'indra', f), `Indra OCR v1.1.0 asset: ${f}`);
 }
 

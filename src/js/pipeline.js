@@ -6,7 +6,7 @@ import { extractFineLines } from './fine-lines.js';
 import { embedImage, segmentPoint } from './segment.js';
 import { correctWord, correctPhrase } from './vocab.js';
 import { loadPaddle, detectText, detectTextRegions } from './paddle.js';
-import { loadIndra, detectTextIndra, recognizeTextRegions } from './indra.js';
+import { loadIndra, recognizeTextRegions } from './indra.js';
 import { structureLines } from './lineart.js';
 import { DEFAULT_TRACING_SENSITIVITY, tracingConfig } from './tracing-config.js';
 
@@ -27,40 +27,37 @@ export async function analyze(imageData, { onStage = () => {}, sensitivity = DEF
   cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
   let ocrEngine = 'paddle';
   const words = await timed('ocr', async () => {
-    // Engine chain: Indra (opt-in from the UI checkbox) -> PaddleOCR -> Tesseract.
-    // Each stage only runs if the previous one threw or produced nothing, so an
-    // experimental engine can never leave the pipeline worse than the default.
+    // Indra is experimental and must never block the baseline OCR path.
+    // PaddleOCR detection provides the line boxes; Indra only recognizes those
+    // crops using its upstream v1.1.0 grayscale/widths contract. Any Indra load,
+    // crop, inference, decode, or empty-result failure immediately retries the
+    // complete PaddleOCR detector + recognizer path.
     if (preferIndra) {
       try {
         await loadIndra({ proxy: true });
-        let indraWords;
-        try {
-          // Paddle supplies rotated text-region quads and perspective correction;
-          // Indra remains the recognizer selected by the user.
-          const regions = await detectTextRegions(imageData, { cv });
-          indraWords = await recognizeTextRegions(imageData, regions, { cv, level: 'word' });
-          console.info('Indra OCR: PaddleOCR detection + Indra recognition', { regions: regions.length });
-        } catch (e) {
-          console.warn('PaddleOCR-guided detection unavailable; trying Indra detection', e);
-          indraWords = await detectTextIndra(imageData, { cv, level: 'word' });
-        }
-        if (indraWords.length) {
-          console.info('OCR engine: indra (PaddleOCR-guided)');
-          ocrEngine = 'indra';
-          return indraWords;
-        }
-        console.warn('Indra OCR found no text, falling back to PaddleOCR');
+        const regions = await detectTextRegions(imageData, { cv });
+        if (!regions.length) throw new Error('PaddleOCR found no text regions for Indra');
+        const indraWords = await recognizeTextRegions(imageData, regions, { cv, level: 'word' });
+        if (!indraWords.length) throw new Error('Indra returned no recognized text');
+        console.info('OCR engine: indra (PaddleOCR detection + Indra recognition)', { regions: regions.length });
+        ocrEngine = 'indra';
+        return indraWords;
       } catch (e) {
-        console.warn('Indra OCR unavailable, falling back to PaddleOCR', e);
+        console.warn('Indra OCR failed; immediately falling back to full PaddleOCR:', e);
       }
     }
     try {
       await loadPaddle({ proxy: true });
-      return await detectText(imageData, { cv, level: 'word' });
+      const paddleWords = await detectText(imageData, { cv, level: 'word' });
+      if (!paddleWords.length) console.warn('PaddleOCR returned no words; trying Tesseract');
+      else {
+        ocrEngine = 'paddle';
+        return paddleWords;
+      }
     } catch (e) {
-      console.warn('PaddleOCR unavailable, falling back to Tesseract', e);
-      ocrEngine = 'tesseract';
+      console.warn('PaddleOCR unavailable or failed; falling back to Tesseract', e);
     }
+    ocrEngine = 'tesseract';
     const worker = await loadOCR();
     const a = await recognizeWords(worker, canvas);
     // Second pass on a locally-binarized copy recovers dark text printed on colored fills.

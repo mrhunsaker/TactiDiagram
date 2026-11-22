@@ -1,6 +1,6 @@
 # Advanced model options (research roadmap)
 
-> **Status: research options only, with one exception.** SAM 2.1 Hiera Tiny (ONNX Community, fp16, WebGPU) is already integrated as an experimental, opt-in checkbox backend; it stores nothing remotely and is not yet the default. All other larger models described here are not integrated and are candidates for experiments after the existing OCR, leader detection, segmentation, and Potrace work are stable. Adding them would require implementation, browser/runtime compatibility work, licensing review, measured download size, and evaluation on the project's diagram set.
+> **Status: mixed.** SAM 2.1 Hiera Tiny (ONNX Community, fp16, WebGPU) is integrated as an experimental, opt-in checkbox backend. Indra OCR v1.1.0 is also integrated as an experimental, opt-in OCR recognizer: PaddleOCR supplies text-region geometry, Indra recognizes the crops using its upstream grayscale ink-map and variable-width input contract, and any Indra failure immediately retries full PaddleOCR detection and recognition (then Tesseract if PaddleOCR also fails). Neither experimental engine is the default. The other larger models described here remain research candidates.
 
 The goal should not be to use the largest model available. It should be to improve a specific failure mode while preserving privacy, predictable tactile geometry, and a workflow that a transcriber can inspect.
 

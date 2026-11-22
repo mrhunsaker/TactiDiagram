@@ -145,7 +145,7 @@ export async function recognizeTextRegions(imageData, boxes, { cv = window.cv, l
       let text = tokens.map(t => t.token).join('');
       if (confidence < MIN_CONF) text = '';
       // Keep confidence semantics aligned with PaddleOCR: 0–100.
-      results.push({ job, text, conf: confidence * 100, tokens });
+      results.push({ job, text, conf: confidence * 100, tokens, stride: paddedWidth / Math.max(1, steps) });
     });
   }
 
@@ -153,9 +153,7 @@ export async function recognizeTextRegions(imageData, boxes, { cv = window.cv, l
     if (!text.trim()) return null;
     // Use Indra's CTC peak positions to map the recognizer's sequence back to
     // page coordinates; the word splitter below can then allocate boxes by glyph.
-    const stepCount = Math.max(1, ...tokens.map(t => t.step + 1));
-    const stride = Math.ceil(job.width / WIDTH_MULTIPLE) * WIDTH_MULTIPLE / stepCount;
-    const xs = tokens.map(t => job.cropX + (t.step + 0.5) * stride * (job.cropWidth / job.width));
+    const xs = tokens.map(t => job.cropX + (t.step + 0.5) * results.find(r => r.job === job).stride * (job.cropWidth / job.width));
     const pad = Math.round(0.17 * Math.min(job.box.x1 - job.box.x0, job.box.y1 - job.box.y0));
     return {
       text: text.trim(), conf,

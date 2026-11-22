@@ -131,13 +131,13 @@ function showUploadPreview({ src, name, width, height, size }) {
   uploadPreview.hidden = false;
   drop.classList.add('has-upload');
 }
-function clearUploadPreview() {
+function clearUploadPreview(preservePending = false) {
   uploadPreview.hidden = true;
   $('#upload-preview-image').removeAttribute('src');
   $('#upload-preview-name').textContent = '';
   $('#upload-preview-meta').textContent = '';
   drop.classList.remove('has-upload');
-  state.pending = null;
+  if (!preservePending) state.pending = null;
   updateAnalyzeButton();
 }
 $('#upload-clear').addEventListener('click', (event) => {
@@ -226,7 +226,7 @@ async function runFromURL(url, title, name, revokeUrl = false, fileInfo = null) 
     if (fileInfo) {
       showUploadPreview({ src: previewDataURL, name: name || 'Uploaded image', width: W, height: H, size: fileInfo.size });
     } else {
-      clearUploadPreview();
+      clearUploadPreview(true);
     }
     console.info('Image loaded; waiting for Start:', { width: W, height: H, name: state.pending.name });
     setStatus(`${state.pending.name} loaded. Set the options on the left, then press Start analysis.`);

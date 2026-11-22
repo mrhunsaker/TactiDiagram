@@ -155,7 +155,7 @@ async function run(input = {}) {
   } finally {
     showLoading(false);
     state.busy = false;
-    document.querySelectorAll('#opt-autotrace, #opt-indra, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file').forEach((el) => { el.disabled = false; });
+    document.querySelectorAll('#opt-autotrace, #opt-indra, #opt-sam21, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file').forEach((el) => { el.disabled = false; });
     document.body.removeAttribute('aria-busy');
   }
 }

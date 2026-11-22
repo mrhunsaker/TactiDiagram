@@ -149,11 +149,11 @@ export async function recognizeTextRegions(imageData, boxes, { cv = window.cv, l
     });
   }
 
-  const lines = results.map(({ job, text, conf, tokens }) => {
+  const lines = results.map(({ job, text, conf, tokens, stride }) => {
     if (!text.trim()) return null;
     // Use Indra's CTC peak positions to map the recognizer's sequence back to
     // page coordinates; the word splitter below can then allocate boxes by glyph.
-    const xs = tokens.map(t => job.cropX + (t.step + 0.5) * results.find(r => r.job === job).stride * (job.cropWidth / job.width));
+    const xs = tokens.map(t => job.cropX + (t.step + 0.5) * stride * (job.cropWidth / job.width));
     const pad = Math.round(0.17 * Math.min(job.box.x1 - job.box.x0, job.box.y1 - job.box.y0));
     return {
       text: text.trim(), conf,

@@ -637,8 +637,8 @@ $('#print').onclick = async () => {
   // and Save as PDF work normally.
   try {
     const tempDir = await desktop.os.getPath('temp');
-    const sep = tempDir.endsWith('/') ? '' : tempDir.endsWith(BS) ? '' : '/';
-    const dir = tempDir + sep + 'touchsight-ng';
+    // '/' separators work on Windows too, so keep it simple.
+    const dir = (tempDir.endsWith('/') ? tempDir : tempDir + '/') + 'touchsight-ng';
     try { await desktop.filesystem.mkdir(dir); } catch {}
     const path = dir + '/' + 'print-' + Date.now() + '.html';
     await desktop.filesystem.writeFile(path, html);

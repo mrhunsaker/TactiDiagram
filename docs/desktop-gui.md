@@ -65,16 +65,19 @@ the Neutralino window. Closing the window shuts the server down.
 ```
 desktop/
   neutralino/
-    neutralino.config.json   window configuration (size, title, no native API)
+    neutralino.config.json   window configuration (size, title, restricted native API list)
     resources/index.html     placeholder shown only if the server is unreachable
 scripts/
   desktop.mjs               launcher: starts serve.mjs, opens the window, cleans up
 ```
 
-The window configuration sets `"enableNativeAPI": false`, so the application
-runs in the webview with no access to Neutralino's filesystem, process, or OS
-APIs. It can do exactly what it can do in a browser, nothing more; the static
-server remains the only local surface.
+The window configuration enables Neutralino's native API with a restricted
+`nativeAllowList` (save/open dialogs, file writes, opening a file with the
+system browser and app metadata), and nothing else. Process, extensions and
+all other native namespaces stay blocked: the app can save the tactile SVG,
+key page and STL through a native Save dialog and hand the print view to the
+default browser, but it can run no arbitrary commands; the static server
+remains the only other local surface.
 
 ## Accessibility note
 
@@ -169,9 +172,9 @@ and push the tag.
   target machine needs Microsoft Edge WebView2 Runtime.
 - The AppImage is x86_64 only; aarch64 builds would need ARM Neutralino
   binaries and `aarch64` `appimagetool`.
-- The packaged app has the same security posture as the browser app
-  (`enableNativeAPI: false`); it can reach the network the same way the
-  web app does.
+- The packaged app reaches the network the same way the web app does. Its
+  native-API access is limited to the `nativeAllowList` (dialogs, file
+  writes, opening a file with the system browser).
 
 ## If you later want an installable desktop app: Tauri
 

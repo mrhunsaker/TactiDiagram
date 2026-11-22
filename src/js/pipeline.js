@@ -17,7 +17,8 @@ export async function analyze(imageData, { onStage = () => {}, sensitivity = DEF
   sensitivity = tracingConfig(sensitivity).sensitivity;
 
   onStage('engines', 'Loading on-device models…');
-  const [cv, sam] = await timed('load', () => Promise.all([loadOpenCV(), loadSAM({ backend: segmentationBackend }), loadPaddle({ proxy: true }).catch(() => null)]));
+  const [cv, initialSam] = await timed('load', () => Promise.all([loadOpenCV(), loadSAM({ backend: segmentationBackend }), loadPaddle({ proxy: true }).catch(() => null)]));
+  let sam = initialSam;
 
   onStage('ocr', 'Reading the printed labels…');
   const canvas = toCanvas(imageData);

@@ -89,11 +89,17 @@ export function loadSAM({ backend = 'slimsam' } = {}) {
         console.warn(`SAM 2.1 unavailable (${reason}); falling back to SlimSAM.`);
         return { ...(await loadSlimSAM(T)), fallbackReason: reason };
       }
-      if (typeof T.Sam2Model !== 'function') throw new Error('Installed Transformers.js does not expose Sam2Model.');
-      const id = 'onnx-community/sam2.1-hiera-tiny-ONNX';
-      const model = await T.Sam2Model.from_pretrained(id, { dtype: 'fp16', device: 'webgpu' });
-      const processor = await T.AutoProcessor.from_pretrained(id);
-      return { T, model, processor, device: 'webgpu', backend: 'sam2' };
+      try {
+        if (typeof T.Sam2Model !== 'function') throw new Error('Installed Transformers.js does not expose Sam2Model.');
+        const id = 'onnx-community/sam2.1-hiera-tiny-ONNX';
+        const model = await T.Sam2Model.from_pretrained(id, { dtype: 'fp16', device: 'webgpu' });
+        const processor = await T.AutoProcessor.from_pretrained(id);
+        return { T, model, processor, device: 'webgpu', backend: 'sam2' };
+      } catch (error) {
+        const reason = error?.message || String(error);
+        console.warn(`SAM 2.1 could not initialize (${reason}); falling back to SlimSAM.`, error);
+        return { ...(await loadSlimSAM(T)), fallbackReason: reason };
+      }
     }
     return loadSlimSAM(T);
   })().catch(error => { samPromises.delete(backend); throw error; });

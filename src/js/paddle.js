@@ -43,6 +43,16 @@ export function loadPaddle({ proxy = false } = {}) {
 }
 
 // imageData: ImageData (RGBA). Transparent pixels are composited on white.
+// Return PaddleOCR's detected, perspective-rectified text-region geometry without
+// invoking the Paddle recognizer. Indra can use these quads with its own recognizer.
+export async function detectTextRegions(imageData, { cv = window.cv, limitSide = 736, maxSide = 2000 } = {}) {
+  const P = await loadPaddle();
+  const src = whiteRGB(cv, imageData);
+  try {
+    return await detect(P, cv, src, imageData.width, imageData.height, limitSide, maxSide);
+  } finally { src.delete(); }
+}
+
 export async function detectText(imageData, { cv = window.cv, level = 'word', limitSide = 736, maxSide = 2000 } = {}) {
   const P = await loadPaddle();
   const t0 = performance.now();

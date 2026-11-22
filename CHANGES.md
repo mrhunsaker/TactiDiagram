@@ -4,6 +4,18 @@ All notable changes to TouchSight-NG are documented in this file. The format is 
 
 ## [Unreleased]
 
+### Fixed
+- SAM 2.1 (WebGPU) segmentation: Transformers.js v4 runs the full image
+  preprocess on every processor call, so building point prompts with
+  `processor(null, ...)` (the v3 pattern) crashed with
+  "Cannot read properties of null (reading 'size')". Point-prompt tensors are
+  now built from the cached embed-step dimensions, and the multi-level image
+  embeddings are cached so per-label prompts no longer rerun the encoder.
+- Code scanning (`js/insecure-randomness`): the vendored Tesseract.js bundle
+  used `Math.random()` for non-cryptographic task IDs. `npm run vendor` now
+  rewrites that call with a deterministic counter, and vendored third-party
+  code is excluded from CodeQL scanning.
+
 ### Added
 - Optional Indra OCR engine (Datalab, v1.1.0): detector and recognizer ONNX
   models vendored from the official Hugging Face repository (pinned commit)

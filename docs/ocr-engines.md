@@ -120,6 +120,12 @@ vendored bundle that SlimSAM and PaddleOCR use. No Python, no server, and no
 network access at run time: the checkbox only changes which locally stored
 ONNX files are loaded into the same pipeline.
 
+The vendored Tesseract bundle is patched during `npm run vendor`: its one
+`Math.random()` call (a non-cryptographic task-ID generator in the worker
+scheduler) is rewritten to a deterministic counter, so the committed
+`src/vendor/tesseract/tesseract.esm.min.js` carries no insecure-randomness
+pattern for Code scanning. This does not change OCR behavior.
+
 ### Where the port is deliberately conservative
 
 The Python reference implementation (`pip install indra-ocr`) includes

@@ -554,8 +554,8 @@ const params = new URLSearchParams(location.search);
 if (params.get('sam') === 'sam2') $('#opt-sam21').checked = true;
 const deep = params.get('sample');
 if (deep && byId[deep]) {
+  // Explicit sample deep links are used by demos and the evaluation harness.
   runSample(deep);
-} else {
-  runSample('heart');
 }
+// Normal app startup stays idle. The user chooses a sample or uploads an image.
 window.__touchsight = state; // read by scripts/eval.mjs

@@ -41,7 +41,8 @@ extra_javascript:
 nav:
   - Home: index.md
   - For transcribers:
-      - Getting started: getting-started.md\n      - Application controls and options: application-options.md
+      - Getting started: getting-started.md
+      - Application controls and options: application-options.md
       - The teacher review workflow: review-workflow.md
       - Printing and swell paper: printing.md
   - How it works:

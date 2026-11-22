@@ -113,6 +113,7 @@ const originalCfg = readFileSync(cfgPath, 'utf8');
 function writeBuildConfig() {
   const cfg = JSON.parse(originalCfg);
   cfg.enableServer = true; // the shell serves resources.neu itself
+  cfg.enableNativeAPI = true; // save dialogs, file writes and print handoff
   cfg.url = '/';
   cfg.exportAuthInfo = false;
   if (versionArg) {

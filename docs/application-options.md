@@ -4,7 +4,7 @@ This reference describes the controls implemented in `src/index.html`, `src/js/u
 
 ## Choose a diagram
 
-The sample gallery provides heart, volcano, animal cell, mitochondrion, tooth, ear, earth layers, flower, and eye examples. Selecting a thumbnail or uploading/dropping a PNG, JPEG/JPG, or WebP image only loads it; processing starts when you press **Start analysis**. This lets you load a document, review every option, and begin only when ready. Files larger than 15 MiB are rejected. Files larger than 15 MiB are rejected. Transparent pixels are composited onto white; the longest image side is scaled to at most 1,400 pixels for analysis.
+The sample gallery provides heart, volcano, animal cell, mitochondrion, tooth, ear, earth layers, flower, and eye examples. Selecting a thumbnail or uploading/dropping a PNG, JPEG/JPG, or WebP image only loads it; processing starts when you press **Start analysis**. This lets you load a document, review every option, and begin only when ready. Files larger than 15 MiB are rejected. Transparent pixels are composited onto white; the longest image side is scaled to at most 1,400 pixels for analysis.
 
 Use a clear labeled diagram where possible. Handwriting, rotated text, busy fills, overlapping leaders, and low-contrast lines can reduce recognition quality.
 

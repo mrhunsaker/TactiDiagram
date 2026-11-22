@@ -132,7 +132,7 @@ export async function analyze(imageData, { onStage = () => {}, sensitivity = DEF
     }
   });
   src.delete(); gray.delete();
-  return { W, H, labels, words: good, fg, lineArt, regions, edges, detailLines, timings, device: sam.device, ocrEngine, sensitivity, segmentationBackend: sam.backend };
+  return { W, H, labels, words: good, fg, lineArt, regions, edges, detailLines, timings, device: sam.device, ocrEngine, sensitivity, segmentationBackend: sam.backend, segmentationFallbackReason: sam.fallbackReason ?? null };
 }
 
 // Non-background pixels minus text and thin strokes (leader lines), holes filled.

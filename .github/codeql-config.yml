@@ -1,0 +1,7 @@
+# CodeQL configuration (used by code scanning advanced setup or default setup).
+# Vendored third-party bundles and generated assets are not maintained as first-party
+# code; findings there should be tracked upstream, not in this repository.
+paths:
+  - "src/vendor/**"
+  - "src/models/**"
+  - "src/precomputed/**"

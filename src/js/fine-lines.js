@@ -54,20 +54,6 @@ export function extractFineLines(cv, gray, opt = {}) {
   for (const L of opt.leaders ?? []) if (L.leader) knockLine(mask, W, H, L.leader, 4);
 
   let sk = skeletonize(mask, W, H);
-  // Drop specks the kernel left behind (< minLen after thinning).
-  {
-    const m = new cv.Mat(H, W, cv.CV_8UC1);
-    m.data.set(sk.map ? sk.map(v => v) : sk);
-    for (let p = 0; p < N; p++) m.data[p] = sk[p] ? 255 : 0;
-    const cl = new cv.Mat(), st = new cv.Mat(), ce = new cv.Mat();
-    const n = cv.connectedComponentsWithStats(m, cl, st, ce, 8, cv.CV_32S);
-    const diag = Math.hypot(W, H);
-    for (let c = 1; c < n; c++) {
-      const w = st.intAt(c, cv.CC_STAT_WIDTH), h = st.intAt(c, cv.CC_STAT_HEIGHT), area = st.intAt(c, cv.CC_STAT_AREA);
-      if (Math.hypot(w, h) < 0.02 * diag && area < 30) { /* keep drop decision for polylines stage */ }
-    }
-    cl.delete(); st.delete(); ce.delete(); m.delete();
-  }
   const polylines = tracePolylines(sk, W, H, minLen);
   // Refill the mask from surviving polylines so mask and polylines agree.
   const kept = new Uint8Array(N);

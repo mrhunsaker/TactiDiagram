@@ -87,7 +87,7 @@ design options; they are **not implemented** in the current code:
 1. **Contrast-relative thresholds.** Several thresholds in
    `tracing-config.js` are fixed formulas. Fine external lines have lower
    contrast than label leaders; estimating the background noise level from a
-   border annulus and setting \`k * sigma\`-relative thresholds instead of
+   border annulus and setting `k * sigma`-relative thresholds instead of
    fixed values would make faint-but-coherent lines findable on both dark
    scans and pale photos without user tuning.
 2. **SlimSAM box prompts on detail strokes.** Drawing a box around a traced
@@ -102,7 +102,7 @@ design options; they are **not implemented** in the current code:
    `detailLines` user-visible on the tactile page.
 4. **CLAHE before the stroke masks.** Local-contrast equalization before
    tophat/blackhat would reduce threshold sensitivity for faint lines, at the
-   cost of amplifying shading gradients that \the structure stage currently
+   cost of amplifying shading gradients that the structure stage currently
    suppresses; it should be measured against the fragment metrics.
 
 Of these, (3) is the natural next step: the polylines already exist and are

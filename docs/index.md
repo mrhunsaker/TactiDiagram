@@ -39,6 +39,7 @@ In evaluation on 16 Wikimedia Commons diagrams, TouchSight-NG found 148 of 151 h
 - [Architecture](architecture.md): why the system combines OCR, geometric computer vision, and segmentation.
 - [Pipeline stages](pipeline.md): how each stage works and how errors propagate.
 - [Models and inference engines](models-and-engines.md): the exact OCR and segmentation model files, runtime libraries, and their purposes.
+- [Tools and libraries](tools-and-libraries.md): every third-party tool the application uses (SlimSAM, SAM 2.1, PaddleOCR, Tesseract.js, Indra, Potrace, OpenCV.js, ONNX Runtime Web, three.js, Neutralino), what it does technically, and why it is worth shipping.
 - [Advanced AI model options](advanced-model-options.md): larger models that could improve grounding, segmentation, and diagram reasoning. These are research options, not implemented features.
 
 ## Where to go next

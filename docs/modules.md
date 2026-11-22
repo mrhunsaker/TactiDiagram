@@ -32,6 +32,16 @@ Loads PP-OCRv6 detection-small and PP-OCRv5 English recognition-mobile ONNX mode
 
 Normalizes OCR output into words, filters implausible tokens using confidence and size, groups words into baselines, and merges stacked lines into labels. It uses leader associations and a small science vocabulary to avoid incorrectly merging separate labels.
 
+### `fine-lines.js`
+
+Recovers fine exterior linework (strokes finer than leader/arrow strokes) that
+the leader detector's thin-stroke mask would otherwise discard: two-scale
+tophat/blackhat extraction, distance-transform stroke-width classification,
+Zhang-Suen thinning, and skeleton-graph walking into polylines. Exposed as
+`analysis.detailLines` (mask + polylines) with its own timing; not yet
+rendered on the tactile page. Measured by `scripts/fineline-recall.mjs`; see
+[Fine exterior lines](fine-lines.md).
+
 ### `leaders.js`
 
 Creates a thin-stroke mask using morphological black-hat/top-hat operations, finds line segments with probabilistic Hough transform, assigns candidate segments to text lines, and chains nearby collinear segments to estimate leader tips.

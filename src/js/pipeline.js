@@ -2,6 +2,7 @@
 import { loadOpenCV, loadOCR, loadSAM } from './libs.js';
 import { recognizeWords, mergeWordSets, filterWords, wordsToLines, linesToLabels } from './ocr.js';
 import { thinStrokeMask, houghSegments, assignLeaders } from './leaders.js';
+import { extractFineLines } from './fine-lines.js';
 import { embedImage, segmentPoint } from './segment.js';
 import { correctWord, correctPhrase } from './vocab.js';
 import { loadPaddle, detectText, detectTextRegions } from './paddle.js';
@@ -82,6 +83,10 @@ export async function analyze(imageData, { onStage = () => {}, sensitivity = DEF
   const segs = houghSegments(cv, thin);
   thin.delete();
   assignLeaders(lines.filter((l) => !l.inside), segs);
+  // Fine exterior linework (strokes finer than the leader strokes): traced into
+  // polylines and kept as a separate mask so tactile weight and the fine-line
+  // metric can treat it independently of the main structure line art.
+  const detailLines = await timed('fine_lines', () => extractFineLines(cv, gray, { sensitivity, textBoxes: good }));
   // Reading order (top to bottom, then left to right) so the review list matches the page.
   const labels = linesToLabels(lines).sort((a, b) => (a.y0 - b.y0) || (a.x0 - b.x0));
   // Lone single characters are usually OCR noise, unless the diagram is letter-labeled.
@@ -127,7 +132,7 @@ export async function analyze(imageData, { onStage = () => {}, sensitivity = DEF
     }
   });
   src.delete(); gray.delete();
-  return { W, H, labels, words: good, fg, lineArt, regions, edges, timings, device: sam.device, ocrEngine, sensitivity };
+  return { W, H, labels, words: good, fg, lineArt, regions, edges, detailLines, timings, device: sam.device, ocrEngine, sensitivity };
 }
 
 // Non-background pixels minus text and thin strokes (leader lines), holes filled.

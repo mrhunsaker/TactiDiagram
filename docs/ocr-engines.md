@@ -6,14 +6,17 @@ one was used (the "ocrEngine" field in the analysis result, also visible in
 the browser console as an "OCR engine:" message):
 
 1. **Indra OCR** (Datalab, v1.1.0) - opt-in from the **"Use Indra OCR"**
-   checkbox under *Output options*.
+   checkbox under *Output options*. Its preferred path uses the PaddleOCR
+   detector and Indra recognizer; if detection fails, it tries Indra's own
+   detector.
 2. **PaddleOCR** (PP-OCRv6 det + PP-OCRv5 English rec, RapidOCR's ONNX
    conversions) - the default.
 3. **Tesseract.js** - the last resort, used only if PaddleOCR itself
    could not run.
 
-Each stage runs only when the previous one throws or finds no text at all,
-so selecting Indra can never leave the pipeline worse than the default chain.
+Each stage runs only when the previous one throws or finds no text at all.
+Selecting Indra changes the recognizer, not the downstream label-processing
+pipeline.
 
 ## Using the Indra engine
 
@@ -34,6 +37,54 @@ so selecting Indra can never leave the pipeline worse than the default chain.
 
 Because the engine change only affects label reading, leader detection,
 segmentation, layout, checking, and export behave identically either way.
+
+## PaddleOCR-guided Indra recognition
+
+When **Use Indra OCR** is enabled, the preferred path combines the two model
+families by role rather than running two complete OCR engines:
+
+1. PaddleOCR's PP-OCRv6 detector locates text regions and returns rotated
+   quadrilateral boxes in original-image coordinates.
+2. OpenCV perspective-warps each quadrilateral into a rectangular crop,
+   correcting the detected skew while preserving the original region geometry.
+3. Indra's Latin recognizer reads those crops. The resulting text records use
+   the same shared word/line format as the other OCR paths.
+4. The original quadrilateral remains attached to each recognized line for
+   spatial traceability; downstream OCR filtering and label grouping continue
+   to use the returned bounding boxes.
+
+If PaddleOCR detection cannot load or run, the app tries Indra's own detector
+and recognizer. If the Indra path errors or returns no text, the existing
+PaddleOCR recognizer path runs, followed by Tesseract when PaddleOCR fails.
+PaddleOCR's recognizer is not run in the normal guided Indra path.
+
+This is **detection-guided recognition**, not an ensemble or a vote between
+recognized strings. It adds PaddleOCR detector inference to the Indra path
+and still loads the Indra model bundle. Perspective correction addresses
+geometric skew in the detected crop; it does not guarantee correct reading
+orientation for upside-down, vertical, curved, or severely distorted text.
+The Indra port does not include the reference package's orientation
+classifier. These cases require targeted validation before claiming improved
+recognition.
+
+```mermaid
+flowchart TD
+  A["Source ImageData"] --> B{"Use Indra OCR?"}
+  B -->|No| P["PaddleOCR detector"]
+  P --> PR["PaddleOCR recognizer"]
+  B -->|Yes| D["PaddleOCR text detector"]
+  D --> Q["Rotated quadrilateral regions"]
+  Q --> W["OpenCV perspective crop / deskew"]
+  W --> I["Indra recognizer"]
+  D -. "detection error" .-> ID["Indra detector + recognizer fallback"]
+  I --> R["Shared OCR word records"]
+  ID --> R
+  PR --> R
+  R --> S["Shared OCR filtering, grouping and label correction"]
+  P -. "OCR error / no text" .-> T["Tesseract fallback"]
+  S --> L["Leader detection and tactile pipeline"]
+  T --> S
+```
 
 ## Architecture of the JavaScript port
 

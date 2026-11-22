@@ -121,7 +121,7 @@ it; locally you can generate `packaging/icon.png` with ImageMagick
 and, on Windows, `packaging/icon.ico` with
 `npm i --no-save sharp png-to-ico && node scripts/win-icon.cjs`.
 Without an icon, the package still builds; the exe keeps the stock
-Neutralino icon and the window keeps no taskbar icon file.
+Neutralino icon, and the window has no custom taskbar icon.
 
 ### CI builds
 

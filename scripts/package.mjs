@@ -3,8 +3,8 @@
 //
 // Usage:
 //   npm run package:desktop            (auto: linux target on Linux, win on Windows)
-//   node scripts/package.mjs --target linux [--out dist]
-//   node scripts/package.mjs --target win   [--out dist]
+//   node scripts/package.mjs --target linux [--version 2026.11.22] [--out dist]
+//   node scripts/package.mjs --target win   [--version 2026.11.22] [--out dist]
 //
 // What this does:
 //   1. Vendors runtime assets ("npm run vendor") so the bundle is complete.
@@ -21,6 +21,12 @@
 //        and executed with --appimage-extract-and-run, so no FUSE needed).
 //      - Windows: a zip with touchsight-ng.exe + resources.neu; the exe icon
 //        is embedded with rcedit when available (see scripts/win-icon.cjs).
+//
+// --version stamps the build: it sets neutralino.config.json "version" and
+// writes resources/version.json. The release workflow passes the tag version
+// (vYYYY.M.D -> YYYY.M.D, e.g. v2026.11.22), so build, git tag, and GitHub
+// release always carry the same calendar version. A version that is not a
+// SemVer triple is rejected.
 //
 // Prerequisites:
 //   npm install         (installs @neutralinojs/neu)
@@ -49,11 +55,19 @@ const isDir = (p) => { try { return statSync(p).isDirectory(); } catch { return 
 
 // ---- arguments -------------------------------------------------------------
 let target = process.platform === 'win32' ? 'win' : 'linux';
+let versionArg = null;
 const argv = process.argv.slice(2);
 const tIdx = argv.indexOf('--target');
 if (tIdx >= 0) target = argv[tIdx + 1];
+const vIdx = argv.indexOf('--version');
+if (vIdx >= 0) versionArg = argv[vIdx + 1];
 if (!['linux', 'win'].includes(target)) {
   console.error('Unsupported target: ' + target + '. Use --target linux or --target win.');
+  process.exit(1);
+}
+const SEMVER = /^[0-9]+[.][0-9]+[.][0-9]+(?:[-+][0-9A-Za-z.-]+)?$/;
+if (versionArg && !SEMVER.test(versionArg)) {
+  console.error('Version must be a SemVer triple (for example 2026.11.22), got: ' + versionArg);
   process.exit(1);
 }
 
@@ -94,9 +108,14 @@ function writeBuildConfig() {
   cfg.enableServer = true; // the shell serves resources.neu itself
   cfg.url = '/';
   cfg.exportAuthInfo = false;
+  if (versionArg) {
+    // Stamped build: the version matches the git tag and GitHub release.
+    cfg.version = versionArg;
+    writeFileSync(join(resDir, 'version.json'),
+      JSON.stringify({ name: 'TouchSight-NG', version: versionArg }, null, 2) + '\n');
+  }
   if (existsSync(join(resDir, 'icon.png'))) cfg.modes.window.icon = '/resources/icon.png';
-  writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + '
-');
+  writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + '\n');
 }
 
 // ---- 4. neu build ----------------------------------------------------------
@@ -112,7 +131,7 @@ function walk(dir) {
 function neuBuild() {
   run('npx', ['neu', 'build', '--release'], { cwd: neuDir });
   const distRoot = join(neuDir, 'dist');
-  const namedDir = readdirSync(distRoot).find((n) => n !== 'touchsight-ng-release');
+  const namedDir = readdirSync(distRoot).find((n2) => n2 !== 'touchsight-ng-release');
   const buildDir = join(distRoot, namedDir || '');
   const files = walk(buildDir);
   const rel = (f) => join(buildDir, f);
@@ -122,8 +141,7 @@ function neuBuild() {
   const resources = files.find((f) => f === 'resources.neu');
   if (!binary || !resources) {
     console.error('Could not find built artifacts in ' + buildDir + ':');
-    console.error(files.join('
-'));
+    console.error(files.join('\n'));
     process.exit(1);
   }
   return { binary: rel(binary), resources: rel(resources) };
@@ -170,32 +188,20 @@ function buildAppImage(binary, resources) {
   chmodSync(join(appDir, 'resources.neu'), 0o644);
 
   writeFileSync(join(appDir, 'touchsight-ng.desktop'),
-    '[Desktop Entry]
-' +
-    'Type=Application
-' +
-    'Name=TouchSight-NG
-' +
-    'Comment=Turn diagrams into print-ready tactile graphics with braille labels.
-' +
-    'Exec=touchsight-ng
-' +
-    'Icon=touchsight-ng
-' +
-    'Categories=Graphics;Office;Education;
-' +
-    'Terminal=false
-');
+    '[Desktop Entry]\n' +
+    'Type=Application\n' +
+    'Name=TouchSight-NG\n' +
+    'Comment=Turn diagrams into print-ready tactile graphics with braille labels.\n' +
+    'Exec=touchsight-ng\n' +
+    'Icon=touchsight-ng\n' +
+    'Categories=Graphics;Office;Education;\n' +
+    'Terminal=false\n');
 
   writeFileSync(join(appDir, 'AppRun'),
-    '#!/bin/sh
-' +
-    'HERE="$(dirname "$(readlink -f "$0")")"
-' +
-    'cd "$HERE"
-' +
-    'exec ./touchsight-ng "$@"
-');
+    '#!/bin/sh\n' +
+    'HERE="$(dirname "$(readlink -f "$0")")"\n' +
+    'cd "$HERE"\n' +
+    'exec ./touchsight-ng "$@"\n');
   chmodSync(join(appDir, 'AppRun'), 0o755);
 
   const icon = resolveAppIcon();
@@ -211,8 +217,7 @@ function buildAppImage(binary, resources) {
   chmodSync(tool, 0o755);
   const appImagePath = join(outDir, 'TouchSight-NG-x86_64.AppImage');
   run(tool, ['--appimage-extract-and-run', appDir, appImagePath]);
-  console.log('
-Built ' + appImagePath);
+  console.log('\nBuilt ' + appImagePath);
 }
 
 // ---- 5. package: Windows zip ----------------------------------------------
@@ -238,19 +243,14 @@ async function buildWindowsPackage(binary, resources) {
   copyFileSync(binary, join(stage, 'touchsight-ng.exe'));
   copyFileSync(resources, join(stage, 'resources.neu'));
   writeFileSync(join(stage, 'README.txt'),
-    'TouchSight-NG desktop application
-
-' +
-    'Keep touchsight-ng.exe and resources.neu together. Run touchsight-ng.exe;
-' +
-    'the app opens in its own window and serves itself (no Node.js needed).
-');
+    'TouchSight-NG desktop application\n\n' +
+    'Keep touchsight-ng.exe and resources.neu together. Run touchsight-ng.exe;\n' +
+    'the app opens in its own window and serves itself (no Node.js needed).\n');
 
   const zipPath = join(outDir, 'TouchSight-NG-win-x64.zip');
   run('powershell', ['-NoProfile', '-Command',
     'Compress-Archive -Path "' + stage + '\\*" -DestinationPath "' + zipPath + '" -Force']);
-  console.log('
-Built ' + zipPath + (iconEmbedded ? '' : ' (default exe icon)'));
+  console.log('\nBuilt ' + zipPath + (iconEmbedded ? '' : ' (default exe icon)'));
 }
 
 // ---- main ------------------------------------------------------------------

@@ -58,14 +58,17 @@ onnxruntime-web. `src/js/indra.js` runs the same DB text-detection and
 batched CTC recognition pattern as PaddleOCR and emits word records in the
 shared format, so the rest of the pipeline is unchanged whatever the engine.
 
-It is **opt-in** ("Use Indra OCR" under Output options) and **experimental**:
-the JS port covers the Latin recognizer only, and where the reference
-implementation was ambiguous (recognizer input shape, detector channel order,
-vocabulary layout) the port probes or exposes a documented constant instead of
-guessing. On any error, or when it finds no text, the chain falls back to
-PaddleOCR, then Tesseract. See [OCR engines](ocr-engines.md) for the
-architecture, the validation recipe against the `indra-ocr` Python package,
-and the licensing notes.
+It is **opt-in** ("Use Indra OCR" under Output options) and **experimental**.
+The preferred path uses PaddleOCR's PP-OCRv6 detector to locate rotated
+quadrilateral text regions, OpenCV to perspective-crop and deskew them, and
+Indra's Latin recognizer to read the crops. If Paddle detection fails, the app
+tries Indra's own detector and recognizer; if the Indra path errors or returns
+no text, it falls back to the normal PaddleOCR path, then Tesseract when
+PaddleOCR fails. The JavaScript port still omits Indra's orientation and script
+classifiers, so perspective correction does not guarantee correct reading
+direction for upside-down or arbitrary-orientation text. See
+[OCR engines](ocr-engines.md) for the data-flow diagram, limitations,
+validation recipe against the `indra-ocr` Python package, and licensing notes.
 
 ## Tesseract.js: fallback OCR
 

@@ -15,9 +15,11 @@ on:
       - 'package-lock.json'
       - 'docs/desktop-gui.md'
       - 'docs/getting-started.md'
+      - 'docs/index.md'
+      - 'README.md'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   validate:
@@ -123,6 +125,8 @@ jobs:
     if: github.event_name == 'push'
     needs: [version, linux, windows]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/download-artifact@v4
         with:

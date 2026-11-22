@@ -85,6 +85,17 @@ async function probeRec(ort, rec) {
   throw new Error('Indra recognizer rejected every candidate input shape');
 }
 
+// Recognize externally detected quadrilateral regions with Indra's recognizer.
+// Coordinates must be in the original ImageData coordinate space.
+export async function recognizeTextRegions(imageData, boxes, { cv = window.cv, level = 'word' } = {}) {
+  const I = await loadIndra();
+  const src = whiteRGB(cv, imageData);
+  try {
+    const lines = await recognize(I, cv, src, boxes);
+    return level === 'line' ? lines : linesToWords(lines);
+  } finally { src.delete(); }
+}
+
 // Same word/line output contract as paddle.js.
 export async function detectTextIndra(imageData, { cv = window.cv, level = 'word', limitSide = 736, maxSide = 2000 } = {}) {
   const I = await loadIndra();

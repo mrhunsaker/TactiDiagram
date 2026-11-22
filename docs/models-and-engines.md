@@ -16,8 +16,8 @@ The file names below come from the checked-in `scripts/vendor.mjs`, `package.jso
 | Tesseract language data | `eng.traineddata.gz` (4.0.0_best_int) | English LSTM character/language model | Tesseract fallback |
 | SlimSAM | `Xenova/slimsam-77-uniform` ONNX files | Default point-prompted segmentation backend | After labels and anchors are found |
 | SAM 2.1 Hiera Tiny (opt-in) | `onnx-community/sam2.1-hiera-tiny-ONNX` fp16 ONNX files and external tensor data | Experimental alternative point-prompted segmentation backend | Only when the SAM 2.1 checkbox is selected; requires WebGPU and a usable adapter |
-| Transformers.js | `@huggingface/transformers@4.3.0` | Loads and runs SlimSAM in the browser | Segmentation |
-| ONNX Runtime Web | `onnxruntime-web` WASM and WebGPU-targeted bundle | Executes ONNX inference in the browser | PaddleOCR and SlimSAM |
+| Transformers.js | `@huggingface/transformers@4.3.0` | Loads and runs SlimSAM and optional SAM 2.1 in the browser | Segmentation |
+| ONNX Runtime Web | `onnxruntime-web` WASM and WebGPU-targeted bundle | Executes ONNX inference in the browser | PaddleOCR, SlimSAM, and optional SAM 2.1 |
 | three.js | `three@0.186.1` | 3D relief visualization and STL geometry support | Only when the relief view/export is used |
 | Potrace | `esm-potrace-wasm@^0.5.1` package dependency | Optional bitmap-to-vector preprocessing | When Autotrace is enabled before analysis |
 

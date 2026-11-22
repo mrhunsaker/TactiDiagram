@@ -39,6 +39,10 @@ Off by default and experimental. When checked, Indra OCR v1.1.0 is attempted fir
 
 The browser port currently supports Latin-script recognition only; the reference package's CJK/RTL/world recognizers, orientation/script classifiers, and language-model rescoring are not ported. Do not select it expecting multilingual OCR. Model assets must be prepared by `npm run vendor`. Toggling this option reruns all analysis. See [OCR engines](ocr-engines.md).
 
+### Use experimental SAM 2.1 segmentation (WebGPU)
+
+Off by default. When checked, the next analysis uses the locally vendored SAM 2.1 Hiera Tiny fp16 model instead of SlimSAM. The model files add about 78 MB during `npm run vendor`. This backend requires `navigator.gpu` and a usable WebGPU adapter; browser support alone is not sufficient if the operating system, GPU, or graphics driver cannot provide an adapter. If WebGPU is unavailable, analysis stops with an error rather than automatically switching backends. Uncheck the option and run the analysis again to use the default SlimSAM WASM backend. Keep this option off unless WebGPU works in the browser on the target machine. The SAM 2.1 path is experimental and has not been validated across all supported browsers and GPUs. See [Models and inference engines](models-and-engines.md).
+
 ### Tracing sensitivity (0–100)
 
 The slider moves in steps of 5 and defaults to 55. Lower values are more conservative and can suppress noise, but may miss pale or faint contours. Higher values lower detection thresholds and can recover lighter regions and strokes, but may add noise and unnecessary detail. Sensitivity affects foreground, edge, colour-region, and thin-stroke recovery; it does not disable physical layout or braille-clearance logic.

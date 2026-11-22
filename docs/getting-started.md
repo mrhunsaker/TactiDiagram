@@ -26,7 +26,7 @@ npm ci
 npm run vendor
 ```
 
-The vendor script copies browser libraries into `src/vendor/` and downloads model assets into `src/models/`. It prepares OpenCV.js, Tesseract.js and English traineddata, Transformers.js, ONNX Runtime Web, three.js, SlimSAM, PaddleOCR, optional Indra OCR files, and the Potrace runtime/license notice. Existing nonempty downloaded files are skipped. If a specific generated file is corrupt or incomplete, remove that file and rerun the command.
+The vendor script copies browser libraries into `src/vendor/` and downloads model assets into `src/models/`. It prepares OpenCV.js, Tesseract.js and English traineddata, Transformers.js, ONNX Runtime Web, three.js, SlimSAM, optional SAM 2.1 Hiera Tiny files (about 78 MB), PaddleOCR, optional Indra OCR files, and the Potrace runtime/license notice. Existing nonempty downloaded files are skipped. If a specific generated file is corrupt or incomplete, remove that file and rerun the command.
 
 Generated browser libraries and model weights are local runtime output, not application source. Do not commit them unless a deliberate distribution policy requires it.
 
@@ -42,6 +42,7 @@ The static server serves the tracked `src/` directory. Its default address is `h
 
 Choose a built-in sample or upload/drop a PNG, JPEG/JPG, or WebP image no larger than 15 MiB. The UI composites transparency onto white and scales the longest side to at most 1,400 pixels.
 
+Set paper and outline style. Leave optional Autotrace, Indra OCR, and SAM 2.1 off for a baseline run; SlimSAM is the default segmentation backend. SAM 2.1 requires a usable WebGPU adapter, not merely a browser that implements the WebGPU API. If the SAM 2.1 option reports that no adapter is available, uncheck it and rerun with SlimSAM. Begin with tracing sensitivity 55. Optionally add a braille title, texture fills, or force letter keys. The processing stages are image/model preparation, OCR, leader detection, segmentation, tactile layout, and guideline checks.
 Loading a sample or your own scan only stages it. Set paper and outline style first, leave optional Autotrace and Indra OCR off for a baseline run, begin with tracing sensitivity 55, then press **Start analysis**. Changing analysis-affecting options (Autotrace, Indra OCR, SAM 2.1) after a run requires pressing the button again; the label shows "Apply settings & re-analyze" when settings differ from the last run. Optionally add a braille title, texture fills, or force letter keys. The processing stages are image/model preparation, OCR, leader detection, segmentation, tactile layout, and guideline checks.
 
 Read [Application controls and options](application-options.md) for the exact effect of every control, tab, review action, and export.
@@ -90,6 +91,7 @@ Generated output is written under `eval-out/`. The harness measures selected geo
 | PaddleOCR fails | The pipeline attempts Tesseract fallback; inspect console errors. |
 | Indra unavailable | Confirm detector, recognizer, metadata, and license files in `src/models/indra/`; fallback should continue to PaddleOCR. |
 | SlimSAM fails | Confirm both SlimSAM ONNX files and Transformers.js/ONNX Runtime assets exist. |
+| SAM 2.1 says WebGPU is unavailable or no adapter exists | This is a browser/OS/GPU/driver capability issue, not an upload or sample-gallery problem. Uncheck SAM 2.1 and use SlimSAM; WebGPU setup is optional and varies by browser and platform. |
 | 3D view blank | Check WebGL/browser/GPU support; SVG and Print/PDF do not need WebGL. |
 | Upload rejected | Use PNG/JPEG/WebP under 15 MiB. |
 | Print dimensions wrong | Print at actual size and disable fit-to-page/shrink-to-fit. |

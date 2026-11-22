@@ -10,7 +10,7 @@ Owns browser UI state, image input, tabs, review rail, export actions, and the d
 
 ### `pipeline.js`
 
-Coordinates the analysis stage: loads OpenCV.js, SlimSAM, and OCR engines; runs the engine chain (opt-in Indra, then PaddleOCR, then Tesseract); filters and groups OCR words into labels; applies vocabulary corrections; detects label/leader relationships; builds foreground and structural line representations; computes SlimSAM image embeddings; and segments label anchors.
+Coordinates the analysis stage: loads OpenCV.js, the selected segmentation backend (SlimSAM by default or optional SAM 2.1), and OCR engines; runs the engine chain (opt-in Indra, then PaddleOCR, then Tesseract); filters and groups OCR words into labels; applies vocabulary corrections; detects label/leader relationships; builds foreground and structural line representations; computes the selected segmenter image embeddings; and segments label anchors.
 
 ## Recognition and geometry
 
@@ -52,11 +52,11 @@ Builds structural line art from colour-region boundaries and thin strokes. It us
 
 ### `segment.js`
 
-Uses Transformers.js and SlimSAM. It computes one image embedding, applies point prompts for each label, evaluates candidate masks by score and area, and returns a mask for each label where possible.
+Uses Transformers.js with SlimSAM by default or SAM 2.1 Hiera Tiny when the experimental WebGPU checkbox is selected. It computes/caches image embeddings, applies point prompts for each label, evaluates candidate masks by score and area, and returns a mask for each label where possible. SAM 2.1 requires a usable WebGPU adapter; it does not automatically fall back to SlimSAM.
 
 ### `libs.js`
 
-Provides lazy loaders for OpenCV.js, Tesseract.js, Transformers.js, and ONNX Runtime WASM. It configures local model paths and disables remote model resolution for Transformers.js. OpenCV has a pinned CDN fallback if the local bundle is missing.
+Provides lazy loaders for OpenCV.js, Tesseract.js, Transformers.js, and ONNX Runtime Web. SlimSAM uses WASM; optional SAM 2.1 uses WebGPU. It configures local model paths and disables remote model resolution for Transformers.js. OpenCV has a pinned CDN fallback if the local bundle is missing.
 
 ## Tactile output and quality
 
@@ -86,7 +86,7 @@ Uses three.js to display a 3D relief preview and generate an STL plate model.
 
 ## Planned / not currently wired into the main pipeline
 
-- **Larger vision-language or segmentation models:** discussed as research directions in [Advanced model options](advanced-model-options.md); none are enabled in the current app.
+- **Other larger vision-language or segmentation models:** discussed as research directions in [Advanced model options](advanced-model-options.md); SAM 2.1 is the sole integrated experimental exception.
 
 ## Editable SVG and vector-editor handoff
 

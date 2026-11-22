@@ -13,7 +13,7 @@ The transcriber remains responsible for the finished graphic. TouchSight-NG is a
 - **Theory and pipeline:** [docs/architecture.md](docs/architecture.md), [docs/pipeline.md](docs/pipeline.md)
 - **Models and inference engines:** [docs/models-and-engines.md](docs/models-and-engines.md)
 - **OCR engines (optional Indra engine):** [docs/ocr-engines.md](docs/ocr-engines.md)
-- **Advanced, not-yet-implemented AI options:** [docs/advanced-model-options.md](docs/advanced-model-options.md)
+- **Research roadmap (other models not implemented):** [docs/advanced-model-options.md](docs/advanced-model-options.md)
 - **Review workflow:** [docs/review-workflow.md](docs/review-workflow.md)
 
 ## Intended workflow
@@ -35,9 +35,12 @@ flowchart TD
     C --> D["Label grouping and text correction"]
     D --> E["Leader-line detection and tracing"]
     E --> F["Point prompts from leader tips or in-figure labels"]
-    F --> G["SlimSAM segmentation<br/>named diagram parts"]
+    F --> G{"Segmentation backend"}
+    G -->|Default| S["SlimSAM segmentation<br/>WASM"]
+    G -->|Opt-in checkbox| S2["SAM 2.1 Hiera Tiny<br/>WebGPU"]
     B --> H["Foreground and contour analysis"]
-    G --> I["Label-guided line hierarchy"]
+    S --> I["Label-guided line hierarchy"]
+    S2 --> I
     H --> I
     I --> J["Tactile page layout<br/>millimetres, spacing, textures, UEB braille"]
     D --> J
@@ -93,7 +96,7 @@ npm run vendor
 npm run serve
 ```
 
-The vendor step copies browser libraries into `src/vendor/` and downloads model assets into `src/models/`. The local server serves `src/` directly at http://localhost:5173 by default. Keep the terminal open while using the app.
+The vendor step copies browser libraries into `src/vendor/` and downloads model assets into `src/models/`, including the optional SAM 2.1 model files (about 78 MB). SAM 2.1 requires a browser/device with a working WebGPU adapter; SlimSAM remains the default and uses WebAssembly. The local server serves `src/` directly at http://localhost:5173 by default. Keep the terminal open while using the app.
 
 By default the application runs in a browser tab. An optional desktop window
 (neutralino, using the operating system webview instead of a bundled Chromium)
@@ -147,7 +150,7 @@ Contributions are welcome, particularly bug reports and improvements grounded in
 
 ## Credits and licensing
 
-TouchSight-NG builds on open-source OCR, computer-vision, segmentation, and rendering libraries, including Indra OCR (optional engine), PaddleOCR, Tesseract.js, SlimSAM, Transformers.js, ONNX Runtime Web, OpenCV.js, three.js, and Potrace. See the project dependency manifests and relevant upstream projects for their respective licenses.
+TouchSight-NG builds on open-source OCR, computer-vision, segmentation, and rendering libraries, including Indra OCR (optional engine), PaddleOCR, Tesseract.js, SlimSAM, experimental SAM 2.1, Transformers.js, ONNX Runtime Web, OpenCV.js, three.js, and Potrace. See the project dependency manifests and relevant upstream projects for their respective licenses.
 
 The application code is licensed under **GPL-3.0-or-later**. Sample diagrams retain their source licenses; attribution is maintained in [src/samples/CREDITS.md](src/samples/CREDITS.md). The precomputed tactile SVGs retain the licenses of their source diagrams.
 

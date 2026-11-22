@@ -15,13 +15,20 @@ npx playwright install chromium
 npm run serve
 ```
 
-In a second terminal:
+In a second terminal, with `npm run serve` still running:
 
 ```bash
 npm run eval
 node scripts/recall.mjs
+```
+
+Run the segmentation comparison separately. Unlike `npm run eval`, `npm run compare-segmentation` starts and stops its own local server when `BASE` is not set, so do not leave another server running on port 5173 for this command:
+
+```bash
 npm run compare-segmentation
 ```
+
+To use an already-running server on another port, set `BASE` to its URL, for example `BASE=http://127.0.0.1:8080 npm run compare-segmentation`. The comparison runs each sample once with SlimSAM and once with SAM 2.1; SAM 2.1 runs require a WebGPU-capable Playwright Chromium environment and will be recorded as failures when no usable adapter is available. SlimSAM results remain useful independently.
 
 The server serves `src/`; `npm run vendor` prepares `src/vendor/` and `src/models/`. Generated evaluation output is written under `eval-out/`. `npm run compare-segmentation` runs every sample with both backends and writes JSON, CSV, Markdown, and per-label mask PNGs under `eval-out/segmentation-comparison/`. Paired-model IoU measures agreement, not accuracy; reviewed reference masks are needed for ground-truth IoU and boundary metrics.
 

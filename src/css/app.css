@@ -3,7 +3,7 @@
 
 :root {
   /* 150% of the browser default: enlarge the entire app UI by 50%. */
-  font-size: 150%;
+  font-size: 100%;
   /* Catppuccin Latte, adjusted for WCAG AA (all text >= 4.5:1) */
   --bg: #eff1f5;            /* Base */
   --panel: #ffffff;         /* Panel: Text on white (11.2:1) */

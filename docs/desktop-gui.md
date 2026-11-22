@@ -65,16 +65,19 @@ the Neutralino window. Closing the window shuts the server down.
 ```
 desktop/
   neutralino/
-    neutralino.config.json   window configuration (size, title, no native API)
+    neutralino.config.json   window configuration (size, title, restricted native API list)
     resources/index.html     placeholder shown only if the server is unreachable
 scripts/
   desktop.mjs               launcher: starts serve.mjs, opens the window, cleans up
 ```
 
-The window configuration sets `"enableNativeAPI": false`, so the application
-runs in the webview with no access to Neutralino's filesystem, process, or OS
-APIs. It can do exactly what it can do in a browser, nothing more; the static
-server remains the only local surface.
+The window configuration enables Neutralino's native API with a restricted
+`nativeAllowList` (save/open dialogs, file writes, opening a file with the
+system browser and app metadata), and nothing else. Process, extensions and
+all other native namespaces stay blocked: the app can save the tactile SVG,
+key page and STL through a native Save dialog and hand the print view to the
+default browser, but it can run no arbitrary commands; the static server
+remains the only other local surface.
 
 ## Accessibility note
 
@@ -169,9 +172,9 @@ and push the tag.
   target machine needs Microsoft Edge WebView2 Runtime.
 - The AppImage is x86_64 only; aarch64 builds would need ARM Neutralino
   binaries and `aarch64` `appimagetool`.
-- The packaged app has the same security posture as the browser app
-  (`enableNativeAPI: false`); it can reach the network the same way the
-  web app does.
+- The packaged app reaches the network the same way the web app does. Its
+  native-API access is limited to the `nativeAllowList` (dialogs, file
+  writes, opening a file with the system browser).
 
 ## If you later want an installable desktop app: Tauri
 
@@ -195,3 +198,20 @@ Tauri requires a Rust toolchain for builds, which is why it is documented as an
 option here rather than wired into the repository now. The
 [sidecar and embedded-server patterns](https://v2.tauri.app/develop/sidecar/)
 are covered in the Tauri documentation.
+
+### Saving and printing in the desktop app
+
+The desktop shell runs the app in a WebView, which does not support browser-style
+downloads or pop-up windows. In the packaged app:
+
+- **Save SVG / key page / STL** opens the system Save As dialog and writes the real
+  file where you choose.
+- **Print / PDF** writes a page-sized print view to a temporary HTML file and opens
+  it in your default browser. Print or Save as PDF from there; the browser is not
+  restricted by the app's WebView.
+
+When running from a repo checkout in a normal browser, the standard download links
+and new-tab printing are used instead. This works because the packaged build enables
+Neutralino's native API with a restricted allow list (`enableNativeAPI: true` plus a
+`nativeAllowList` limited to dialogs, file I/O and opening files); the script in
+`scripts/package.mjs` sets this up in the build config automatically.

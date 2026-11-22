@@ -113,6 +113,7 @@ const originalCfg = readFileSync(cfgPath, 'utf8');
 function writeBuildConfig() {
   const cfg = JSON.parse(originalCfg);
   cfg.enableServer = true; // the shell serves resources.neu itself
+  cfg.enableNativeAPI = true; // save dialogs, file writes and print handoff
   cfg.url = '/';
   cfg.exportAuthInfo = false;
   if (versionArg) {
@@ -121,7 +122,14 @@ function writeBuildConfig() {
     writeFileSync(join(resDir, 'version.json'),
       JSON.stringify({ name: 'TouchSight-NG', version: versionArg }, null, 2) + '\n');
   }
-  if (existsSync(join(resDir, 'icon.png'))) cfg.modes.window.icon = '/resources/icon.png';
+  if (existsSync(join(resDir, 'icon.png'))) {
+    cfg.modes.window.icon = '/resources/icon.png';
+  } else {
+    // The checked-in Neutralino config points at ./resources/icon.png, but
+    // the packaging icon is optional. Remove the stale path when no PNG was
+    // staged so `neu build` does not fail while stat'ing a missing file.
+    delete cfg.modes.window.icon;
+  }
   writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + '\n');
 }
 

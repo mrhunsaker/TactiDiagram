@@ -5,7 +5,7 @@ TouchSight-NG is a hybrid computer-vision pipeline. OCR and segmentation use tra
 ## End-to-end pipeline
 
 ```mermaid
-flowchart LR
+flowchart TD
   A[Input: PNG, JPG, WebP] --> B[Decode and normalize]
   B --> I0{Use Indra OCR checked?}
   I0 -->|Yes| I1[Indra detection and recognition]
@@ -102,7 +102,7 @@ The current method:
 7. Uses the far endpoint as an approximate point on the named part.
 
 ```mermaid
-flowchart LR
+flowchart TD
   A[OCR label box] --> C[Candidate line segments]
   B[Thin-stroke mask] --> C
   C --> D[Score by proximity and direction]

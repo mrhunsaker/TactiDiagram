@@ -422,7 +422,16 @@ async function relayout(withSteps = false) {
 // ---------- views ----------
 function draw() {
   $('#tabs').hidden = false; $('#views').hidden = false; $('#side').hidden = false; $('#howto').hidden = true;
-  $('#viewmode').hidden = currentTab() !== 'tactile' || $('#opt-original-braille')?.checked;
+  const originalBraille = !!$('#opt-original-braille')?.checked;
+  for (const tabName of ['compare', 'key', 'relief']) {
+    const tab = $(`#tabs [data-tab="${tabName}"]`);
+    if (tab) tab.hidden = originalBraille;
+  }
+  if (originalBraille && ['compare', 'key', 'relief'].includes(currentTab())) {
+    document.querySelectorAll('#tabs button').forEach((tab) => tab.setAttribute('aria-selected', String(tab.dataset.tab === 'tactile')));
+    document.querySelectorAll('.view').forEach((view) => { view.hidden = view.dataset.view !== 'tactile'; });
+  }
+  $('#viewmode').hidden = currentTab() !== 'tactile' || originalBraille;
   drawTactile();
   $('#ours-small').innerHTML = renderTactile(state.layout);
   $('#keypage').innerHTML = $('#opt-original-braille')?.checked

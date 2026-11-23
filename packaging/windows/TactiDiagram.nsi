@@ -3,24 +3,26 @@
   !define APP_VERSION "0.0.0"
 !endif
 !include "MUI2.nsh"
+!define REPO_ROOT "..\.."
 !define APP_NAME "TactiDiagram"
 !define APP_EXE "TactiDiagram.exe"
 !define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\TactiDiagram"
 Name "${APP_NAME}"
 Caption "${APP_NAME} Setup"
-OutFile "dist\TactiDiagram-Setup.exe"
+OutFile "${REPO_ROOT}\dist\TactiDiagram-Setup.exe"
 InstallDir "$LOCALAPPDATA\Programs\TactiDiagram"
 InstallDirRegKey HKCU "${UNINSTALL_KEY}" "InstallLocation"
 RequestExecutionLevel user
 Unicode True
 SetCompressor /SOLID lzma
-Icon "packaging\icon.ico"
-UninstallIcon "packaging\icon.ico"
+Icon "${REPO_ROOT}\packaging\icon.ico"
+UninstallIcon "${REPO_ROOT}\packaging\icon.ico"
 !define MUI_ABORTWARNING
 !define MUI_STARTMENUPAGE_DEFAULTFOLDER "${APP_NAME}"
 !define MUI_STARTMENUPAGE_REGISTRY_ROOT HKCU
 !define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\TactiDiagram"
 !define MUI_STARTMENUPAGE_REGISTRY_VALUENAME "StartMenuFolder"
+Var StartMenuFolder
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_STARTMENU Application $StartMenuFolder
@@ -39,10 +41,10 @@ Section "Install"
   SetShellVarContext current
   SetOutPath "$INSTDIR"
   ; Keep the Neutralino executable and resources.neu side by side.
-  File "dist\TactiDiagram-win-x64\TactiDiagram.exe"
-  File "dist\TactiDiagram-win-x64\resources.neu"
-  File "dist\TactiDiagram-win-x64\README.txt"
-  File "packaging\icon.ico"
+  File "${REPO_ROOT}\dist\TactiDiagram-win-x64\TactiDiagram.exe"
+  File "${REPO_ROOT}\dist\TactiDiagram-win-x64\resources.neu"
+  File "${REPO_ROOT}\dist\TactiDiagram-win-x64\README.txt"
+  File "${REPO_ROOT}\packaging\icon.ico"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 
   ; Per-user Add/Remove Programs registration (no administrator elevation).

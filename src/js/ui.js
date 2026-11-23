@@ -643,7 +643,12 @@ const indraInput = $('#opt-indra');
 indraInput?.addEventListener('change', () => updateAnalyzeButton());
 
 const originalBrailleInput = $('#opt-original-braille');
-originalBrailleInput?.addEventListener('change', () => updateAnalyzeButton());
+originalBrailleInput?.addEventListener('change', () => {
+  const ready = originalBrailleInput.checked && !!state.traceSvg && !!state.analysis?.transcribeOnly;
+  $('#dl-pottrace-svg').hidden = !ready;
+  $('#dl-svg').textContent = ready ? 'Download layered editable SVG' : 'Download editable tactile SVG';
+  updateAnalyzeButton();
+});
 
 const sensitivityInput = $('#opt-sensitivity');
 const sensitivityValue = $('#opt-sensitivity-value');

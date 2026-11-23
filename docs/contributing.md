@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for considering a contribution. The practical details live in the repository: see [CONTRIBUTING.md](https://github.com/mrhunsaker/touchsight-NG/blob/main/CONTRIBUTING.md), [CODE_STYLE.md](https://github.com/mrhunsaker/touchsight-NG/blob/main/CODE_STYLE.md), [CODE_OF_CONDUCT.md](https://github.com/mrhunsaker/touchsight-NG/blob/main/CODE_OF_CONDUCT.md) and [CHANGES.md](https://github.com/mrhunsaker/touchsight-NG/blob/main/CHANGES.md).
+Thank you for considering a contribution. The practical details live in the repository: see [CONTRIBUTING.md](https://github.com/mrhunsaker/TactiDiagram/blob/main/CONTRIBUTING.md), [CODE_STYLE.md](https://github.com/mrhunsaker/TactiDiagram/blob/main/CODE_STYLE.md), [CODE_OF_CONDUCT.md](https://github.com/mrhunsaker/TactiDiagram/blob/main/CODE_OF_CONDUCT.md) and [CHANGES.md](https://github.com/mrhunsaker/TactiDiagram/blob/main/CHANGES.md).
 
 Quick summary:
 

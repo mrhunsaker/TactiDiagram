@@ -12,6 +12,10 @@ Owns browser UI state, image input, tabs, review rail, export actions, and the d
 
 Coordinates the analysis stage: loads OpenCV.js, the selected segmentation backend (SlimSAM by default or optional SAM 2.1), and OCR engines; runs the engine chain (opt-in Indra, then PaddleOCR, then Tesseract); filters and groups OCR words into labels; applies vocabulary corrections; detects label/leader relationships; builds foreground and structural line representations; computes the selected segmenter image embeddings; and segments label anchors.
 
+### `autotrace.js`
+
+Owns both Potrace call paths. Autotrace preprocessing reconstructs and rasterizes an image before analysis. Direct-output helpers build an OCR-masked monochrome edge image using per-channel RGB Sobel gradients and bounded Otsu thresholding, invoke Potrace, and normalize the returned SVG to black editable paths on transparency. The direct trace uses the original uploaded raster, not the prepared analysis raster.
+
 ## Recognition and geometry
 
 ### `indra.js`
@@ -52,7 +56,7 @@ Builds structural line art from colour-region boundaries and thin strokes. It us
 
 ### `segment.js`
 
-Uses Transformers.js with SlimSAM by default or SAM 2.1 Hiera Tiny when the experimental WebGPU checkbox is selected. The direct Potrace SVG output option still runs the complete pipeline, including leader detection, line extraction, foreground reconstruction, and SAM segmentation. Potrace then traces the original source as the primary SVG artwork while the normal tactile layout supplies braille placement and optional two-letter keys. SAM 2.1 requires a usable WebGPU adapter; it does not automatically fall back to SlimSAM.
+Uses Transformers.js with SlimSAM by default or SAM 2.1 Hiera Tiny when the experimental WebGPU checkbox is selected. The direct Potrace SVG output option still runs the complete pipeline, including leader detection, line extraction, foreground reconstruction, and SAM segmentation. Potrace then traces the original source as the primary SVG artwork while the normal tactile layout supplies braille placement and optional two-letter keys. SAM 2.1 requires a usable WebGPU adapter. If its inference fails after initialization, the pipeline clears partial masks and retries the complete segmentation set with SlimSAM.
 
 ### `libs.js`
 
@@ -74,7 +78,7 @@ Encodes uncontracted UEB Grade 1 and generates two-letter label keys.
 
 ### `render.js`
 
-Renders the tactile page and key page as SVG, including line geometry, texture patterns, braille dots, and preview-only presentation elements. The direct Potrace output mode embeds editable Potrace paths and exports each normally laid-out braille label as a separately movable layer, while retaining the standard key-page export.
+Renders the segmented tactile page and key page, including line geometry, textures, braille dots, and preview-only elements. The direct Potrace output embeds transparent black Potrace paths as the diagram linework, plus an optional title layer and a separate movable layer for each braille label. Both renderers consume the same tactile layout and key-page data.
 
 ### `check.js`
 

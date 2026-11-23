@@ -90,7 +90,7 @@ This design supports use with school and student materials while keeping source 
 
 ## Run locally
 
-Requirements: Node.js 24 or newer and a current desktop browser with WebAssembly support. WebGL is needed only for the 3D relief view and STL export.
+Requirements: Node.js 24 or newer and a **Chromium-based desktop browser** (Chrome, Edge, Brave, Chromium). Use a Chromium browser when possible: Firefox runs the app and its default SlimSAM path, but the optional SAM 2.1 / WebGPU backend is disabled there (see below). WebKit-based browsers (Safari on macOS, GNOME Web/Epiphany) are not supported: WebKit's WebGPU and WebGL implementations do not provide the ONNX Runtime backends the models need. WebGL is needed only for the 3D relief view and STL export.
 
 ```bash
 npm ci
@@ -98,7 +98,7 @@ npm run vendor
 npm run serve
 ```
 
-The vendor step copies browser libraries into `src/vendor/` and downloads model assets into `src/models/`, including the optional SAM 2.1 model files (about 78 MB). SAM 2.1 requires a browser/device with a working WebGPU adapter; SlimSAM remains the default and uses WebAssembly. The local server serves `src/` directly at http://localhost:5173 by default. Keep the terminal open while using the app.
+The vendor step copies browser libraries into `src/vendor/` and downloads model assets into `src/models/`, including the optional SAM 2.1 model files (about 78 MB). SAM 2.1 requires a **Chromium-based browser** with a working WebGPU adapter; it is disabled automatically on Firefox (the ONNX Runtime WebGPU backend is Chromium-oriented and fails mid-run there) and is not supported on WebKit/Safari. SlimSAM remains the default and uses WebAssembly, so the app works in any modern browser even without SAM 2.1. The local server serves `src/` directly at http://localhost:5173 by default. Keep the terminal open while using the app.
 
 There are three ways to run TactiDiagram:
 

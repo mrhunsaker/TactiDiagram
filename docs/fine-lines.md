@@ -18,15 +18,15 @@ The fine-line tracer in this project keeps that linework deliberately.
 
 ```mermaid
 flowchart TD
-  A["Grayscale image"] --> B["3x3 tophat / blackhat<br/>(responds only to strokes < ~3 px)"]
-  A --> C["9x9 tophat / blackhat<br/>(leader-width strokes)"]
-  B --> D["threshold"]
+  A["Grayscale image"] --> B["3x3 tophat / blackhat (responds only to strokes under about 3 px)"]
+  A --> C["9x9 tophat / blackhat (leader-width strokes)"]
+  B --> D["Threshold"]
   C --> D
-  D --> E["distance transform<br/>keep thin strokes only"]
-  E --> F["erase text boxes and<br/>assigned leader lines"]
+  D --> E["Distance transform; keep thin strokes only"]
+  E --> F["Erase text boxes and assigned leader lines"]
   F --> G["Zhang-Suen skeleton"]
-  G --> H["walk skeleton graph:<br/>chains and closed loops"]
-  H --> I["analysis.detailLines<br/>mask + polylines"]
+  G --> H["Walk skeleton graph: chains and closed loops"]
+  H --> I["analysis.detailLines: mask and polylines"]
 ```
 
 Design points:

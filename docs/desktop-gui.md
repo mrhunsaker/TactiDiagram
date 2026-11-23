@@ -79,6 +79,10 @@ key page and STL through a native Save dialog and hand the print view to the
 default browser, but it can run no arbitrary commands; the static server
 remains the only other local surface.
 
+## Optional SAM 2.1 / WebGPU in the desktop window
+
+The Windows desktop window uses the installed Microsoft Edge WebView2 runtime, so SAM 2.1 may be available when that runtime is current and Windows exposes a compatible WebGPU adapter. Its availability still depends on graphics acceleration, GPU drivers, and ONNX Runtime compatibility. The Linux desktop window uses WebKitGTK and is not a supported SAM 2.1 target; use the browser app in Chrome or Edge for the experimental backend. SlimSAM/WASM remains the default and automatic fallback. See [WebGPU setup and browser compatibility](webgpu.md).
+
 ## Accessibility note
 
 Network access in the shell is limited to the local static server and the

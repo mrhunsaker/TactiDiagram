@@ -74,7 +74,7 @@ jobs:
         shell: pwsh
         run: |
           $version = node -p "require('./package.json').version"
-          & "\${env:ProgramFiles(x86)}\NSIS\makensis.exe" "/DAPP_VERSION=$version" "packaging/windows/TactiDiagram.nsi"
+          & "${env:ProgramFiles(x86)}\NSIS\makensis.exe" "/DAPP_VERSION=$version" "packaging/windows/TactiDiagram.nsi"
 
   version:
     if: github.event_name == 'push'
@@ -82,7 +82,7 @@ jobs:
     permissions:
       contents: write
     outputs:
-      version: \${{ steps.v.outputs.version }}
+      version: ${{ steps.v.outputs.version }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -97,7 +97,7 @@ jobs:
             echo "::error::Tag must match vYYYY.MM.DD (for example v2026.11.23)."
             exit 1
           fi
-          VERSION="\${TAG#v}"
+          VERSION="${TAG#v}"
           if [ "$(date -d "$VERSION" +%Y.%m.%d 2>/dev/null || true)" != "$VERSION" ]; then
             echo "::error::Tag version must be a valid calendar date in YYYY.MM.DD format."
             exit 1
@@ -106,8 +106,8 @@ jobs:
       - name: Synchronize package version from release tag
         shell: bash
         env:
-          VERSION: \${{ steps.v.outputs.version }}
-          DEFAULT_BRANCH: \${{ github.event.repository.default_branch }}
+          VERSION: ${{ steps.v.outputs.version }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
           git fetch origin "$DEFAULT_BRANCH"
@@ -141,7 +141,7 @@ jobs:
       - run: npx neu update
         working-directory: desktop/neutralino
       - name: Build Linux AppImage
-        run: node scripts/package.mjs --target linux --version "\${{ needs.version.outputs.version }}"
+        run: node scripts/package.mjs --target linux --version "${{ needs.version.outputs.version }}"
       - uses: actions/upload-artifact@v4
         with:
           name: TactiDiagram-linux-x86_64
@@ -167,12 +167,12 @@ jobs:
       - name: Build Windows icon assets
         run: node scripts/win-icon.cjs
       - name: Build Windows ZIP
-        run: node scripts/package.mjs --target win --version "\${{ needs.version.outputs.version }}"
+        run: node scripts/package.mjs --target win --version "${{ needs.version.outputs.version }}"
       - name: Install NSIS
         run: choco install nsis --yes --no-progress
       - name: Build Windows installer
         shell: pwsh
-        run: '& "\${env:ProgramFiles(x86)}\NSIS\makensis.exe" "/DAPP_VERSION=\${{ needs.version.outputs.version }}" "packaging/windows/TactiDiagram.nsi"'
+        run: '& "${env:ProgramFiles(x86)}\NSIS\makensis.exe" "/DAPP_VERSION=${{ needs.version.outputs.version }}" "packaging/windows/TactiDiagram.nsi"'
       - uses: actions/upload-artifact@v4
         with:
           name: TactiDiagram-win-x64

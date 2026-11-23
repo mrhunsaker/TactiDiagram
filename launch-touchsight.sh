@@ -28,7 +28,7 @@ npm install
 npm ci
 npm run vendor
 
-if [[ "$MODE" == "web" ]]; then
+if [[ "${MODE,,}" == "web" ]]; then
     PORT="${PORT:-5173}"
     URL="http://localhost:${PORT}/"
     echo "==> Starting TactiDiagram web server on $URL"

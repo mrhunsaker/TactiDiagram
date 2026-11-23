@@ -105,6 +105,7 @@ jobs:
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Synchronize package version from release tag
+        id: sync
         shell: bash
         env:
           VERSION: ${{ steps.v.outputs.version }}
@@ -124,14 +125,29 @@ jobs:
             echo "package.json and package-lock.json already match $VERSION"
           fi
           if git diff --quiet -- package.json package-lock.json; then
-            echo "No package version changes to commit."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No package version changes are needed."
           else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add package.json package-lock.json
-            git commit -m "chore: sync package version to $VERSION"
-            git push origin "HEAD:$DEFAULT_BRANCH"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+      - name: Open package version synchronization pull request
+        if: steps.sync.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.RELEASE_PR_TOKEN }}
+          branch: automation/sync-release-version
+          delete-branch: true
+          base: ${{ github.event.repository.default_branch }}
+          add-paths: |
+            package.json
+            package-lock.json
+          commit-message: "chore: sync package version to ${{ steps.v.outputs.version }}"
+          title: "chore: sync package version to ${{ steps.v.outputs.version }}"
+          body: |
+            ## Summary
+            - Synchronize `package.json` and `package-lock.json` to release tag version `${{ steps.v.outputs.version }}`.
+
+            This pull request was opened automatically by the desktop release workflow. Merge it to keep the default branch's package metadata aligned with the release tag.
 
   linux:
     if: github.event_name == 'push'

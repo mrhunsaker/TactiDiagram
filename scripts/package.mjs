@@ -114,6 +114,10 @@ function writeBuildConfig() {
   const cfg = JSON.parse(originalCfg);
   cfg.enableServer = true; // the shell serves resources.neu itself
   cfg.enableNativeAPI = true; // save dialogs, file writes and print handoff
+  // resources.neu preserves the resources/ directory prefix. Point the
+  // internal server at that directory so "/" resolves to /resources/index.html.
+  // Without this, Neutralino starts its localhost server but returns 404 at "/".
+  cfg.documentRoot = '/resources/';
   cfg.url = '/';
   cfg.exportAuthInfo = false;
   if (versionArg) {
@@ -131,6 +135,16 @@ function writeBuildConfig() {
     delete cfg.modes.window.icon;
   }
   writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + '\n');
+
+  // Fail the package step early if the generated standalone config cannot
+  // serve the staged entry point, rather than shipping a blank localhost page.
+  const writtenCfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
+  if (!writtenCfg.enableServer || writtenCfg.documentRoot !== '/resources/' || writtenCfg.url !== '/') {
+    throw new Error('Invalid packaged Neutralino server configuration: expected enableServer=true, documentRoot=/resources/, and url=/.');
+  }
+  if (!existsSync(join(resDir, 'index.html'))) {
+    throw new Error('Packaged application entry point is missing: ' + join(resDir, 'index.html'));
+  }
 }
 
 // ---- 4. neu build ----------------------------------------------------------

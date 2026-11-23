@@ -124,7 +124,7 @@ Three interchangeable engines read the printed labels. They all expose the same 
 
 **How TactiDiagram uses it:** for packaged releases (`npm run package:desktop` via `scripts/package.mjs`; AppImage on Linux, zipped `.exe` on Windows). The packaged build enables the native API with an explicit allow-list covering only save/open dialogs, file writes, and asking the OS to open a file with its default application: saving the tactile SVG, key page, or STL goes through the system Save dialog, and printing hands a temporary HTML print view to the default browser. Process, extension, and all other native namespaces stay blocked. When running from a repo checkout in a normal browser, none of this is loaded.
 
-**The benefit:** WebGPU (and thus the SAM 2.1 backend) runs in installed desktop builds without requiring any particular browser, and teachers get a real double-click experience with no application server or network.
+**The benefit:** a real double-click application with no application server or network. Note the webview caveat for SAM 2.1: Windows WebView2 is Chromium-based, so SAM 2.1 is available there, but the Linux WebKitGTK webview provides no usable WebGPU, so packaged Linux builds run the SlimSAM backend only.
 
 
 ## Where each tool is pinned

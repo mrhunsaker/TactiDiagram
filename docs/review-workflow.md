@@ -91,6 +91,10 @@ Recommended post-processing sequence:
 The vector editor is a post-processing and QC option, not an automated validation step. Editing SVG geometry does not update TactiDiagram's analysis state or its automated guideline report. Re-run or independently perform checks after edits, and retain the unmodified export so changes can be compared or reverted.
 
 
+## Reviewing Autotrace preprocessing
+
+When **Use Autotrace (Potrace)** is enabled, the reconstructed raster becomes the input to OCR, leader detection, foreground/structural-line analysis, and SAM segmentation. Compare **What the AI saw** with the untouched **Original** view. Look for lost pale outlines, merged neighbouring features, changed label recognition, and leader endpoints that no longer land on the intended part. A better-looking raster is not necessarily a more accurate analysis input; verify the label-to-part relationships again after every Autotrace run.
+
 ## Reviewing direct Potrace output
 
 When **Use direct Potrace SVG output (full analysis)** is enabled, do not treat the direct trace as a substitute for the analysis views. The full OCR, leader, foreground, and SAM segmentation pipeline still runs, but the primary SVG artwork is traced from the original source image rather than rendered from the part masks.

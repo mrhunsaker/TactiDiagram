@@ -256,7 +256,15 @@ async function buildWindowsPackage(binary, resources) {
     const icoPath = join(packagingDir, 'icon.ico');
     if (existsSync(icoPath)) {
       const require = createRequire(import.meta.url);
-      const rcedit = require('rcedit');
+      const rceditModule = require('rcedit');
+      const rcedit = typeof rceditModule === 'function'
+        ? rceditModule
+        : (typeof rceditModule.rcedit === 'function'
+          ? rceditModule.rcedit
+          : rceditModule.default);
+      if (typeof rcedit !== 'function') {
+        throw new Error('The installed rcedit package does not expose a callable rcedit function.');
+      }
       await rcedit(binary, { icon: icoPath });
       iconEmbedded = true;
       console.log('Embedded application icon into the exe (rcedit).');

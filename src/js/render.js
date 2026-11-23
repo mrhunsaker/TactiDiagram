@@ -107,22 +107,27 @@ function potraceInner(svgText) {
   const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
   if (doc.querySelector('parsererror')) throw new Error('Potrace returned malformed SVG.');
   const root = doc.documentElement;
-  const viewBox = root.getAttribute('viewBox') || `0 0 ${root.getAttribute('width') || 1} ${root.getAttribute('height') || 1}`;
+  const viewBox = root.getAttribute('viewBox') || `0 0 ${parseFloat(root.getAttribute('width')) || 1} ${parseFloat(root.getAttribute('height')) || 1}`;
+  const dimensions = viewBox.trim().split(/[\\s,]+/).map(Number);
+  if (dimensions.length !== 4 || !dimensions.every(Number.isFinite) || dimensions[2] <= 0 || dimensions[3] <= 0) {
+    throw new Error('Potrace SVG has an invalid viewBox.');
+  }
   const contents = Array.from(root.childNodes).map((node) => new XMLSerializer().serializeToString(node)).join('');
-  return { viewBox, contents };
+  return { minX: dimensions[0], minY: dimensions[1], sourceW: dimensions[2], sourceH: dimensions[3], contents };
 }
 
 export function renderPotraceBraille(layout, analysis, traceSvg, { layered = false } = {}) {
   if (!traceSvg) throw new Error('The Potrace SVG is not available; run analysis again.');
   const { pageW, pageH, ox, oy, s } = layout;
-  const { viewBox, contents } = potraceInner(traceSvg);
+  const { minX, minY, sourceW, sourceH, contents } = potraceInner(traceSvg);
+  const scaleX = analysis.W * s / sourceW, scaleY = analysis.H * s / sourceH;
   const out = [
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${f(pageW)}mm" height="${f(pageH)}mm" viewBox="0 0 ${f(pageW)} ${f(pageH)}">`,
     '<title>Potrace diagram with braille-transcribed labels</title>',
     '<desc>Experimental Potrace vectorization. Print labels are masked; braille is separated into editable groups. Review all paths and braille placement before tactile production.</desc>',
     '<rect id="page-background" width="100%" height="100%" fill="#fff"/>',
     `<g id="potrace-linework"${layered ? ' inkscape:groupmode="layer" inkscape:label="Potrace traced diagram (editable paths)"' : ''}>`,
-    `<svg x="${f(ox)}" y="${f(oy)}" width="${f(analysis.W * s)}" height="${f(analysis.H * s)}" viewBox="${esc(viewBox)}" preserveAspectRatio="none">${contents}</svg>`,
+`<g transform="translate(${f(ox)} ${f(oy)}) scale(${scaleX} ${scaleY}) translate(${f(-minX)} ${f(-minY)})">${contents}</g>`,
     '</g>',
     `<g id="print-label-coverups"${layered ? ' inkscape:groupmode="layer" inkscape:label="White print-label cover-ups"' : ''} fill="#fff">`,
   ];

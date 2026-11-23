@@ -84,8 +84,8 @@
         </label>
         <label class="check"><input id="opt-textures" type="checkbox"> Fill parts with textures</label>
         <label class="check"><input id="opt-keys" type="checkbox"> Use letter keys for every label</label>
-        <label class="check"><input id="opt-original-braille" type="checkbox"> Experimental: keep the original diagram and replace printed labels with braille</label>
-        <p class="hint"><strong>Warning:</strong> This experimental option skips part segmentation and uses Potrace to vectorize the original diagram after covering detected print labels. It may sacrifice segmentation quality, simplify fine details, or obscure nearby diagram content. Review and adjust the traced paths and braille layers before production.</p>
+        <label class="check"><input id="opt-original-braille" type="checkbox"> Use direct Potrace SVG output (full analysis)</label>
+        <p class="hint"><strong>Output option:</strong> Runs the complete OCR, leader detection, foreground and line analysis, and part segmentation pipeline, then uses a direct Potrace SVG trace of the original diagram instead of the segmented drawing. Label placement uses the normal tactile layout. Enable “Use letter keys for every label” to replace every label with a unique two-letter braille key and include the key page. Potrace may simplify fine details; review traced paths and braille placement before production.</p>
         <button class="btn primary big" id="btn-analyze" type="button" disabled>Load a diagram to begin</button>
         <p class="hint">Loading an image or sample and changing options does not start processing. Set everything up, then press this button.</p>
       </details>

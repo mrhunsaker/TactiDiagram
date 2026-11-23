@@ -260,7 +260,7 @@ function currentPipelineOptions() {
     autotrace: $('#opt-autotrace')?.checked ?? false,
     indra: $('#opt-indra')?.checked ?? false,
     sam21: $('#opt-sam21')?.checked ?? false,
-    originalBraille: $('#opt-original-braille')?.checked ?? false,
+    potraceOutput: $('#opt-original-braille')?.checked ?? false,
     sensitivity: Number($('#opt-sensitivity')?.value ?? DEFAULT_TRACING_SENSITIVITY),
   };
 }
@@ -271,23 +271,15 @@ function updateAnalyzeButton() {
   btn.disabled = !state.pending && !state.analysis;
   if (newImage || !state.analysis) { btn.textContent = state.pending ? 'Start analysis' : 'Re-analyze'; return; }
   const o = currentPipelineOptions(), s = state.optionsSnapshot;
-  const enginesDiffer = !s || o.autotrace !== s.autotrace || o.indra !== s.indra || o.sam21 !== s.sam21 || o.originalBraille !== s.originalBraille;
-  const sensitivityDiffers = !o.originalBraille && o.sensitivity !== state.sensitivity;
+  const enginesDiffer = !s || o.autotrace !== s.autotrace || o.indra !== s.indra || o.sam21 !== s.sam21 || o.potraceOutput !== s.potraceOutput;
+  const sensitivityDiffers = o.sensitivity !== state.sensitivity;
   btn.textContent = enginesDiffer || sensitivityDiffers ? 'Apply settings & re-analyze' : 'Re-run analysis';
 }
 async function startAnalysis() {
   if (state.busy) return;
   const o = currentPipelineOptions(), s = state.optionsSnapshot;
-  const enginesDiffer = !s || o.autotrace !== s.autotrace || o.indra !== s.indra || o.sam21 !== s.sam21 || o.originalBraille !== s.originalBraille;
+  const enginesDiffer = !s || o.autotrace !== s.autotrace || o.indra !== s.indra || o.sam21 !== s.sam21 || o.potraceOutput !== s.potraceOutput;
   if (state.pending || !state.analysis || enginesDiffer) return run(state.pending ?? {});
-  if (o.originalBraille && o.sensitivity !== state.sensitivity) {
-    // Tracing sensitivity is not used by the OCR-only original-diagram output.
-    state.sensitivity = o.sensitivity;
-    state.optionsSnapshot = o;
-    setStatus('Tracing sensitivity does not affect original-diagram braille mode.');
-    updateAnalyzeButton();
-    return;
-  }
   if (o.sensitivity !== state.sensitivity) {
     // Same engines, only tracing sensitivity changed: reuse OCR and SAM masks.
     state.busy = true;
@@ -355,26 +347,22 @@ async function run(input = {}) {
     state.sensitivity = Number($('#opt-sensitivity')?.value ?? DEFAULT_TRACING_SENSITIVITY);
     state.optionsSnapshot = currentPipelineOptions();
     let preparedImageData = sourceImageData;
-    if ($('#opt-autotrace')?.checked && !$('#opt-original-braille')?.checked) {
+    if ($('#opt-autotrace')?.checked) {
       setStep('engines', 'Reconstructing image with Potrace…');
       preparedImageData = await prepareAutotrace(sourceImageData);
     }
     const analysis = await analyze(preparedImageData, { sensitivity: state.sensitivity,
       preferIndra: $('#opt-indra')?.checked ?? false,
       segmentationBackend: $('#opt-sam21')?.checked ? 'sam2' : 'slimsam',
-      transcribeOnly: $('#opt-original-braille')?.checked ?? false,
       onStage: (k, msg) => setStep(k, k === 'engines' ? 'Loading on-device models… (first run only)' : msg),
     });
-    const traceSvg = $('#opt-original-braille')?.checked
-      ? await (async () => { setStep('engines', 'Tracing diagram and removing detected print labels with Potrace…'); return traceOriginalDiagram(sourceImageData, analysis.labels); })()
-      : null;
     state.sourceImageData = sourceImageData;
     state.imageData = preparedImageData;
     state.original = input.original ?? state.original;
     state.name = input.name ?? state.name;
     if (input.title !== undefined) $('#opt-title').value = input.title;
     state.analysis = analysis;
-    state.traceSvg = traceSvg;
+    state.traceSvg = null;
     await relayout(true);
     const secs = ((performance.now() - t0) / 1000).toFixed(1);
     const st = state.layout.stats;
@@ -384,8 +372,8 @@ async function run(input = {}) {
       : '';
     if (fallbackNote) $('#opt-sam21').checked = false;
     const fixes = state.analysis.labels.reduce((n, L) => n + (L.corrections?.length || 0), 0);
-    const quickNote = state.analysis.transcribeOnly ? ' · original diagram retained; part segmentation skipped' : '';
-    setStatus(`Done in ${secs} s on this device · ${state.analysis.labels.length} labels found · ${st.parts} parts segmented · ${st.fullLabels} full braille labels + ${st.keyLabels} keyed${fixes ? ` · ${fixes} OCR slip${fixes > 1 ? 's' : ''} auto-corrected` : ''}${state.analysis.labels.length ? '' : ' · no printed labels found, so this is outlines only'}` + indraNote + fallbackNote + quickNote);
+    const outputNote = $('#opt-original-braille')?.checked ? ' · full analysis completed; direct Potrace SVG used for diagram artwork' : '';
+    setStatus(`Done in ${secs} s on this device · ${state.analysis.labels.length} labels found · ${st.parts} parts segmented · ${st.fullLabels} full braille labels + ${st.keyLabels} keyed${fixes ? ` · ${fixes} OCR slip${fixes > 1 ? 's' : ''} auto-corrected` : ''}${state.analysis.labels.length ? '' : ' · no printed labels found, so this is outlines only'}` + indraNote + fallbackNote + outputNote);
   } catch (e) {
     console.error(e);
     Object.assign(state, previous);
@@ -428,7 +416,12 @@ async function relayout(withSteps = false) {
     textures: $('#opt-textures').checked, forceKeys: $('#opt-keys').checked,
   });
   if (withSteps) { setStep('check', 'Running guideline checks…'); await nextFrame(); }
-  state.check = $('#opt-original-braille')?.checked ? { rules: [] } : checkAll(cv, state.analysis, state.layout, state.imageData);
+  if ($('#opt-original-braille')?.checked) {
+    setStep('engines', 'Tracing the analyzed diagram with Potrace…');
+    const placedTexts = new Set(state.layout.labels.map((label) => label.text));
+    state.traceSvg = await traceOriginalDiagram(state.sourceImageData, state.analysis.labels.filter((label) => !label.removed && placedTexts.has(label.text)));
+  }
+  state.check = checkAll(cv, state.analysis, state.layout, state.imageData);
   draw();
 }
 
@@ -437,23 +430,21 @@ function draw() {
   $('#tabs').hidden = false; $('#views').hidden = false; $('#side').hidden = false; $('#howto').hidden = true;
   const originalBraille = !!$('#opt-original-braille')?.checked;
   $('#dl-pottrace-svg').hidden = !originalBraille;
-  $('#dl-svg').textContent = originalBraille ? 'Download layered editable SVG' : 'Download editable tactile SVG';
-  for (const tabName of ['compare', 'key', 'relief']) {
+  $('#dl-svg').textContent = originalBraille ? 'Download layered Potrace SVG' : 'Download editable tactile SVG';
+  for (const tabName of ['compare', 'relief']) {
     const tab = $(`#tabs [data-tab="${tabName}"]`);
     if (tab) tab.hidden = originalBraille;
   }
-  if (originalBraille && ['compare', 'key', 'relief'].includes(currentTab())) {
+  if (originalBraille && ['compare', 'relief'].includes(currentTab())) {
     document.querySelectorAll('#tabs button').forEach((tab) => tab.setAttribute('aria-selected', String(tab.dataset.tab === 'tactile')));
     document.querySelectorAll('.view').forEach((view) => { view.hidden = view.dataset.view !== 'tactile'; });
   }
   $('#viewmode').hidden = currentTab() !== 'tactile' || originalBraille;
   drawTactile();
   $('#ours-small').innerHTML = renderTactile(state.layout);
-  $('#keypage').innerHTML = $('#opt-original-braille')?.checked
-    ? '<p>Original-diagram mode renders the full transcribed braille labels directly; no key page is generated.</p>'
-    : state.layout.keyEntries.length
-      ? renderKeyPage(state.layout, { preview: true })
-      : '<p>Every label fits as full braille, so no key page is needed.</p>';
+  $('#keypage').innerHTML = state.layout.keyEntries.length
+    ? renderKeyPage(state.layout, { preview: true })
+    : '<p>Every label fits as full braille, so no key page is needed.</p>';
   drawBaseline();
   drawAnalysis();
   drawLabels();
@@ -555,13 +546,13 @@ function drawLabels() {
     const li = document.createElement('li');
     if (L.removed) li.classList.add('removed');
     const hit = placedByText.get(L.text), p = hit?.p;
-    const how = L.removed ? 'removed' : state.analysis.transcribeOnly ? 'original label position' : !p ? 'could not be placed' : p.usesKey ? `key “${p.key}”` : 'full braille';
+    const how = L.removed ? 'removed' : !p ? 'could not be placed' : p.usesKey ? `key “${p.key}”` : 'full braille';
     const fix = L.corrections?.length ? ` · <span class="fix">auto-corrected ${L.corrections.join(', ')}</span>` : '';
     li.innerHTML = `<span class="badge" style="background:${PAL[i % PAL.length]}">${i + 1}</span>
       <input type="text" aria-label="Label ${i + 1} text" value="${L.text.replace(/"/g, '&quot;')}">
       <span class="acts">${i > 0 && !L.removed ? `<button class="m" type="button" aria-label="Merge label ${i + 1} into the label above" title="Merge into the label above">⤒</button>` : ''}<button class="x" type="button" aria-label="${L.removed ? 'Restore' : 'Remove'} label ${i + 1}" title="${L.removed ? 'Restore' : 'Remove'}">${L.removed ? 'Undo' : '✕'}</button></span>
       <div class="br" aria-hidden="true">${toUnicode(L.text.toLowerCase())}</div>
-      <div class="meta">${how} · ${state.analysis.transcribeOnly ? 'leader tracing skipped' : L.leader ? 'leader traced' : 'label sits on the part'} · ${state.analysis.transcribeOnly ? 'segmentation skipped' : L.mask ? 'part segmented' : 'no part found'}${fix}</div>`;
+      <div class="meta">${how} · ${L.leader ? 'leader traced' : 'label sits on the part'} · ${L.mask ? 'part segmented' : 'no part found'}${fix}</div>`;
     const input = li.querySelector('input');
     input.addEventListener('change', async () => { L.text = input.value.trim() || L.text; L.corrections = []; await relayout(); });
     li.querySelector('.x').addEventListener('click', async () => { L.removed = !L.removed; await relayout(); });
@@ -588,7 +579,7 @@ function drawLegend() {
   const ul = $('#legend'); ul.innerHTML = '';
   const parts = state.layout.parts.filter((p) => p.texture != null);
   const bold = state.layout.stats.boldEdges;
-  $('#legend-card').hidden = !parts.length && !bold;
+  $('#legend-card').hidden = !!$('#opt-original-braille')?.checked || (!parts.length && !bold);
   if (bold) {
     for (const [w, txt] of [[3, '<b>Bold line</b> · edge of a labeled part (found by Segment Anything from the leader tip)'], [1.4, '<b>Fine line</b> · other detail traced from the original']]) {
       const li = document.createElement('li');
@@ -607,7 +598,7 @@ function drawLegend() {
 
 function drawRules() {
   const card = $('#guideline-card');
-  if (card) card.hidden = !!$('#opt-original-braille')?.checked;
+  if (card) card.hidden = false;
   const tb = $('#rules tbody'); tb.innerHTML = '';
   for (const r of state.check.rules) {
     const tr = document.createElement('tr');
@@ -644,9 +635,9 @@ indraInput?.addEventListener('change', () => updateAnalyzeButton());
 
 const originalBrailleInput = $('#opt-original-braille');
 originalBrailleInput?.addEventListener('change', () => {
-  const ready = originalBrailleInput.checked && !!state.traceSvg && !!state.analysis?.transcribeOnly;
+  const ready = originalBrailleInput.checked && !!state.traceSvg && !!state.analysis;
   $('#dl-pottrace-svg').hidden = !ready;
-  $('#dl-svg').textContent = ready ? 'Download layered editable SVG' : 'Download editable tactile SVG';
+  $('#dl-svg').textContent = ready ? 'Download layered Potrace SVG' : 'Download editable tactile SVG';
   updateAnalyzeButton();
 });
 
@@ -716,7 +707,7 @@ function printHTML(L, pages) {
 $('#print').onclick = async () => {
   const L = state.layout;
   const pages = [primaryTactileSVG()];
-  if (!$('#opt-original-braille')?.checked && L.keyEntries.length) pages.push(renderKeyPage(L, { preview: true }));
+  if (L.keyEntries.length) pages.push(renderKeyPage(L, { preview: true }));
   const html = printHTML(L, pages);
   if (!desktop) {
     // Browser: a new tab is the only way to print the bare page-sized SVGs.

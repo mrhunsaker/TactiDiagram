@@ -121,34 +121,39 @@ export function renderPotraceBraille(layout, analysis, traceSvg, { layered = fal
   const { pageW, pageH, ox, oy, s } = layout;
   const { minX, minY, sourceW, sourceH, contents } = potraceInner(traceSvg);
   const scaleX = analysis.W * s / sourceW, scaleY = analysis.H * s / sourceH;
+  const layer = (id, label) => layered
+    ? ` inkscape:groupmode="layer" inkscape:label="${esc(label)}"`
+    : '';
   const out = [
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${f(pageW)}mm" height="${f(pageH)}mm" viewBox="0 0 ${f(pageW)} ${f(pageH)}">`,
-    '<title>Potrace diagram with braille-transcribed labels</title>',
-    '<desc>Experimental Potrace vectorization. Print labels are masked; braille is separated into editable groups. Review all paths and braille placement before tactile production.</desc>',
-    '<rect id="page-background" width="100%" height="100%" fill="#fff"/>',
-    `<g id="potrace-linework"${layered ? ' inkscape:groupmode="layer" inkscape:label="Potrace traced diagram (editable paths)"' : ''}>`,
-`<g transform="translate(${f(ox)} ${f(oy)}) scale(${scaleX} ${scaleY}) translate(${f(-minX)} ${f(-minY)})">${contents}</g>`,
+    '<title>Full-pipeline Potrace diagram with editable braille labels</title>',
+    '<desc>The original diagram is traced as editable Potrace vector paths after the complete OCR, leader-detection, foreground, line-analysis, and segmentation pipeline. Braille labels use the normal tactile layout and may be individually moved in a vector editor.</desc>',
+    `<rect id="page-background"${layer('page-background', 'Page background')} width="100%" height="100%" fill="#fff"/>`,
+    `<g id="potrace-linework"${layer('potrace-linework', 'Potrace traced diagram (editable paths)')}>`,
+    `<g transform="translate(${f(ox)} ${f(oy)}) scale(${scaleX} ${scaleY}) translate(${f(-minX)} ${f(-minY)})">${contents}</g>`,
     '</g>',
-    `<g id="print-label-coverups"${layered ? ' inkscape:groupmode="layer" inkscape:label="White print-label cover-ups"' : ''} fill="#fff">`,
+    `<g id="print-label-coverups"${layer('print-label-coverups', 'White print-label cover-ups')} fill="#fff">`,
   ];
+  const placedTexts = new Set(layout.labels.map((label) => label.text));
   for (const L of analysis.labels) {
-    if (L.removed) continue;
+    if (L.removed || !placedTexts.has(L.text)) continue;
     const pad = 3;
     const x = ox + (L.x0 - pad) * s, y = oy + (L.y0 - pad) * s;
     const w = (L.x1 - L.x0 + 2 * pad) * s, h = (L.y1 - L.y0 + 2 * pad) * s;
     out.push(`<rect x="${f(x)}" y="${f(y)}" width="${f(w)}" height="${f(h)}"/>`);
   }
   out.push('</g>');
-  for (let i = 0; i < analysis.labels.length; i++) {
-    const L = analysis.labels[i];
-    if (L.removed) continue;
-    const cells = toCells(L.text);
-    if (!cells.length) continue;
-    const w = brailleWidth(cells.length);
-    const x = ox + ((L.x0 + L.x1) / 2) * s - w / 2;
-    const y = oy + ((L.y0 + L.y1) / 2) * s - BRAILLE.dotPitch;
+  if (layout.title?.cells?.length) {
+    const w = brailleWidth(layout.title.cells.length);
+    out.push(`<g id="braille-title"${layer('braille-title', 'Braille title')} fill="#000">${brailleSVG(layout.title.cells, (pageW - w) / 2, layout.margin)}</g>`);
+  }
+  // Use the ordinary layout's selected cells and coordinates. This preserves
+  // forceKeys, collision avoidance, braille clearance, and the key-page mapping.
+  for (let i = 0; i < layout.labels.length; i++) {
+    const L = layout.labels[i];
     const label = String(L.text || `Label ${i + 1}`);
-    out.push(`<g id="braille-label-${i + 1}"${layered ? ` inkscape:groupmode="layer" inkscape:label="Braille: ${esc(label)}"` : ''} data-label="${i}" fill="#000">${brailleSVG(cells, x, y)}</g>`);
+    const keyNote = L.usesKey ? ` (key ${L.key})` : '';
+    out.push(`<g id="braille-label-${i + 1}"${layer(`braille-label-${i + 1}`, `Braille: ${label}${keyNote}`)} data-label="${i}" fill="#000">${brailleSVG(L.cells, L.rect.x, L.rect.y)}</g>`);
   }
   out.push('</svg>');
   return out.join('');

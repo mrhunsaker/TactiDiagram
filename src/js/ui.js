@@ -3,7 +3,7 @@ import { analyze, updateTracing } from './pipeline.js';
 import { DEFAULT_TRACING_SENSITIVITY } from './tracing-config.js';
 import { prepareAutotrace } from './autotrace.js';
 import { buildLayout } from './tactile.js';
-import { renderTactile, renderKeyPage, TEXTURES } from './render.js';
+import { renderTactile, renderOriginalBraille, renderKeyPage, TEXTURES } from './render.js';
 import { checkAll } from './check.js';
 import { toUnicode } from './braille.js';
 
@@ -260,6 +260,7 @@ function currentPipelineOptions() {
     autotrace: $('#opt-autotrace')?.checked ?? false,
     indra: $('#opt-indra')?.checked ?? false,
     sam21: $('#opt-sam21')?.checked ?? false,
+    originalBraille: $('#opt-original-braille')?.checked ?? false,
     sensitivity: Number($('#opt-sensitivity')?.value ?? DEFAULT_TRACING_SENSITIVITY),
   };
 }
@@ -270,18 +271,18 @@ function updateAnalyzeButton() {
   btn.disabled = !state.pending && !state.analysis;
   if (newImage || !state.analysis) { btn.textContent = state.pending ? 'Start analysis' : 'Re-analyze'; return; }
   const o = currentPipelineOptions(), s = state.optionsSnapshot;
-  const enginesDiffer = !s || o.autotrace !== s.autotrace || o.indra !== s.indra || o.sam21 !== s.sam21;
+  const enginesDiffer = !s || o.autotrace !== s.autotrace || o.indra !== s.indra || o.sam21 !== s.sam21 || o.originalBraille !== s.originalBraille;
   btn.textContent = enginesDiffer || o.sensitivity !== state.sensitivity ? 'Apply settings & re-analyze' : 'Re-run analysis';
 }
 async function startAnalysis() {
   if (state.busy) return;
   const o = currentPipelineOptions(), s = state.optionsSnapshot;
-  const enginesDiffer = !s || o.autotrace !== s.autotrace || o.indra !== s.indra || o.sam21 !== s.sam21;
+  const enginesDiffer = !s || o.autotrace !== s.autotrace || o.indra !== s.indra || o.sam21 !== s.sam21 || o.originalBraille !== s.originalBraille;
   if (state.pending || !state.analysis || enginesDiffer) return run(state.pending ?? {});
   if (o.sensitivity !== state.sensitivity) {
     // Same engines, only tracing sensitivity changed: reuse OCR and SAM masks.
     state.busy = true;
-    document.querySelectorAll("#btn-analyze, #opt-autotrace, #opt-indra, #opt-sam21, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file").forEach((el) => { el.disabled = true; });
+    document.querySelectorAll("#btn-analyze, #opt-autotrace, #opt-indra, #opt-sam21, #opt-original-braille, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file").forEach((el) => { el.disabled = true; });
     const btn = $('#btn-analyze'); if (btn) btn.disabled = true;
     setStatus('Updating tracing sensitivity…');
     try {
@@ -295,7 +296,7 @@ async function startAnalysis() {
       console.error(e);
       setStatus('Could not update tracing: ' + (e.message || e), true);
     } finally {
-      document.querySelectorAll("#btn-analyze, #opt-autotrace, #opt-indra, #opt-sam21, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file").forEach((el) => { el.disabled = false; });
+      document.querySelectorAll("#btn-analyze, #opt-autotrace, #opt-indra, #opt-sam21, #opt-original-braille, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file").forEach((el) => { el.disabled = false; });
       if (btn) btn.disabled = false;
       state.busy = false;
       updateAnalyzeButton();
@@ -334,7 +335,7 @@ async function run(input = {}) {
   const previous = { imageData: state.imageData, sourceImageData: state.sourceImageData, original: state.original, analysis: state.analysis, layout: state.layout, check: state.check, name: state.name };
   state.busy = true;
   document.body.setAttribute('aria-busy', 'true');
-  document.querySelectorAll('#btn-analyze, #opt-autotrace, #opt-indra, #opt-sam21, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file').forEach((el) => { el.disabled = true; });
+  document.querySelectorAll('#btn-analyze, #opt-autotrace, #opt-indra, #opt-sam21, #opt-original-braille, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file').forEach((el) => { el.disabled = true; });
   $('#empty').hidden = true;
   showLoading(true);
   setStatus('Working… everything runs on this device.');
@@ -352,6 +353,7 @@ async function run(input = {}) {
     const analysis = await analyze(preparedImageData, { sensitivity: state.sensitivity,
       preferIndra: $('#opt-indra')?.checked ?? false,
       segmentationBackend: $('#opt-sam21')?.checked ? 'sam2' : 'slimsam',
+      transcribeOnly: $('#opt-original-braille')?.checked ?? false,
       onStage: (k, msg) => setStep(k, k === 'engines' ? 'Loading on-device models… (first run only)' : msg),
     });
     state.sourceImageData = sourceImageData;
@@ -369,7 +371,8 @@ async function run(input = {}) {
       : '';
     if (fallbackNote) $('#opt-sam21').checked = false;
     const fixes = state.analysis.labels.reduce((n, L) => n + (L.corrections?.length || 0), 0);
-    setStatus(`Done in ${secs} s on this device · ${state.analysis.labels.length} labels found · ${st.parts} parts segmented · ${st.fullLabels} full braille labels + ${st.keyLabels} keyed${fixes ? ` · ${fixes} OCR slip${fixes > 1 ? 's' : ''} auto-corrected` : ''}${state.analysis.labels.length ? '' : ' · no printed labels found, so this is outlines only'}` + indraNote + fallbackNote);
+    const quickNote = state.analysis.transcribeOnly ? ' · original diagram retained; part segmentation skipped' : '';
+    setStatus(`Done in ${secs} s on this device · ${state.analysis.labels.length} labels found · ${st.parts} parts segmented · ${st.fullLabels} full braille labels + ${st.keyLabels} keyed${fixes ? ` · ${fixes} OCR slip${fixes > 1 ? 's' : ''} auto-corrected` : ''}${state.analysis.labels.length ? '' : ' · no printed labels found, so this is outlines only'}` + indraNote + fallbackNote + quickNote);
   } catch (e) {
     console.error(e);
     Object.assign(state, previous);
@@ -384,7 +387,7 @@ async function run(input = {}) {
     showLoading(false);
     state.busy = false;
     state.pending = null;
-    document.querySelectorAll('#btn-analyze, #opt-autotrace, #opt-indra, #opt-sam21, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file').forEach((el) => { el.disabled = false; });
+    document.querySelectorAll('#btn-analyze, #opt-autotrace, #opt-indra, #opt-sam21, #opt-original-braille, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file').forEach((el) => { el.disabled = false; });
     document.body.removeAttribute('aria-busy');
     updateAnalyzeButton();
   }
@@ -412,14 +415,14 @@ async function relayout(withSteps = false) {
     textures: $('#opt-textures').checked, forceKeys: $('#opt-keys').checked,
   });
   if (withSteps) { setStep('check', 'Running guideline checks…'); await nextFrame(); }
-  state.check = checkAll(cv, state.analysis, state.layout, state.imageData);
+  state.check = $('#opt-original-braille')?.checked ? { rules: [] } : checkAll(cv, state.analysis, state.layout, state.imageData);
   draw();
 }
 
 // ---------- views ----------
 function draw() {
   $('#tabs').hidden = false; $('#views').hidden = false; $('#side').hidden = false; $('#howto').hidden = true;
-  $('#viewmode').hidden = currentTab() !== 'tactile';
+  $('#viewmode').hidden = currentTab() !== 'tactile' || $('#opt-original-braille')?.checked;
   drawTactile();
   $('#ours-small').innerHTML = renderTactile(state.layout);
   $('#keypage').innerHTML = state.layout.keyEntries.length
@@ -435,6 +438,11 @@ function draw() {
 
 function drawTactile(highlight = null) {
   const el = $('#tactile');
+  if ($('#opt-original-braille')?.checked) {
+    el.innerHTML = renderOriginalBraille(state.layout, state.analysis, state.original);
+    el.querySelector('svg')?.setAttribute('aria-label', 'Original diagram with detected print labels replaced by braille');
+    return;
+  }
   if (state.mode === 'original') {
     el.innerHTML = `<img src="${state.original}" alt="Original diagram">`;
     return;
@@ -572,6 +580,8 @@ function drawLegend() {
 }
 
 function drawRules() {
+  const card = $('#guideline-card');
+  if (card) card.hidden = !!$('#opt-original-braille')?.checked;
   const tb = $('#rules tbody'); tb.innerHTML = '';
   for (const r of state.check.rules) {
     const tr = document.createElement('tr');
@@ -605,6 +615,9 @@ autotraceInput?.addEventListener('change', () => updateAnalyzeButton());
 // pipeline, which the Start button chooses via startAnalysis().
 const indraInput = $('#opt-indra');
 indraInput?.addEventListener('change', () => updateAnalyzeButton());
+
+const originalBrailleInput = $('#opt-original-braille');
+originalBrailleInput?.addEventListener('change', () => updateAnalyzeButton());
 
 const sensitivityInput = $('#opt-sensitivity');
 const sensitivityValue = $('#opt-sensitivity-value');
@@ -655,7 +668,12 @@ $('#dl-stl').onclick = async () => {
     await saveAs(`${state.name}-tactile.stl`, blob, 'model/stl');
   } finally { btn.disabled = false; btn.textContent = 'Download STL for 3D printing'; }
 };
-$('#dl-svg').onclick = () => saveAs(`${state.name}-tactile-editable.svg`, renderTactile(state.layout));
+function primaryTactileSVG() {
+  return $('#opt-original-braille')?.checked
+    ? renderOriginalBraille(state.layout, state.analysis, state.original)
+    : renderTactile(state.layout);
+}
+$('#dl-svg').onclick = () => saveAs(`${state.name}-tactile-editable.svg`, primaryTactileSVG());
 $('#dl-key').onclick = () => saveAs(`${state.name}-key.svg`, renderKeyPage(state.layout, { preview: true }));
 function printHTML(L, pages) {
   // The document is written into a fresh browsing context (or a temp file), so
@@ -665,7 +683,7 @@ function printHTML(L, pages) {
 }
 $('#print').onclick = async () => {
   const L = state.layout;
-  const pages = [renderTactile(L)];
+  const pages = [primaryTactileSVG()];
   if (L.keyEntries.length) pages.push(renderKeyPage(L, { preview: true }));
   const html = printHTML(L, pages);
   if (!desktop) {

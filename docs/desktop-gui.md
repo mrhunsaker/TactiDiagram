@@ -101,11 +101,10 @@ app serves its own resources instead of depending on localhost:5173.
 
 ```bash
 npm ci
-npx neu update                  # once per machine
-npm run package:desktop -- --target win --version 2026.11.22
-# On Windows, after the bundle is built:
 npm i --no-save sharp png-to-ico rcedit
-node scripts/win-icon.cjs
+npx neu update                  # once per machine
+node scripts/win-icon.cjs       # generate packaging/icon.ico before packaging
+npm run package:desktop -- --target win --version 2026.11.22
 choco install nsis --yes
 makensis /DAPP_VERSION=2026.11.22 packaging/windows/TactiDiagram.nsi
 ```

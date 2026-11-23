@@ -88,8 +88,18 @@ export async function analyze(imageData, { onStage = () => {}, sensitivity = DEF
     // The quick mode only needs recognized text and its OCR boxes. Skip leader
     // detection, line extraction, foreground reconstruction, and SAM entirely.
     onStage('leaders', 'Preparing recognized labels for braille replacement…');
+    const quickLabels = linesToLabels(lines).sort((a, b) => (a.y0 - b.y0) || (a.x0 - b.x0));
+    const singles = quickLabels.filter((L) => L.text.replace(/[^A-Za-z0-9]/g, '').length <= 1);
+    if (singles.length < 3) for (const L of singles) quickLabels.splice(quickLabels.indexOf(L), 1);
+    for (const L of quickLabels) {
+      const fixes = L.lines.flatMap((l) => l.words).filter((w) => w.orig !== w.text);
+      L.corrections = fixes.map((w) => `${w.orig} → ${w.text}`);
+      const ph = correctPhrase(L.text);
+      if (ph !== L.text) { L.corrections.push(`${L.text} → ${ph}`); L.text = ph; }
+    }
+    onStage('segment', 'Skipping part segmentation in original-diagram mode…');
     src.delete(); gray.delete();
-    return { W, H, labels, words: good, fg: new Uint8Array(W * H), lineArt: [],
+    return { W, H, labels: quickLabels, words: good, fg: new Uint8Array(W * H), lineArt: [],
       regions: null, edges: new Uint8Array(W * H), detailLines: [], timings,
       device: null, ocrEngine, sensitivity, segmentationBackend: 'skipped',
       segmentationFallbackReason: null, indraFallback: preferIndra && ocrEngine !== 'indra',

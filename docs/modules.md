@@ -52,7 +52,7 @@ Builds structural line art from colour-region boundaries and thin strokes. It us
 
 ### `segment.js`
 
-Uses Transformers.js with SlimSAM by default or SAM 2.1 Hiera Tiny when the experimental WebGPU checkbox is selected. The experimental original-diagram/braille-only option returns immediately after OCR and label correction, skipping leader detection, line extraction, foreground reconstruction, and SAM; it uses OCR boxes to replace printed labels with braille. It computes/caches image embeddings, applies point prompts for each label, evaluates candidate masks by score and area, and returns a mask for each label where possible. SAM 2.1 requires a usable WebGPU adapter; it does not automatically fall back to SlimSAM.
+Uses Transformers.js with SlimSAM by default or SAM 2.1 Hiera Tiny when the experimental WebGPU checkbox is selected. The direct Potrace SVG output option still runs the complete pipeline, including leader detection, line extraction, foreground reconstruction, and SAM segmentation. Potrace then traces the original source as the primary SVG artwork while the normal tactile layout supplies braille placement and optional two-letter keys. SAM 2.1 requires a usable WebGPU adapter; it does not automatically fall back to SlimSAM.
 
 ### `libs.js`
 
@@ -74,7 +74,7 @@ Encodes uncontracted UEB Grade 1 and generates two-letter label keys.
 
 ### `render.js`
 
-Renders the tactile page and key page as SVG, including line geometry, texture patterns, braille dots, and preview-only presentation elements. The experimental original-diagram mode embeds editable Potrace paths and exports separately movable braille-label layers.
+Renders the tactile page and key page as SVG, including line geometry, texture patterns, braille dots, and preview-only presentation elements. The direct Potrace output mode embeds editable Potrace paths and exports each normally laid-out braille label as a separately movable layer, while retaining the standard key-page export.
 
 ### `check.js`
 

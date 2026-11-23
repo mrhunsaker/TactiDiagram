@@ -53,7 +53,17 @@ flowchart TD
     M --> N["Production and final quality assurance"]
 ```
 
-**Optional Potrace / Autotrace preprocessing** is available to reconstruct a raster before OCR, leader detection, foreground analysis, and segmentation. It does not replace those stages or generate the final tactile page. See [Pipeline stages](docs/pipeline.md).
+TactiDiagram has three distinct processing paths. The standard segmented tactile output is the default. Optional Autotrace reconstructs a raster before OCR and segmentation. Optional direct Potrace SVG output runs the full analysis and tactile layout, then replaces segmented artwork with editable monochrome object outlines traced from the original source. The direct SVG has a transparent background and independent braille-label layers. See [Pipeline stages](docs/pipeline.md).
+
+## Processing modes and output paths
+
+1. **Standard segmented output (default):** OCR identifies labels; leader-line geometry links labels to the drawing; foreground/structural analysis and point-prompted SAM segmentation identify named parts; the renderer builds the tactile page from part masks, structural lines, optional textures, braille, and keys.
+2. **Autotrace preprocessing (optional):** Potrace reconstructs a raster before analysis. That raster feeds OCR, leader detection, foreground/line analysis, and segmentation. The original upload remains available for comparison. The standard segmented renderer still creates the tactile page.
+3. **Direct Potrace SVG output (optional):** full analysis and segmentation still run. The layout engine places braille and keys normally. A separate pass traces the original source into black vector outlines on transparency: it masks OCR label boxes, computes per-channel RGB Sobel edge strength, applies a bounded Otsu threshold, and passes a binary edge map to Potrace. The trace replaces segmented diagram artwork in the primary SVG, while analysis overlays remain available.
+
+**Use letter keys for every label** forces each placed label to a unique two-letter alphabetic braille key and retains the standard key-page mapping. Direct Potrace output honors this option. Its layered export separates Potrace linework, the braille title, and every label's braille into independently editable Inkscape layers. Source colours and fills are intentionally omitted. Potrace can simplify small details, and OCR masking can suppress nearby contours.
+
+See [Application controls](docs/application-options.md), [Pipeline stages](docs/pipeline.md), and [Models and inference engines](docs/models-and-engines.md#potrace-and-autotrace).
 
 ## What the application produces
 
@@ -200,7 +210,7 @@ model assets; the samples' per-image attribution is in
 | Component | Role | License | License source |
 |---|---|---|---|
 | Atkinson Hyperlegible (woff2) | Self-hosted accessibility font, `src/fonts/` | SIL Open Font License 1.1 | [Braille Institute](https://www.brailleinstitute.org/freefont/) |
-| esm-potrace-wasm / Potrace | Optional bitmap-to-vector preprocessing (Autotrace) | GPL-2.0-or-later (Potrace) | vendored with its license notice; `LICENSES/GPL-2.0.txt` |
+| esm-potrace-wasm / Potrace | Optional Autotrace preprocessing and direct monochrome SVG outline tracing | GPL-2.0-or-later (Potrace) | vendored with its license notice; `LICENSES/GPL-2.0.txt` |
 | Indra OCR models (opt-in engine) | `det.onnx`, `rec.onnx`, `meta.json` | **AI Pub-Open RAIL-M (modified), not GPL** — see note below | `src/models/indra/LICENSE` (downloaded) |
 | ONNX Runtime Web | Executes the OCR and segmentation ONNX models in the browser | MIT | [microsoft/onnxruntime](https://github.com/microsoft/onnxruntime/blob/main/LICENSE) |
 | OpenCV.js | Classical image processing, contours, Hough, checks | Apache-2.0 | [@techstark/opencv-js](https://www.npmjs.com/package/@techstark/opencv-js), OpenCV 4.12.0 |

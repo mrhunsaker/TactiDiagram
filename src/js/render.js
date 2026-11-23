@@ -108,7 +108,7 @@ function potraceInner(svgText) {
   if (doc.querySelector('parsererror')) throw new Error('Potrace returned malformed SVG.');
   const root = doc.documentElement;
   const viewBox = root.getAttribute('viewBox') || `0 0 ${parseFloat(root.getAttribute('width')) || 1} ${parseFloat(root.getAttribute('height')) || 1}`;
-  const dimensions = viewBox.trim().split(/[\\s,]+/).map(Number);
+  const dimensions = viewBox.trim().split(/[\s,]+/).map(Number);
   if (dimensions.length !== 4 || !dimensions.every(Number.isFinite) || dimensions[2] <= 0 || dimensions[3] <= 0) {
     throw new Error('Potrace SVG has an invalid viewBox.');
   }

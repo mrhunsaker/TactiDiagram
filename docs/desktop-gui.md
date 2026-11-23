@@ -116,9 +116,14 @@ node scripts/package.mjs --target linux --version 2026.11.22 --out dist
    (except `src/dev/`) into `desktop/neutralino/resources/`, then restores
    the original resources and development configuration even if packaging fails.
 3. Rewrites the Neutralino configuration for a standalone build
-   (`enableServer: true`, `url: "/"`), then runs `neu build --release`.
-   It locates the target x86_64 binary and `resources.neu` by filename anywhere
-   under Neutralino's `dist/` output and verifies they are siblings.
+   (`enableServer: true`, `documentRoot: "/resources/"`, `url: "/"`), then
+   runs `neu build --release`. The explicit document root is required because
+   the bundled files retain their `resources/` prefix; without it, the app can
+   open its localhost server but return a 404 for the root page. The packaging
+   script verifies this configuration and the staged `resources/index.html`
+   before building. It locates the target x86_64 binary and `resources.neu` by
+   filename anywhere under Neutralino's `dist/` output and verifies they are
+   siblings.
 4. Assembles artifacts in the selected output directory (default `dist/`).
    The `--out` option accepts a relative or absolute directory; `PACKAGE_OUT`
    is also supported as an environment-variable override. Automatic target

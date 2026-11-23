@@ -42,12 +42,15 @@ The static server serves the tracked `src/` directory. Its default address is `h
 
 WebGPU is not required for TactiDiagram's default SlimSAM/WASM segmentation. To try the optional SAM 2.1 backend, use current Chrome or Edge on a platform with a compatible GPU adapter, enable hardware acceleration, restart the browser, and confirm WebGPU is available on the browser's internal GPU page (`chrome://gpu` or `edge://gpu`). Then check **Use experimental SAM 2.1 segmentation (WebGPU)** in the app before starting analysis. See the [WebGPU setup and browser compatibility guide](webgpu.md) for browser-specific instructions, Firefox limitations, operating-system notes, and troubleshooting. A browser reporting WebGPU support does not guarantee that every ONNX Runtime model operator will run; the app falls back to SlimSAM if SAM 2.1 fails.
 
-
 ## 4. Run a diagram
 
 Choose a built-in sample or upload/drop a PNG, JPEG/JPG, or WebP image no larger than 15 MiB. The UI composites transparency onto white and scales the longest side to at most 1,400 pixels.
 
-Loading a sample or your own scan only stages it. Set paper and outline style first, leave optional Autotrace and Indra OCR off for a baseline run, begin with tracing sensitivity 55, then press **Start analysis**. Changing analysis-affecting options (Autotrace, Indra OCR, SAM 2.1) after a run requires pressing the button again; the label shows "Apply settings & re-analyze" when settings differ from the last run. Optionally add a braille title, texture fills, or force letter keys. The processing stages are image/model preparation, OCR, leader detection, segmentation, tactile layout, and guideline checks.
+Loading a sample or your own scan only stages it. Set paper and outline style first, leave optional Autotrace and Indra OCR off for a baseline run, begin with tracing sensitivity 55, then press **Start analysis**. Changing analysis-affecting options (Autotrace, Indra OCR, SAM 2.1, or direct Potrace output) after a run requires pressing the button again; the label shows "Apply settings & re-analyze" when settings differ from the last run. Optionally add a braille title, texture fills, or force letter keys.
+
+For a baseline, leave both Potrace options off. Enable **Use Autotrace (Potrace)** when you want a reconstructed raster to feed OCR, leader detection, and segmentation. Enable **Use direct Potrace SVG output (full analysis)** when you want complete analysis and tactile layout but prefer a monochrome transparent outline trace as the primary artwork. These controls can be combined: Autotrace changes the analysis input, while direct output always traces the original uploaded image. Enable **Use letter keys for every label** to make every placed label a two-letter braille key with a corresponding key page; this also works in direct Potrace mode.
+
+The standard processing sequence is image/model preparation, OCR, leader detection, foreground/structural-line analysis, SAM segmentation, tactile layout, and guideline checks. Direct Potrace tracing is an additional output stage after layout; it does not skip OCR, leader detection, or segmentation.
 
 Read [Application controls and options](application-options.md) for the exact effect of every control, tab, review action, and export.
 

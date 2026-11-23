@@ -1,4 +1,4 @@
-// Launch the TouchSight-NG application in a Neutralino desktop window.
+// Launch the TactiDiagram application in a Neutralino desktop window.
 //
 // This starts scripts/serve.mjs (the static server for src/), waits for it to
 // accept connections, then runs the Neutralino binary in

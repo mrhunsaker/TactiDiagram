@@ -134,8 +134,9 @@ export function renderPotraceBraille(layout, analysis, traceSvg, { layered = fal
     '</g>',
     `<g id="print-label-coverups"${layer('print-label-coverups', 'White print-label cover-ups')} fill="#fff">`,
   ];
+  const placedTexts = new Set(layout.labels.map((label) => label.text));
   for (const L of analysis.labels) {
-    if (L.removed) continue;
+    if (L.removed || !placedTexts.has(L.text)) continue;
     const pad = 3;
     const x = ox + (L.x0 - pad) * s, y = oy + (L.y0 - pad) * s;
     const w = (L.x1 - L.x0 + 2 * pad) * s, h = (L.y1 - L.y0 + 2 * pad) * s;

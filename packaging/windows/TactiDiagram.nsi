@@ -39,7 +39,9 @@ VIAddVersionKey "LegalCopyright" "Copyright TactiDiagram contributors"
 Section "Install"
   SetOutPath "$INSTDIR"
   ; Keep the Neutralino executable and resources.neu side by side.
-  File /r "dist\TactiDiagram-win-x64\*"
+  File "dist\TactiDiagram-win-x64\TactiDiagram.exe"
+  File "dist\TactiDiagram-win-x64\resources.neu"
+  File "dist\TactiDiagram-win-x64\README.txt"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 
   ; Per-user Add/Remove Programs registration (no administrator elevation).

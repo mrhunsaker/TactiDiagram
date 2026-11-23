@@ -30,10 +30,6 @@ The vendor script copies browser libraries into `src/vendor/` and downloads mode
 
 Generated browser libraries and model weights are local runtime output, not application source. Do not commit them unless a deliberate distribution policy requires it.
 
-## Optional SAM 2.1 / WebGPU setup
-
-WebGPU is not required for TactiDiagram's default SlimSAM/WASM segmentation. To try the optional SAM 2.1 backend, use current Chrome or Edge on a platform with a compatible GPU adapter, enable hardware acceleration, restart the browser, and confirm WebGPU is available on the browser's internal GPU page (`chrome://gpu` or `edge://gpu`). Then check **Use experimental SAM 2.1 segmentation (WebGPU)** in the app before starting analysis. See the [WebGPU setup and browser compatibility guide](webgpu.md) for browser-specific instructions, Firefox limitations, operating-system notes, and troubleshooting. A browser reporting WebGPU support does not guarantee that every ONNX Runtime model operator will run; the app falls back to SlimSAM if SAM 2.1 fails.
-
 ## 3. Start the app
 
 ```bash
@@ -41,6 +37,11 @@ npm run serve
 ```
 
 The static server serves the tracked `src/` directory. Its default address is `http://localhost:5173`; keep the terminal open. To change the port, set `PORT` before starting (for example, `PORT=8080 npm run serve` on macOS/Linux).
+
+## Optional SAM 2.1 / WebGPU setup
+
+WebGPU is not required for TactiDiagram's default SlimSAM/WASM segmentation. To try the optional SAM 2.1 backend, use current Chrome or Edge on a platform with a compatible GPU adapter, enable hardware acceleration, restart the browser, and confirm WebGPU is available on the browser's internal GPU page (`chrome://gpu` or `edge://gpu`). Then check **Use experimental SAM 2.1 segmentation (WebGPU)** in the app before starting analysis. See the [WebGPU setup and browser compatibility guide](webgpu.md) for browser-specific instructions, Firefox limitations, operating-system notes, and troubleshooting. A browser reporting WebGPU support does not guarantee that every ONNX Runtime model operator will run; the app falls back to SlimSAM if SAM 2.1 fails.
+
 
 ## 4. Run a diagram
 

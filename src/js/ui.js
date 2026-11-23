@@ -260,7 +260,7 @@ function currentPipelineOptions() {
     autotrace: $('#opt-autotrace')?.checked ?? false,
     indra: $('#opt-indra')?.checked ?? false,
     sam21: $('#opt-sam21')?.checked ?? false,
-    originalBraille: $('#opt-original-braille')?.checked ?? false,
+    potraceOutput: $('#opt-original-braille')?.checked ?? false,
     sensitivity: Number($('#opt-sensitivity')?.value ?? DEFAULT_TRACING_SENSITIVITY),
   };
 }
@@ -271,23 +271,15 @@ function updateAnalyzeButton() {
   btn.disabled = !state.pending && !state.analysis;
   if (newImage || !state.analysis) { btn.textContent = state.pending ? 'Start analysis' : 'Re-analyze'; return; }
   const o = currentPipelineOptions(), s = state.optionsSnapshot;
-  const enginesDiffer = !s || o.autotrace !== s.autotrace || o.indra !== s.indra || o.sam21 !== s.sam21 || o.originalBraille !== s.originalBraille;
-  const sensitivityDiffers = !o.originalBraille && o.sensitivity !== state.sensitivity;
+  const enginesDiffer = !s || o.autotrace !== s.autotrace || o.indra !== s.indra || o.sam21 !== s.sam21 || o.potraceOutput !== s.potraceOutput;
+  const sensitivityDiffers = o.sensitivity !== state.sensitivity;
   btn.textContent = enginesDiffer || sensitivityDiffers ? 'Apply settings & re-analyze' : 'Re-run analysis';
 }
 async function startAnalysis() {
   if (state.busy) return;
   const o = currentPipelineOptions(), s = state.optionsSnapshot;
-  const enginesDiffer = !s || o.autotrace !== s.autotrace || o.indra !== s.indra || o.sam21 !== s.sam21 || o.originalBraille !== s.originalBraille;
+  const enginesDiffer = !s || o.autotrace !== s.autotrace || o.indra !== s.indra || o.sam21 !== s.sam21 || o.potraceOutput !== s.potraceOutput;
   if (state.pending || !state.analysis || enginesDiffer) return run(state.pending ?? {});
-  if (o.originalBraille && o.sensitivity !== state.sensitivity) {
-    // Tracing sensitivity is not used by the OCR-only original-diagram output.
-    state.sensitivity = o.sensitivity;
-    state.optionsSnapshot = o;
-    setStatus('Tracing sensitivity does not affect original-diagram braille mode.');
-    updateAnalyzeButton();
-    return;
-  }
   if (o.sensitivity !== state.sensitivity) {
     // Same engines, only tracing sensitivity changed: reuse OCR and SAM masks.
     state.busy = true;
@@ -355,18 +347,17 @@ async function run(input = {}) {
     state.sensitivity = Number($('#opt-sensitivity')?.value ?? DEFAULT_TRACING_SENSITIVITY);
     state.optionsSnapshot = currentPipelineOptions();
     let preparedImageData = sourceImageData;
-    if ($('#opt-autotrace')?.checked && !$('#opt-original-braille')?.checked) {
+    if ($('#opt-autotrace')?.checked) {
       setStep('engines', 'Reconstructing image with Potrace…');
       preparedImageData = await prepareAutotrace(sourceImageData);
     }
     const analysis = await analyze(preparedImageData, { sensitivity: state.sensitivity,
       preferIndra: $('#opt-indra')?.checked ?? false,
       segmentationBackend: $('#opt-sam21')?.checked ? 'sam2' : 'slimsam',
-      transcribeOnly: $('#opt-original-braille')?.checked ?? false,
       onStage: (k, msg) => setStep(k, k === 'engines' ? 'Loading on-device models… (first run only)' : msg),
     });
     const traceSvg = $('#opt-original-braille')?.checked
-      ? await (async () => { setStep('engines', 'Tracing diagram and removing detected print labels with Potrace…'); return traceOriginalDiagram(sourceImageData, analysis.labels); })()
+      ? await (async () => { setStep('engines', 'Tracing the analyzed diagram with Potrace…'); return traceOriginalDiagram(sourceImageData, analysis.labels); })()
       : null;
     state.sourceImageData = sourceImageData;
     state.imageData = preparedImageData;
@@ -384,8 +375,8 @@ async function run(input = {}) {
       : '';
     if (fallbackNote) $('#opt-sam21').checked = false;
     const fixes = state.analysis.labels.reduce((n, L) => n + (L.corrections?.length || 0), 0);
-    const quickNote = state.analysis.transcribeOnly ? ' · original diagram retained; part segmentation skipped' : '';
-    setStatus(`Done in ${secs} s on this device · ${state.analysis.labels.length} labels found · ${st.parts} parts segmented · ${st.fullLabels} full braille labels + ${st.keyLabels} keyed${fixes ? ` · ${fixes} OCR slip${fixes > 1 ? 's' : ''} auto-corrected` : ''}${state.analysis.labels.length ? '' : ' · no printed labels found, so this is outlines only'}` + indraNote + fallbackNote + quickNote);
+    const outputNote = $('#opt-original-braille')?.checked ? ' · full analysis completed; direct Potrace SVG used for diagram artwork' : '';
+    setStatus(`Done in ${secs} s on this device · ${state.analysis.labels.length} labels found · ${st.parts} parts segmented · ${st.fullLabels} full braille labels + ${st.keyLabels} keyed${fixes ? ` · ${fixes} OCR slip${fixes > 1 ? 's' : ''} auto-corrected` : ''}${state.analysis.labels.length ? '' : ' · no printed labels found, so this is outlines only'}` + indraNote + fallbackNote + outputNote);
   } catch (e) {
     console.error(e);
     Object.assign(state, previous);
@@ -438,22 +429,20 @@ function draw() {
   const originalBraille = !!$('#opt-original-braille')?.checked;
   $('#dl-pottrace-svg').hidden = !originalBraille;
   $('#dl-svg').textContent = originalBraille ? 'Download layered editable SVG' : 'Download editable tactile SVG';
-  for (const tabName of ['compare', 'key', 'relief']) {
+  for (const tabName of ['compare', 'relief']) {
     const tab = $(`#tabs [data-tab="${tabName}"]`);
     if (tab) tab.hidden = originalBraille;
   }
-  if (originalBraille && ['compare', 'key', 'relief'].includes(currentTab())) {
+  if (originalBraille && ['compare', 'relief'].includes(currentTab())) {
     document.querySelectorAll('#tabs button').forEach((tab) => tab.setAttribute('aria-selected', String(tab.dataset.tab === 'tactile')));
     document.querySelectorAll('.view').forEach((view) => { view.hidden = view.dataset.view !== 'tactile'; });
   }
   $('#viewmode').hidden = currentTab() !== 'tactile' || originalBraille;
   drawTactile();
   $('#ours-small').innerHTML = renderTactile(state.layout);
-  $('#keypage').innerHTML = $('#opt-original-braille')?.checked
-    ? '<p>Original-diagram mode renders the full transcribed braille labels directly; no key page is generated.</p>'
-    : state.layout.keyEntries.length
-      ? renderKeyPage(state.layout, { preview: true })
-      : '<p>Every label fits as full braille, so no key page is needed.</p>';
+  $('#keypage').innerHTML = state.layout.keyEntries.length
+    ? renderKeyPage(state.layout, { preview: true })
+    : '<p>Every label fits as full braille, so no key page is needed.</p>';
   drawBaseline();
   drawAnalysis();
   drawLabels();
@@ -644,7 +633,7 @@ indraInput?.addEventListener('change', () => updateAnalyzeButton());
 
 const originalBrailleInput = $('#opt-original-braille');
 originalBrailleInput?.addEventListener('change', () => {
-  const ready = originalBrailleInput.checked && !!state.traceSvg && !!state.analysis?.transcribeOnly;
+  const ready = originalBrailleInput.checked && !!state.traceSvg && !!state.analysis && !state.analysis.transcribeOnly;
   $('#dl-pottrace-svg').hidden = !ready;
   $('#dl-svg').textContent = ready ? 'Download layered editable SVG' : 'Download editable tactile SVG';
   updateAnalyzeButton();
@@ -716,7 +705,7 @@ function printHTML(L, pages) {
 $('#print').onclick = async () => {
   const L = state.layout;
   const pages = [primaryTactileSVG()];
-  if (!$('#opt-original-braille')?.checked && L.keyEntries.length) pages.push(renderKeyPage(L, { preview: true }));
+  if (L.keyEntries.length) pages.push(renderKeyPage(L, { preview: true }));
   const html = printHTML(L, pages);
   if (!desktop) {
     // Browser: a new tab is the only way to print the bare page-sized SVGs.

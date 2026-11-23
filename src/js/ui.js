@@ -363,12 +363,13 @@ async function run(input = {}) {
     await relayout(true);
     const secs = ((performance.now() - t0) / 1000).toFixed(1);
     const st = state.layout.stats;
+    const indraNote = state.analysis.indraFallback ? ' · Indra OCR produced no usable text; PaddleOCR was used.' : '';
     const fallbackNote = state.analysis.segmentationFallbackReason
       ? ` SAM 2.1 could not use WebGPU (${state.analysis.segmentationFallbackReason}); switched to SlimSAM.`
       : '';
     if (fallbackNote) $('#opt-sam21').checked = false;
     const fixes = state.analysis.labels.reduce((n, L) => n + (L.corrections?.length || 0), 0);
-    setStatus(`Done in ${secs} s on this device · ${state.analysis.labels.length} labels found · ${st.parts} parts segmented · ${st.fullLabels} full braille labels + ${st.keyLabels} keyed${fixes ? ` · ${fixes} OCR slip${fixes > 1 ? 's' : ''} auto-corrected` : ''}${state.analysis.labels.length ? '' : ' · no printed labels found, so this is outlines only'}` + fallbackNote);
+    setStatus(`Done in ${secs} s on this device · ${state.analysis.labels.length} labels found · ${st.parts} parts segmented · ${st.fullLabels} full braille labels + ${st.keyLabels} keyed${fixes ? ` · ${fixes} OCR slip${fixes > 1 ? 's' : ''} auto-corrected` : ''}${state.analysis.labels.length ? '' : ' · no printed labels found, so this is outlines only'}` + indraNote + fallbackNote);
   } catch (e) {
     console.error(e);
     Object.assign(state, previous);

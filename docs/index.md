@@ -22,7 +22,7 @@ Packaged releases currently provide an x86_64 Linux AppImage and an unsigned Win
 
 Each textbook diagram has to be redrawn by hand as a *tactile graphic*: clutter removed, print replaced with braille, lines spaced at least 3 mm apart so fingers can tell them apart, only a few distinguishable textures. A science assignment with graphics can take up to 10 hours to transcribe ([Jordan School District, 2024](https://jam.jordandistrict.org/2024/10/03/transcription-services-for-the-visually-impaired/)), and a 2023 survey found almost half of the teachers making tactile graphics had never been trained to do so ([British Journal of Visual Impairment](https://experts.arizona.edu/en/publications/creating-tactile-graphics-in-school-settings-a-survey-of-training/)).
 
-Naive tracing does not work: edge detection turns every printed label into raised squiggles and every shading gradient into noise. TactiDiagram reads the labels, follows the leader lines, segments the parts the labels name, and redraws the result for touch.
+Naive tracing does not work as a complete transcription method: edge detection can turn printed labels, shading, and decoration into clutter. The default TactiDiagram workflow reads labels, follows leader lines, segments named parts, and redraws the result for touch. Two optional Potrace paths serve different purposes: Autotrace reconstructs the raster before analysis, while direct Potrace SVG output runs the full analysis and then replaces segmented artwork with transparent monochrome object outlines. The direct output keeps braille placement and key mapping from the standard tactile layout.
 
 ## What it produces
 
@@ -37,7 +37,7 @@ In evaluation on 16 Wikimedia Commons diagrams, TactiDiagram found 148 of 151 ha
 ## Learn the theory and technology
 
 - [Architecture](architecture.md): why the system combines OCR, geometric computer vision, and segmentation.
-- [Pipeline stages](pipeline.md): how each stage works and how errors propagate.
+- [Pipeline stages](pipeline.md): standard segmented workflow, Autotrace preprocessing, direct Potrace output, edge-map construction, and how errors propagate.
 - [Models and inference engines](models-and-engines.md): the exact OCR and segmentation model files, runtime libraries, and their purposes.
 - [WebGPU browser setup](webgpu.md): browser compatibility, GPU acceleration, and SAM 2.1 troubleshooting.
 - [Tools and libraries](tools-and-libraries.md): every third-party tool the application uses (SlimSAM, SAM 2.1, PaddleOCR, Tesseract.js, Indra, Potrace, OpenCV.js, ONNX Runtime Web, three.js, Neutralino), what it does technically, and why it is worth shipping.
@@ -59,7 +59,7 @@ These are automated checks derived from BANA guidelines, not a substitute for a 
 
 ## Editable SVG post-processing and quality control
 
-The tactile SVG export is a vector document with physical dimensions in millimetres. It contains separate, named SVG groups for the page background, textures, structural line art, outlines, label-clearance knockouts, leader lines, and braille dots. The key-page SVG also separates braille from sighted print-reference text. Paths, circles, and text remain vector objects rather than a flattened screenshot.
+The standard tactile SVG export is a vector document with physical dimensions in millimetres. It contains separate, named SVG groups for the page background, textures, structural line art, outlines, label-clearance knockouts, leader lines, and braille dots. The key-page SVG also separates braille from sighted print-reference text. Paths, circles, and text remain vector objects rather than a flattened screenshot.
 
 **Inkscape is the recommended reference editor because it is free and open-source (FOSS).** The exported SVG is standard vector artwork; other SVG-capable editors—including Adobe Illustrator and Affinity Designer—can also be used. TactiDiagram targets FOSS workflows, so Inkscape is the editor used in these instructions, not a technical requirement.
 
@@ -73,3 +73,6 @@ Recommended post-processing sequence:
 6. Save a separate reviewed SVG, then produce a physical proof on the target printer/swell-paper/fuser system. Inspect the raised output and obtain tactile-reader feedback where possible.
 
 The vector editor is a post-processing and QC option, not an automated validation step. Editing SVG geometry does not update TactiDiagram's analysis state or its automated guideline report. Re-run or independently perform checks after edits, and retain the unmodified export so changes can be compared or reverted.
+
+
+The optional direct Potrace SVG is a different deliverable: black vector outline paths on a transparent canvas, no source-colour fills or opaque background, and independent braille layers for the title and each label. Both output modes use the normal key-page renderer when keys are required.

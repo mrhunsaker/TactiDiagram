@@ -79,6 +79,8 @@ jobs:
   version:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       version: ${{ steps.v.outputs.version }}
     steps:
@@ -91,17 +93,110 @@ jobs:
         shell: bash
         run: |
           TAG="${GITHUB_REF_NAME}"
-          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]{4}\.[0-9]+\.[0-9]+$'; then
-            echo "::error::Tag must match vYYYY.M.D."
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]{4}\.[0-9]{2}\.[0-9]{2}
+    if: github.event_name == 'push'
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Rasterize app icon
+        run: |
+          sudo apt-get update && sudo apt-get install -y imagemagick
+          convert -background none -density 300 packaging/icon.svg -resize 256x256 packaging/icon.png
+      - run: npx neu update
+        working-directory: desktop/neutralino
+      - run: node scripts/package.mjs --target linux --version "${{ needs.version.outputs.version }}"
+        name: Build Linux AppImage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TactiDiagram-linux-x86_64
+          path: dist/TactiDiagram-x86_64.AppImage
+          if-no-files-found: error
+
+  windows:
+    if: github.event_name == 'push'
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm install --no-save sharp png-to-ico rcedit
+      - run: npx neu update
+        working-directory: desktop/neutralino
+      - run: node scripts/win-icon.cjs
+        name: Build Windows icon assets
+      - run: node scripts/package.mjs --target win --version "${{ needs.version.outputs.version }}"
+        name: Build Windows ZIP
+      - name: Install NSIS
+        run: choco install nsis --yes --no-progress
+      - name: Build Windows installer
+        shell: pwsh
+        run: '& "${env:ProgramFiles(x86)}\NSIS\makensis.exe" "/DAPP_VERSION=${{ needs.version.outputs.version }}" "packaging/windows/TactiDiagram.nsi"'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TactiDiagram-win-x64
+          path: |
+            dist/TactiDiagram-win-x64.zip
+            dist/TactiDiagram-Setup.exe
+          if-no-files-found: error
+
+  release:
+    if: github.event_name == 'push'
+    needs: [version, linux, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+      - name: Attach all desktop artifacts to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-assets/TactiDiagram-linux-x86_64/TactiDiagram-x86_64.AppImage
+            release-assets/TactiDiagram-win-x64/TactiDiagram-win-x64.zip
+            release-assets/TactiDiagram-win-x64/TactiDiagram-Setup.exe
+; then
+            echo "::error::Tag must match vYYYY.MM.DD (for example v2026.11.23)."
             exit 1
           fi
           VERSION="${TAG#v}"
-          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
-          if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
-            echo "::error::package.json version ($PACKAGE_VERSION) must match tag version ($VERSION)."
+          if [ "$(date -d "$VERSION" +%Y.%m.%d 2>/dev/null || true)" != "$VERSION" ]; then
+            echo "::error::Tag version must be a valid calendar date in YYYY.MM.DD format."
             exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Synchronize package version from release tag
+        shell: bash
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          git fetch origin "$DEFAULT_BRANCH"
+          git checkout -B "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH"
+          npm version "$VERSION" --no-git-tag-version
+          if git diff --quiet -- package.json package-lock.json; then
+            echo "package.json and package-lock.json already match $VERSION"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add package.json package-lock.json
+            git commit -m "chore: sync package version to $VERSION"
+            git push origin "HEAD:$DEFAULT_BRANCH"
+          fi
 
   linux:
     if: github.event_name == 'push'

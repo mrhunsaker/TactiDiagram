@@ -42,6 +42,7 @@ Section "Install"
   File "dist\TactiDiagram-win-x64\TactiDiagram.exe"
   File "dist\TactiDiagram-win-x64\resources.neu"
   File "dist\TactiDiagram-win-x64\README.txt"
+  File "packaging\icon.ico"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 
   ; Per-user Add/Remove Programs registration (no administrator elevation).
@@ -49,17 +50,17 @@ Section "Install"
   WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayVersion" "${APP_VERSION}"
   WriteRegStr HKCU "${UNINSTALL_KEY}" "Publisher" "TactiDiagram"
   WriteRegStr HKCU "${UNINSTALL_KEY}" "InstallLocation" "$INSTDIR"
-  WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayIcon" "$INSTDIR\${APP_EXE}"
+  WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayIcon" "$INSTDIR\icon.ico"
   WriteRegStr HKCU "${UNINSTALL_KEY}" "UninstallString" '"$INSTDIR\Uninstall.exe"'
   WriteRegStr HKCU "${UNINSTALL_KEY}" "QuietUninstallString" '"$INSTDIR\Uninstall.exe" /S'
   WriteRegStr HKCU "${UNINSTALL_KEY}" "URLInfoAbout" "https://github.com/mrhunsaker/TactiDiagram"
   WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoModify" 1
   WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoRepair" 1
 
-  CreateShortcut "$DESKTOP\${APP_NAME}.lnk" "$INSTDIR\${APP_EXE}" "" "$INSTDIR\${APP_EXE}" 0 SW_SHOWNORMAL "" "Launch ${APP_NAME}"
+  CreateShortcut "$DESKTOP\${APP_NAME}.lnk" "$INSTDIR\${APP_EXE}" "" "$INSTDIR\icon.ico" 0 SW_SHOWNORMAL "" "Launch ${APP_NAME}"
   !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
     CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
-    CreateShortcut "$SMPROGRAMS\$StartMenuFolder\${APP_NAME}.lnk" "$INSTDIR\${APP_EXE}" "" "$INSTDIR\${APP_EXE}" 0 SW_SHOWNORMAL "" "Launch ${APP_NAME}"
+    CreateShortcut "$SMPROGRAMS\$StartMenuFolder\${APP_NAME}.lnk" "$INSTDIR\${APP_EXE}" "" "$INSTDIR\icon.ico" 0 SW_SHOWNORMAL "" "Launch ${APP_NAME}"
     CreateShortcut "$SMPROGRAMS\$StartMenuFolder\Uninstall ${APP_NAME}.lnk" "$INSTDIR\Uninstall.exe"
   !insertmacro MUI_STARTMENU_WRITE_END
 SectionEnd
@@ -77,6 +78,7 @@ Section "Uninstall"
   Delete "$INSTDIR\${APP_EXE}"
   Delete "$INSTDIR\resources.neu"
   Delete "$INSTDIR\README.txt"
+  Delete "$INSTDIR\icon.ico"
   Delete "$INSTDIR\Uninstall.exe"
   RMDir "$INSTDIR"
 SectionEnd

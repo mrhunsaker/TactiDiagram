@@ -14,6 +14,7 @@ The transcriber remains responsible for the finished graphic. TactiDiagram is an
 - **Every application setting and action:** [docs/application-options.md](docs/application-options.md)
 - **Theory and pipeline:** [docs/architecture.md](docs/architecture.md), [docs/pipeline.md](docs/pipeline.md)
 - **Models and inference engines:** [docs/models-and-engines.md](docs/models-and-engines.md)
+- **WebGPU browser setup:** [docs/webgpu.md](docs/webgpu.md)
 - **OCR engines (optional Indra engine):** [docs/ocr-engines.md](docs/ocr-engines.md)
 - **Research roadmap (other models not implemented):** [docs/advanced-model-options.md](docs/advanced-model-options.md)
 - **Review workflow:** [docs/review-workflow.md](docs/review-workflow.md)
@@ -90,7 +91,7 @@ This design supports use with school and student materials while keeping source 
 
 ## Run locally
 
-Requirements: Node.js 24 or newer and a **Chromium-based desktop browser** (Chrome, Edge, Brave, Chromium). Use a Chromium browser when possible: Firefox runs the app and its default SlimSAM path, but the optional SAM 2.1 / WebGPU backend is disabled there (see below). WebKit-based browsers (Safari on macOS, GNOME Web/Epiphany) are not supported: WebKit's WebGPU and WebGL implementations do not provide the ONNX Runtime backends the models need. WebGL is needed only for the 3D relief view and STL export.
+Requirements: Node.js 24 or newer and a **Chromium-based desktop browser** (Chrome, Edge, Brave, Chromium) for the recommended experience. Firefox can run the standard application with SlimSAM, but TactiDiagram deliberately disables its optional SAM 2.1 backend there because of an ONNX Runtime WebGPU compatibility issue—even though Firefox itself has WebGPU on some platforms. Safari and other WebKit browsers are not supported application targets. WebGL is needed only for the 3D relief view and STL export.
 
 ```bash
 npm ci
@@ -98,7 +99,9 @@ npm run vendor
 npm run serve
 ```
 
-The vendor step copies browser libraries into `src/vendor/` and downloads model assets into `src/models/`, including the optional SAM 2.1 model files (about 78 MB). SAM 2.1 requires a **Chromium-based browser** with a working WebGPU adapter; it is disabled automatically on Firefox (the ONNX Runtime WebGPU backend is Chromium-oriented and fails mid-run there) and is not supported on WebKit/Safari. SlimSAM remains the default and uses WebAssembly, so the app works in any modern browser even without SAM 2.1. The local server serves `src/` directly at http://localhost:5173 by default. Keep the terminal open while using the app.
+The vendor step copies browser libraries into `src/vendor/` and downloads model assets into `src/models/`, including the optional SAM 2.1 model files (about 78 MB). SAM 2.1 is an experimental, optional path: Chrome and Edge are the recommended browsers, and Brave/other Chromium builds may work if they expose a compatible WebGPU adapter and ONNX Runtime can execute the model. Enable browser hardware acceleration, restart, and check `chrome://gpu` or `edge://gpu`. Firefox is deliberately routed to SlimSAM because the current ONNX Runtime WebGPU backend is not reliable there; Safari/WebKit is not a supported application target. If WebGPU is missing or SAM 2.1 inference fails, TactiDiagram automatically retries segmentation with SlimSAM. The local server serves `src/` directly at http://localhost:5173 by default; localhost is a secure context for WebGPU. Keep the terminal open while using the app.
+
+For browser-specific setup, GPU diagnostics, Firefox behavior, and troubleshooting, see the [WebGPU setup guide](docs/webgpu.md). The application can use its default WASM segmentation backend without WebGPU; SAM 2.1 is optional.
 
 There are three ways to run TactiDiagram:
 

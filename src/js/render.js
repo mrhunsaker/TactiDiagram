@@ -99,37 +99,53 @@ export function renderTactile(layout, { preview = false, highlight = null, under
   return out.join('');
 }
 
-// Experimental quick output: retain the source diagram and replace each detected
-// print-label box with uncontracted braille. This does not claim the segmentation,
-// spacing, or tactile-line quality of the full reconstruction.
-export function renderOriginalBraille(layout, analysis, original) {
+// Experimental original-diagram output. Potrace supplies editable vector
+// paths; detected print labels are masked before tracing and replaced with UEB
+// braille. The layered variant exposes linework, knockouts, and each label as
+// independently movable Inkscape layers.
+function potraceInner(svgText) {
+  const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+  if (doc.querySelector('parsererror')) throw new Error('Potrace returned malformed SVG.');
+  const root = doc.documentElement;
+  const viewBox = root.getAttribute('viewBox') || `0 0 ${root.getAttribute('width') || 1} ${root.getAttribute('height') || 1}`;
+  const contents = Array.from(root.childNodes).map((node) => new XMLSerializer().serializeToString(node)).join('');
+  return { viewBox, contents };
+}
+
+export function renderPotraceBraille(layout, analysis, traceSvg, { layered = false } = {}) {
+  if (!traceSvg) throw new Error('The Potrace SVG is not available; run analysis again.');
   const { pageW, pageH, ox, oy, s } = layout;
+  const { viewBox, contents } = potraceInner(traceSvg);
   const out = [
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${f(pageW)}mm" height="${f(pageH)}mm" viewBox="0 0 ${f(pageW)} ${f(pageH)}">`,
-    '<title>Original diagram with braille-transcribed labels</title>',
-    '<desc>Experimental output. Original diagram retained; detected print labels are covered and replaced with braille. Review carefully before tactile production.</desc>',
-    '<rect width="100%" height="100%" fill="#fff"/>',
-    `<image href="${original}" x="${f(ox)}" y="${f(oy)}" width="${f(analysis.W * s)}" height="${f(analysis.H * s)}" preserveAspectRatio="none"/>`,
-    '<g id="print-label-coverups" fill="#fff">'
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${f(pageW)}mm" height="${f(pageH)}mm" viewBox="0 0 ${f(pageW)} ${f(pageH)}">`,
+    '<title>Potrace diagram with braille-transcribed labels</title>',
+    '<desc>Experimental Potrace vectorization. Print labels are masked; braille is separated into editable groups. Review all paths and braille placement before tactile production.</desc>',
+    '<rect id="page-background" width="100%" height="100%" fill="#fff"/>',
+    `<g id="potrace-linework"${layered ? ' inkscape:groupmode="layer" inkscape:label="Potrace traced diagram (editable paths)"' : ''}>`,
+    `<svg x="${f(ox)}" y="${f(oy)}" width="${f(analysis.W * s)}" height="${f(analysis.H * s)}" viewBox="${esc(viewBox)}" preserveAspectRatio="none">${contents}</svg>`,
+    '</g>',
+    `<g id="print-label-coverups"${layered ? ' inkscape:groupmode="layer" inkscape:label="White print-label cover-ups"' : ''} fill="#fff">`,
   ];
   for (const L of analysis.labels) {
     if (L.removed) continue;
-    const pad = 2;
+    const pad = 3;
     const x = ox + (L.x0 - pad) * s, y = oy + (L.y0 - pad) * s;
     const w = (L.x1 - L.x0 + 2 * pad) * s, h = (L.y1 - L.y0 + 2 * pad) * s;
     out.push(`<rect x="${f(x)}" y="${f(y)}" width="${f(w)}" height="${f(h)}"/>`);
   }
-  out.push('</g><g id="transcribed-braille" fill="#000">');
-  for (const L of analysis.labels) {
+  out.push('</g>');
+  for (let i = 0; i < analysis.labels.length; i++) {
+    const L = analysis.labels[i];
     if (L.removed) continue;
-    const cells = toCells(L.text.toLowerCase());
+    const cells = toCells(L.text);
     if (!cells.length) continue;
     const w = brailleWidth(cells.length);
     const x = ox + ((L.x0 + L.x1) / 2) * s - w / 2;
     const y = oy + ((L.y0 + L.y1) / 2) * s - BRAILLE.dotPitch;
-    out.push(brailleSVG(cells, x, y));
+    const label = String(L.text || `Label ${i + 1}`);
+    out.push(`<g id="braille-label-${i + 1}"${layered ? ` inkscape:groupmode="layer" inkscape:label="Braille: ${esc(label)}"` : ''} data-label="${i}" fill="#000">${brailleSVG(cells, x, y)}</g>`);
   }
-  out.push('</g></svg>');
+  out.push('</svg>');
   return out.join('');
 }
 

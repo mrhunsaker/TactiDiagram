@@ -14,7 +14,7 @@ At a glance:
 | PaddleOCR | Primary OCR engine | `src/js/paddle.js`, `models/paddleocr/` |
 | Tesseract.js | Fallback OCR engine | `src/js/ocr.js`, `src/vendor/tesseract/` |
 | Indra OCR (Datalab) | Experimental alternative OCR engine | `src/js/indra.js`, `models/indra/` |
-| Potrace | Raster-to-vector tracing (Autotrace preprocessing) | `src/js/autotrace.js`, `src/vendor/potrace/` |
+| Potrace | Raster reconstruction before analysis and monochrome outline tracing after analysis | `src/js/autotrace.js`, `src/js/render.js`, `src/vendor/potrace/` |
 | three.js | 3D relief preview | `src/js/relief.js`, `src/vendor/three/` |
 | Neutralino | Desktop application shell | `desktop/`, `scripts/package.mjs` |
 

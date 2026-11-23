@@ -5,7 +5,7 @@ GitHub Pages publishes the documentation only. The browser application is run lo
 ## Requirements
 
 - Node.js 24 or newer (npm included).
-- A current desktop browser with JavaScript modules, WebAssembly, and Canvas support. Packaged desktop builds additionally require Microsoft Edge WebView2 Runtime (Windows) or WebKitGTK (Linux); these runtimes are not bundled.
+- A **Chromium-based desktop browser** (Chrome, Edge, Brave, Chromium) with JavaScript modules, WebAssembly, and Canvas support. Firefox can run everything except the optional SAM 2.1 backend (the ONNX Runtime WebGPU execution provider is Chromium-oriented and is disabled on Firefox). WebKit-based browsers (Safari on macOS, GNOME Web/Epiphany) are not supported. Packaged desktop builds additionally require Microsoft Edge WebView2 Runtime (Windows) or WebKitGTK (Linux); these runtimes are not bundled.
 - WebGL for the optional 3D relief view and STL export.
 - Internet access for dependency installation and initial asset preparation.
 - Enough memory for in-browser OCR, segmentation, and image processing.
@@ -99,7 +99,7 @@ Generated output is written under `eval-out/`. The harness measures selected geo
 | PaddleOCR fails | The pipeline attempts Tesseract fallback; inspect console errors. |
 | Indra unavailable | Confirm detector, recognizer, metadata, and license files in `src/models/indra/`; fallback should continue to PaddleOCR. |
 | SlimSAM fails | Confirm both SlimSAM ONNX files and Transformers.js/ONNX Runtime assets exist. |
-| SAM 2.1 says WebGPU is unavailable or no adapter exists | This is a browser/OS/GPU/driver capability issue, not an upload or sample-gallery problem. Uncheck SAM 2.1 and use SlimSAM; WebGPU setup is optional and varies by browser and platform. |
+| SAM 2.1 is unavailable, falls back to SlimSAM, or WebGPU errors appear | SAM 2.1 needs a Chromium-based browser (Chrome/Edge/Brave) with a working WebGPU adapter; it is disabled automatically on Firefox and unsupported on Safari/WebKit. Uncheck SAM 2.1 to use SlimSAM; WebGPU setup is optional and varies by browser, OS, GPU, and driver. |
 | 3D view blank | Check WebGL/browser/GPU support; SVG and Print/PDF do not need WebGL. |
 | Upload rejected | Use PNG/JPEG/WebP under 15 MiB. |
 | Print dimensions wrong | Print at actual size and disable fit-to-page/shrink-to-fit. |

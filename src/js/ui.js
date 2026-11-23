@@ -346,7 +346,7 @@ async function run(input = {}) {
     state.sensitivity = Number($('#opt-sensitivity')?.value ?? DEFAULT_TRACING_SENSITIVITY);
     state.optionsSnapshot = currentPipelineOptions();
     let preparedImageData = sourceImageData;
-    if ($('#opt-autotrace')?.checked) {
+    if ($('#opt-autotrace')?.checked && !$('#opt-original-braille')?.checked) {
       setStep('engines', 'Reconstructing image with Potrace…');
       preparedImageData = await prepareAutotrace(sourceImageData);
     }
@@ -596,7 +596,7 @@ $('#tabs').addEventListener('click', (e) => {
   const b = e.target.closest('button[role=tab]'); if (!b) return;
   document.querySelectorAll('#tabs button').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
   document.querySelectorAll('.view').forEach((v) => { v.hidden = v.dataset.view !== b.dataset.tab; });
-  $('#viewmode').hidden = b.dataset.tab !== 'tactile';
+  $('#viewmode').hidden = b.dataset.tab !== 'tactile' || $('#opt-original-braille')?.checked;
   if (b.dataset.tab === 'analysis') drawAnalysis();
   if (b.dataset.tab === 'relief') showRelief(); else relief?.stop();
 });

@@ -5,7 +5,7 @@ use the strict `vYYYY.MM.DD` format (for example `v2026.11.22`). The tag is
 the source of truth; the release workflow synchronizes `package.json` and
 `package-lock.json` on the default branch to the corresponding SemVer triple.
 
-## [Unreleased]
+## [21026.11.23]
 
 ### Fixed
 - SAM 2.1 (WebGPU) segmentation: Transformers.js v4 runs the full image

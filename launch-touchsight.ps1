@@ -24,7 +24,7 @@ if ($env:VERBOSE -ne '0') {
     $env:DEBUG = '*'
     if (-not $env:NODE_OPTIONS) { $env:NODE_OPTIONS = '' }
     $env:NODE_OPTIONS += ' --trace-warnings'
-    $Preference.InformationPreference = 'Continue'
+    $InformationPreference = 'Continue'
 }
 
 Write-Host '==> Installing dependencies'

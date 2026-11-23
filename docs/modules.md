@@ -101,3 +101,15 @@ The tactile SVG is an editable vector document sized in millimetres, with named 
 Use the vector editor for post-processing: compare with the source and analysis overlays, correct paths and false contours, adjust leaders, and inspect braille, label-to-part correspondence, line hierarchy, textures, clearances, and margins. Preserve the page dimensions and mm scale. Save a separate reviewed copy, then produce a physical proof on the intended swell-paper/fuser system.
 
 Vector editing is an optional manual post-processing and QC stage, not automated validation. Edits do not update TactiDiagram's analysis state or guideline report. Recheck the edited SVG independently, retain the untouched export, and assess the physical proof; visual correctness alone does not establish tactile readability.
+
+
+## Potrace processing and output modules
+
+The autotrace module implements two distinct call paths:
+
+- **Autotrace preprocessing** runs before analysis when its checkbox is selected. It vectorizes and rasterizes a reconstructed image; the returned image data becomes the analysis input.
+- **Direct outline-map construction** masks OCR text boxes, computes independent RGB Sobel gradients, thresholds the gradient histogram with bounded Otsu selection, and rejects nearly blank results.
+- **Direct trace normalization** passes that edge map to Potrace and validates/normalizes the returned SVG to black editable paths without a background shape.
+- **Direct rendering** scales the trace into page coordinates and emits a separate linework layer, optional title layer, and one braille layer per label. It consumes the ordinary layout labels and key entries; it does not calculate an alternate braille layout.
+
+The direct trace always uses the original source raster. If Autotrace and direct output are both enabled, the reconstructed raster is used for analysis but the original raster is used for final Potrace artwork. Standard analysis overlays and checks remain based on the analysis image and layout; they do not certify the direct trace.

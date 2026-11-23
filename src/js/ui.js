@@ -549,13 +549,13 @@ function drawLabels() {
     const li = document.createElement('li');
     if (L.removed) li.classList.add('removed');
     const hit = placedByText.get(L.text), p = hit?.p;
-    const how = L.removed ? 'removed' : !p ? 'could not be placed' : p.usesKey ? `key “${p.key}”` : 'full braille';
+    const how = L.removed ? 'removed' : state.analysis.transcribeOnly ? 'original label position' : !p ? 'could not be placed' : p.usesKey ? `key “${p.key}”` : 'full braille';
     const fix = L.corrections?.length ? ` · <span class="fix">auto-corrected ${L.corrections.join(', ')}</span>` : '';
     li.innerHTML = `<span class="badge" style="background:${PAL[i % PAL.length]}">${i + 1}</span>
       <input type="text" aria-label="Label ${i + 1} text" value="${L.text.replace(/"/g, '&quot;')}">
       <span class="acts">${i > 0 && !L.removed ? `<button class="m" type="button" aria-label="Merge label ${i + 1} into the label above" title="Merge into the label above">⤒</button>` : ''}<button class="x" type="button" aria-label="${L.removed ? 'Restore' : 'Remove'} label ${i + 1}" title="${L.removed ? 'Restore' : 'Remove'}">${L.removed ? 'Undo' : '✕'}</button></span>
       <div class="br" aria-hidden="true">${toUnicode(L.text.toLowerCase())}</div>
-      <div class="meta">${how} · ${L.leader ? 'leader traced' : 'label sits on the part'} · ${L.mask ? 'part segmented' : 'no part found'}${fix}</div>`;
+      <div class="meta">${how} · ${state.analysis.transcribeOnly ? 'leader tracing skipped' : L.leader ? 'leader traced' : 'label sits on the part'} · ${state.analysis.transcribeOnly ? 'segmentation skipped' : L.mask ? 'part segmented' : 'no part found'}${fix}</div>`;
     const input = li.querySelector('input');
     input.addEventListener('change', async () => { L.text = input.value.trim() || L.text; L.corrections = []; await relayout(); });
     li.querySelector('.x').addEventListener('click', async () => { L.removed = !L.removed; await relayout(); });

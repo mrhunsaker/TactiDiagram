@@ -89,3 +89,22 @@ Recommended post-processing sequence:
 6. Save a separate reviewed SVG, then produce a physical proof on the target printer/swell-paper/fuser system. Inspect the raised output and obtain tactile-reader feedback where possible.
 
 The vector editor is a post-processing and QC option, not an automated validation step. Editing SVG geometry does not update TactiDiagram's analysis state or its automated guideline report. Re-run or independently perform checks after edits, and retain the unmodified export so changes can be compared or reverted.
+
+
+## Reviewing Autotrace preprocessing
+
+When **Use Autotrace (Potrace)** is enabled, the reconstructed raster becomes the input to OCR, leader detection, foreground/structural-line analysis, and SAM segmentation. Compare **What the AI saw** with the untouched **Original** view. Look for lost pale outlines, merged neighbouring features, changed label recognition, and leader endpoints that no longer land on the intended part. A better-looking raster is not necessarily a more accurate analysis input; verify the label-to-part relationships again after every Autotrace run.
+
+## Reviewing direct Potrace output
+
+When **Use direct Potrace SVG output (full analysis)** is enabled, do not treat the direct trace as a substitute for the analysis views. The full OCR, leader, foreground, and SAM segmentation pipeline still runs, but the primary SVG artwork is traced from the original source image rather than rendered from the part masks.
+
+Review the direct mode separately:
+
+1. Compare the transparent black outline trace with the untouched Original view. Look for missing pale boundaries, excess internal colour boundaries, false contours, and details simplified by Potrace.
+2. Confirm that OCR-masked label areas have not removed nearby meaningful linework. The mask intentionally suppresses printed glyphs and a small surrounding margin.
+3. Check each braille layer against the source wording and the standard analysis association. In the layered SVG, Potrace linework, title, and each label can be selected and moved independently.
+4. If **Use letter keys for every label** is on, verify every two-letter key is unique and the key page maps it to the correct full label. Confirm that the key page is included in print/PDF output.
+5. Remember that geometric checks are computed from analysis/layout data, not a tactile validation of direct Potrace paths. Recheck edited paths and braille after vector-editor changes.
+
+The direct SVG is transparent by design. An editor may display transparency against a checkerboard or its page colour; this does not mean a background has been embedded. The standard segmented export remains available by turning off direct Potrace output and rerunning analysis.

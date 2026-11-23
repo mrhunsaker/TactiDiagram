@@ -19,7 +19,7 @@ the release date and reads as a SemVer triple (`2026.11.22`).
   code is excluded from CodeQL scanning.
 
 ### Added
-- Experimental original-diagram braille export now traces the source with Potrace after masking OCR-detected print labels. It provides both a Potrace SVG and a layered editable SVG with separately movable braille labels and editable traced paths.
+- Direct Potrace SVG output now runs the complete analysis and segmentation pipeline, then replaces segmented diagram artwork with editable paths traced from the original source. It uses the normal tactile label layout, supports two-letter keys for every label, and retains the standard key-page export.
 - Desktop packaging: `npm run package:desktop` (`scripts/package.mjs`)
   builds the existing Neutralino shell into distributable artifacts - an
   AppImage (`TactiDiagram-x86_64.AppImage`) on Linux and a zipped,

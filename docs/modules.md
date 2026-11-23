@@ -74,7 +74,7 @@ Encodes uncontracted UEB Grade 1 and generates two-letter label keys.
 
 ### `render.js`
 
-Renders the tactile page and key page as SVG, including line geometry, texture patterns, braille dots, and preview-only presentation elements.
+Renders the tactile page and key page as SVG, including line geometry, texture patterns, braille dots, and preview-only presentation elements. The experimental original-diagram mode embeds editable Potrace paths and exports separately movable braille-label layers.
 
 ### `check.js`
 

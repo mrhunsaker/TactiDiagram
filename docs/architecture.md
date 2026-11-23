@@ -53,8 +53,8 @@ flowchart TD
   O -->|Default| O1["Segmented tactile SVG"]
   O -->|Direct Potrace option| O2["Original-source monochrome edge map + Potrace paths"]
   O2 --> O3["Transparent SVG + separate braille layers"]
-  O1 --> O4["Key page, print PDF, STL"]
-  O3 --> O4
+  O1 --> O4["Key page, print PDF, 3D relief / STL"]
+  O3 --> O5["Key page and print PDF"]
 ```
 
 The diagram shows conceptual dependencies. OCR, line analysis, and foreground analysis share the prepared source image; segmentation uses label anchors and an image embedding; layout consumes the analysis records.

@@ -32,23 +32,23 @@ The image-analysis stages are deliberately ordered. The diagram's labels provide
 
 ```mermaid
 flowchart TD
-    A["Source diagram<br/>PNG, JPG, or WebP"] --> B["Image preparation"]
-    B --> C["OCR<br/>Indra opt-in; PaddleOCR; Tesseract fallback"]
+    A["Source diagram: PNG, JPG, or WebP"] --> B["Image preparation"]
+    B --> C["OCR: Indra opt-in, PaddleOCR, Tesseract fallback"]
     C --> D["Label grouping and text correction"]
     D --> E["Leader-line detection and tracing"]
     E --> F["Point prompts from leader tips or in-figure labels"]
     F --> G{"Segmentation backend"}
-    G -->|Default| S["SlimSAM segmentation<br/>WASM"]
-    G -->|Opt-in checkbox| S2["SAM 2.1 Hiera Tiny<br/>WebGPU"]
+    G -->|Default| S["SlimSAM segmentation (WASM)"]
+    G -->|Opt-in checkbox| S2["SAM 2.1 Hiera Tiny (WebGPU)"]
     B --> H["Foreground and contour analysis"]
     S --> I["Label-guided line hierarchy"]
     S2 --> I
     H --> I
-    I --> J["Tactile page layout<br/>millimetres, spacing, textures, UEB braille"]
+    I --> J["Tactile page layout: millimetres, spacing, textures, UEB braille"]
     D --> J
     J --> K["Automated guideline checks"]
     K --> L["Transcriber review and editing"]
-    L --> M["Tactile SVG / print PDF / key page / STL"]
+    L --> M["Tactile SVG, print PDF, key page, STL"]
     M --> N["Production and final quality assurance"]
 ```
 

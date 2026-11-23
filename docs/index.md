@@ -16,7 +16,7 @@ Start with [Getting started](getting-started.md). The [Application controls and 
 
 ## Desktop distribution
 
-Packaged releases provide an x86_64 Linux AppImage, a Windows x64 NSIS installer, and a portable Windows ZIP. The installer creates desktop and Start Menu shortcuts and registers an uninstaller. All desktop builds use the operating system's WebView runtime. Releases are published only when a matching `vYYYY.M.D` version tag is pushed. See [Desktop app and packaging](desktop-gui.md) for installation details and platform prerequisites.
+Packaged releases provide an x86_64 Linux AppImage, a Windows x64 NSIS installer (`TactiDiagram-Setup.exe`), and a portable Windows ZIP. The NSIS installer installs the Neutralino executable and its `resources.neu` runtime payload per-user, creates desktop and Start Menu shortcuts, and registers an uninstaller; it defaults to `%LOCALAPPDATA%\Programs\TactiDiagram` and does not require administrator elevation. All desktop builds use the operating system's WebView runtime. GitHub Actions builds the Windows payload first, then compiles `packaging/windows/TactiDiagram.nsi` with NSIS; only matching `vYYYY.M.D` version-tag pushes publish releases. See [Desktop app and packaging](desktop-gui.md) for the installer logic, reproducible build commands, installation details, and platform prerequisites.
 
 ## Why it exists
 

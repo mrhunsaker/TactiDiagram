@@ -26,7 +26,11 @@ GitHub Pages hosts the MkDocs documentation only. It does not host the applicati
 ```mermaid
 flowchart TD
   A["Source image"] --> B["Decode, orient, resize, composite transparency"]
-  B --> C["OCR engines"]
+  B --> P{"Autotrace preprocessing enabled?"}
+  P -->|No| C["OCR engines"]
+  P -->|Yes| P1["Potrace vector reconstruction"]
+  P1 --> P2["Rasterize reconstructed SVG"]
+  P2 --> C
   C --> D["Word boxes and confidence"]
   C -.->|Indra selected: Paddle detection plus Indra recognition| D
   D --> E["Filter, group into lines and labels"]
@@ -45,7 +49,12 @@ flowchart TD
   F --> L
   L --> M["Guideline checks"]
   M --> N["Transcriber review"]
-  N --> O["SVG, key page, print PDF, STL"]
+  N --> O{"Primary diagram renderer"}
+  O -->|Default| O1["Segmented tactile SVG"]
+  O -->|Direct Potrace option| O2["Original-source monochrome edge map + Potrace paths"]
+  O2 --> O3["Transparent SVG + separate braille layers"]
+  O1 --> O4["Key page, print PDF, STL"]
+  O3 --> O4
 ```
 
 The diagram shows conceptual dependencies. OCR, line analysis, and foreground analysis share the prepared source image; segmentation uses label anchors and an image embedding; layout consumes the analysis records.
@@ -76,7 +85,7 @@ This is a hybrid system: learned models handle text recognition and part segment
 | SAM 2.1 Hiera Tiny (opt-in) | Experimental alternative point-prompted segmentation | Transformers.js + ONNX Runtime WebGPU; requires a usable GPU adapter |
 | ONNX Runtime Web | Executes OCR and segmentation ONNX models | WebAssembly |
 | three.js | Interactive 3D relief preview | WebGL |
-| Potrace WASM | Opt-in raster preprocessing through the Autotrace control; its SVG result is rasterized before normal analysis | Locally vendored WebAssembly package |
+| Potrace WASM | Optional Autotrace raster preprocessing and post-analysis direct monochrome outline tracing | Locally vendored WebAssembly package |
 
 See [Models and inference engines](models-and-engines.md) for model identities, files, roles, and caveats.
 
@@ -110,7 +119,8 @@ Generated vendor libraries and model weights are not committed as application so
 | `src/js/lineart.js` | Colour-region boundaries and thin structural strokes |
 | `src/js/tactile.js` | Physical page layout, textures, braille placement, clearance |
 | `src/js/braille.js` | UEB Grade 1 encoding and two-letter keys |
-| `src/js/render.js` | SVG output and preview rendering |
+| `src/js/autotrace.js` | Potrace preprocessing, RGB Sobel/Otsu outline-map generation, and SVG normalization for direct tracing |
+| `src/js/render.js` | Segmented tactile SVG, transparent direct-Potrace SVG, key page, and preview rendering |
 | `src/js/check.js` | Automated geometric checks and edge-tracing baseline |
 | `src/js/relief.js` | three.js relief preview and STL export |
 
@@ -126,3 +136,17 @@ Generated vendor libraries and model weights are not committed as application so
 ## Editable SVG handoff
 
 The rendering stage produces vector artwork with named groups and physical millimetre dimensions. After the automated checks and transcriber review, the SVG can be opened in Inkscape (the recommended FOSS editor) or any SVG-capable editor, including Illustrator or Affinity Designer, for manual path cleanup and production QC. The editor is optional; physical proofing and tactile review remain necessary. See [Review workflow](review-workflow.md).
+
+
+## The two Potrace paths and the renderer branch
+
+The application has two separate Potrace call sites:
+
+- **Pre-analysis Autotrace** runs only when its checkbox is enabled. It vectorizes a raster and rasterizes the SVG back to pixels. The resulting raster becomes the input for OCR, leader detection, foreground/line analysis, and segmentation. It can therefore change every downstream analysis result.
+- **Post-analysis direct output** runs only when the direct Potrace SVG option is enabled. The normal pipeline, including SAM segmentation and tactile layout, completes first. The direct trace then uses the original uploaded pixels to create monochrome outline paths. This path does not use the Autotrace-prepared image for final linework.
+
+The two options can be enabled together: Autotrace supplies the analysis raster, while direct Potrace output still traces the original upload. This lets a user experiment with a cleaner analysis input without silently changing the source used for the final direct trace.
+
+In direct-output rendering, renderPotraceBraille consumes the already-built layout for braille geometry. The same forceKeys option and key-page entries therefore apply to both renderers. Each braille label is emitted as a separate Inkscape layer; Potrace linework forms its own layer. The direct SVG omits the opaque page background and label knockouts used by the conventional segmented tactile SVG.
+
+The mode selection changes the primary drawing, not the review obligation: OCR text, label-to-part associations, segmentation masks, and geometric checks remain important. The geometric checks are calculated against the analysis/layout data; they do not certify the traced SVG or its physical tactile readability.

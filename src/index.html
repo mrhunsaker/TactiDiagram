@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TouchSight</title>
+<title>TactiDiagram</title>
 <meta name="description" content="Turn a textbook diagram into a print-ready tactile graphic with braille labels. Runs entirely in your browser.">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="css/app.css">
@@ -12,7 +12,7 @@
 <a class="skip" href="#stage">Skip to the result</a>
 <header class="top">
   <div class="brand">
-    <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8"/><g><circle cx="11" cy="9" r="2.6"/><circle cx="11" cy="16" r="2.6"/><circle cx="21" cy="16" r="2.6"/><circle cx="21" cy="23" r="2.6"/></g></svg>
+    <img class="logo" src="favicon.svg" alt="">
     <div>
       <h1>TactiDiagram</h1>
       <p class="tag">Textbook diagram in, tactile graphic out</p>
@@ -112,9 +112,9 @@
     <div class="canvasarea">
       <!-- Empty state -->
       <div class="empty" id="empty">
-        <div class="hero-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <img class="hero-icon" src="favicon.svg" alt="" aria-hidden="true">
         <h2>Make a diagram readable by touch in under a minute</h2>
-        <p>Teachers of blind students redraw science diagrams by hand: removing clutter, swapping print for braille, keeping lines far enough apart to feel. TouchSight does the first draft for them.</p>
+        <p>Teachers of blind students redraw science diagrams by hand: removing clutter, swapping print for braille, keeping lines far enough apart to feel. TactiDiagram does the first draft for them.</p>
         <button class="btn primary big" id="try-heart" type="button">Try it on a heart diagram</button>
         <p class="hint">Or pick any sample on the left, or upload your own.</p>
       </div>
@@ -129,7 +129,7 @@
         <div class="view" data-view="compare" hidden>
           <div class="compare">
             <figure><figcaption>Naive edge tracing (Canny), same page</figcaption><div class="paper fit" id="baseline"></div></figure>
-            <figure><figcaption>TouchSight</figcaption><div class="paper fit" id="ours-small"></div></figure>
+            <figure><figcaption>TactiDiagram</figcaption><div class="paper fit" id="ours-small"></div></figure>
           </div>
         </div>
         <div class="view" data-view="key" hidden>
@@ -194,7 +194,7 @@
       <section class="card" id="guideline-card">
         <h2 class="ph"><span class="num">3</span> Guideline check</h2>
         <table class="rules" id="rules">
-          <thead><tr><th>Check</th><th>TouchSight</th><th>Edge tracing</th></tr></thead>
+          <thead><tr><th>Check</th><th>TactiDiagram</th><th>Edge tracing</th></tr></thead>
           <tbody></tbody>
         </table>
         <p class="hint small">Automated checks derived from the BANA <cite>Guidelines and Standards for Tactile Graphics</cite> (2022). They do not replace review by a qualified transcriber.</p>

@@ -118,12 +118,16 @@ function runSample(id, autoRun = false) {
   if (state.busy) return setStatus('Please wait for the current analysis to finish.', true);
   grid.querySelectorAll('.sample').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.id === id)));
   console.info('Loading sample:', id, sample.file);
-  runFromURL(assetURL(`samples/${sample.file}`), shortTitle(sample.title), id).then(() => {
-    // Deep links (?sample=...) are used by demos and the evaluation harness.
-    if (autoRun) startAnalysis();
+  runFromURL(assetURL(`samples/${sample.file}`), shortTitle(sample.title), id).then((loaded) => {
+    // Deep links and the hero demo start only after the sample has decoded successfully.
+    if (autoRun && loaded) startAnalysis();
+  }).catch((error) => {
+    console.error('Could not stage sample:', sample.id, error);
+    setStatus(`Could not load ${sample.title || sample.id}. ${error.message || error}`, true);
   });
 }
-$('#try-heart').addEventListener('click', () => runSample('heart'));
+// The hero CTA is a one-click demo: load the heart sample and start the pipeline.
+$('#try-heart').addEventListener('click', () => runSample('heart', true));
 
 // ---------- input ----------
 const drop = $('#drop');
@@ -243,9 +247,11 @@ async function runFromURL(url, title, name, revokeUrl = false, fileInfo = null) 
     console.info('Image loaded; waiting for Start:', { width: W, height: H, name: state.pending.name });
     setStatus(`${state.pending.name} loaded. Set the options on the left, then press Start analysis.`);
     updateAnalyzeButton();
+    return true;
   } catch (error) {
     console.error('Could not load or decode image:', error);
     setStatus('Could not read that image. ' + (error.message || ''), true);
+    return false;
   } finally {
     if (revokeUrl) URL.revokeObjectURL(url);
   }

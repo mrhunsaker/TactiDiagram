@@ -19,6 +19,7 @@ the release date and reads as a SemVer triple (`2026.11.22`).
   code is excluded from CodeQL scanning.
 
 ### Added
+- Windows distribution now includes a per-user NSIS installer (`TactiDiagram-Setup.exe`) alongside the existing portable ZIP. The installer creates desktop and Start Menu shortcuts, registers an uninstaller, and installs without administrator elevation. The existing tag-only desktop release workflow compiles it from the version tag and attaches it to the GitHub Release; pull requests compile-check the installer but never publish releases.
 - Direct Potrace SVG output now runs the complete analysis and segmentation pipeline, then replaces segmented diagram artwork with monochrome object-outline paths traced from the original source. The exported SVG has a transparent background, no source colour fills, and independent braille label layers; it uses the normal tactile layout, supports two-letter keys for every label, and retains the standard key-page export.
 - Desktop packaging: `npm run package:desktop` (`scripts/package.mjs`)
   builds the existing Neutralino shell into distributable artifacts - an

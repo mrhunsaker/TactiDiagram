@@ -6,16 +6,16 @@ TouchSight-NG produces a first draft. The transcriber verifies the content, corr
 
 ```mermaid
 flowchart TD
-  A[Generated first draft] --> B[Verify every printed label]
-  B --> C[Verify label-to-part relationship]
-  C --> D[Inspect part boundaries and leader paths]
-  D --> E[Review braille, keys, textures and spacing]
-  E --> F[Inspect relief / tactile preview]
-  F --> G{Ready for production?}
-  G -->|No| H[Correct text or revise/remove labels]
+  A["Generated first draft"] --> B["Verify every printed label"]
+  B --> C["Verify label-to-part relationship"]
+  C --> D["Inspect part boundaries and leader paths"]
+  D --> E["Review braille, keys, textures and spacing"]
+  E --> F["Inspect relief / tactile preview"]
+  F --> G{"Ready for production?"}
+  G -->|No| H["Correct text or revise / remove labels"]
   H --> B
-  G -->|Yes| I[Export and produce proof]
-  I --> J[Physical QA and tactile-reader feedback]
+  G -->|Yes| I["Export and produce proof"]
+  I --> J["Physical QA and tactile-reader feedback"]
 ```
 
 ## Fixing labels

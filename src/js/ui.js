@@ -356,16 +356,13 @@ async function run(input = {}) {
       segmentationBackend: $('#opt-sam21')?.checked ? 'sam2' : 'slimsam',
       onStage: (k, msg) => setStep(k, k === 'engines' ? 'Loading on-device models… (first run only)' : msg),
     });
-    const traceSvg = $('#opt-original-braille')?.checked
-      ? await (async () => { setStep('engines', 'Tracing the analyzed diagram with Potrace…'); return traceOriginalDiagram(sourceImageData, analysis.labels); })()
-      : null;
     state.sourceImageData = sourceImageData;
     state.imageData = preparedImageData;
     state.original = input.original ?? state.original;
     state.name = input.name ?? state.name;
     if (input.title !== undefined) $('#opt-title').value = input.title;
     state.analysis = analysis;
-    state.traceSvg = traceSvg;
+    state.traceSvg = null;
     await relayout(true);
     const secs = ((performance.now() - t0) / 1000).toFixed(1);
     const st = state.layout.stats;
@@ -419,7 +416,11 @@ async function relayout(withSteps = false) {
     textures: $('#opt-textures').checked, forceKeys: $('#opt-keys').checked,
   });
   if (withSteps) { setStep('check', 'Running guideline checks…'); await nextFrame(); }
-  state.check = $('#opt-original-braille')?.checked ? { rules: [] } : checkAll(cv, state.analysis, state.layout, state.imageData);
+  if ($('#opt-original-braille')?.checked) {
+    setStep('engines', 'Tracing the analyzed diagram with Potrace…');
+    state.traceSvg = await traceOriginalDiagram(state.sourceImageData, state.analysis.labels);
+  }
+  state.check = checkAll(cv, state.analysis, state.layout, state.imageData);
   draw();
 }
 
@@ -428,7 +429,7 @@ function draw() {
   $('#tabs').hidden = false; $('#views').hidden = false; $('#side').hidden = false; $('#howto').hidden = true;
   const originalBraille = !!$('#opt-original-braille')?.checked;
   $('#dl-pottrace-svg').hidden = !originalBraille;
-  $('#dl-svg').textContent = originalBraille ? 'Download layered editable SVG' : 'Download editable tactile SVG';
+  $('#dl-svg').textContent = originalBraille ? 'Download layered Potrace SVG' : 'Download editable tactile SVG';
   for (const tabName of ['compare', 'relief']) {
     const tab = $(`#tabs [data-tab="${tabName}"]`);
     if (tab) tab.hidden = originalBraille;
@@ -577,7 +578,7 @@ function drawLegend() {
   const ul = $('#legend'); ul.innerHTML = '';
   const parts = state.layout.parts.filter((p) => p.texture != null);
   const bold = state.layout.stats.boldEdges;
-  $('#legend-card').hidden = !parts.length && !bold;
+  $('#legend-card').hidden = !!$('#opt-original-braille')?.checked || (!parts.length && !bold);
   if (bold) {
     for (const [w, txt] of [[3, '<b>Bold line</b> · edge of a labeled part (found by Segment Anything from the leader tip)'], [1.4, '<b>Fine line</b> · other detail traced from the original']]) {
       const li = document.createElement('li');
@@ -596,7 +597,7 @@ function drawLegend() {
 
 function drawRules() {
   const card = $('#guideline-card');
-  if (card) card.hidden = !!$('#opt-original-braille')?.checked;
+  if (card) card.hidden = false;
   const tb = $('#rules tbody'); tb.innerHTML = '';
   for (const r of state.check.rules) {
     const tr = document.createElement('tr');
@@ -635,7 +636,7 @@ const originalBrailleInput = $('#opt-original-braille');
 originalBrailleInput?.addEventListener('change', () => {
   const ready = originalBrailleInput.checked && !!state.traceSvg && !!state.analysis && !state.analysis.transcribeOnly;
   $('#dl-pottrace-svg').hidden = !ready;
-  $('#dl-svg').textContent = ready ? 'Download layered editable SVG' : 'Download editable tactile SVG';
+  $('#dl-svg').textContent = ready ? 'Download layered Potrace SVG' : 'Download editable tactile SVG';
   updateAnalyzeButton();
 });
 

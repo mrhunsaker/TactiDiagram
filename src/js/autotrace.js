@@ -54,6 +54,13 @@ function makeOutlineImage(sourceImageData, labels) {
     for (let y = y0; y < y1; y++) excluded.fill(1, y * width + x0, y * width + x1);
   }
 
+  // Replace masked label pixels with white before calculating gradients. A one-pixel
+  // guard is also skipped below so the mask boundary itself is not traced.
+  for (let i = 0; i < count; i++) {
+    if (!excluded[i]) continue;
+    channels[i * 3] = channels[i * 3 + 1] = channels[i * 3 + 2] = 255;
+  }
+
   // Sobel gradients are evaluated independently per RGB channel. This retains
   // boundaries between differently coloured regions even when their luminance
   // is similar; the output itself is strictly black and white.
@@ -64,7 +71,7 @@ function makeOutlineImage(sourceImageData, labels) {
   for (let y = 1; y < height - 1; y++) {
     for (let x = 1; x < width - 1; x++) {
       const i = y * width + x;
-      if (excluded[i]) continue;
+      if (excluded[i] || excluded[i - 1] || excluded[i + 1] || excluded[i - width] || excluded[i + width]\n        || excluded[i - width - 1] || excluded[i - width + 1] || excluded[i + width - 1] || excluded[i + width + 1]) continue;
       let strongest = 0;
       for (let c = 0; c < 3; c++) {
         const gx = -sample(x - 1, y - 1, c) + sample(x + 1, y - 1, c)

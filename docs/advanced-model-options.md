@@ -34,21 +34,21 @@ A practical future architecture would retain deterministic geometric constraints
 
 ```mermaid
 flowchart TD
-  A[Source diagram] --> B[Current image normalization]
-  B --> C[Specialist OCR: PaddleOCR / Tesseract]
-  B --> D[Optional vision-language analysis]
-  C --> E[Candidate labels and text boxes]
-  D --> F[Candidate label-part relationships and explanations]
-  E --> G[Geometric leader detection]
-  F --> H[Cross-check labels, arrows, spatial relations]
-  G --> I[Candidate point prompts / boxes]
+  A["Source diagram"] --> B["Current image normalization"]
+  B --> C["Specialist OCR: PaddleOCR / Tesseract"]
+  B --> D["Optional vision-language analysis"]
+  C --> E["Candidate labels and text boxes"]
+  D --> F["Candidate label-part relationships and explanations"]
+  E --> G["Geometric leader detection"]
+  F --> H["Cross-check labels, arrows, spatial relations"]
+  G --> I["Candidate point prompts / boxes"]
   H --> I
-  I --> J[Grounding model, optional]
-  J --> K[Promptable segmentation: SlimSAM or SAM 2/3]
-  K --> L[Mask confidence and geometry validation]
-  L --> M[Deterministic tactile constraints]
-  M --> N[Transcriber review]
-  N --> O[Production export]
+  I --> J["Grounding model, optional"]
+  J --> K["Promptable segmentation: SlimSAM or SAM 2/3"]
+  K --> L["Mask confidence and geometry validation"]
+  L --> M["Deterministic tactile constraints"]
+  M --> N["Transcriber review"]
+  N --> O["Production export"]
 ```
 
 A model should propose, not silently decide. Every proposed label, box, point, or mask should be stored with its source, confidence, and a visible overlay. Deterministic code should enforce physical spacing, braille geometry, line widths, and page dimensions after AI inference.

@@ -1,6 +1,6 @@
 # Pipeline stages and theory
 
-TouchSight-NG is a hybrid computer-vision pipeline. OCR and segmentation use trained neural networks; OpenCV operations and project-specific algorithms connect their results and convert them into tactile geometry.
+TactiDiagram is a hybrid computer-vision pipeline. OCR and segmentation use trained neural networks; OpenCV operations and project-specific algorithms connect their results and convert them into tactile geometry.
 
 ## End-to-end pipeline
 
@@ -162,7 +162,7 @@ The transcriber must compare every label and part relationship against the sourc
 
 ## Potrace: optional preprocessing
 
-TouchSight-NG includes an optional **Autotrace** control that uses the locally vendored `esm-potrace-wasm` runtime. It is an opt-in preprocessing step: when enabled, the browser passes the source image through Potrace, renders the resulting SVG back to an image at the original pixel dimensions, and sends that prepared raster through the normal analysis pipeline. OCR, leader detection, foreground and line-art analysis, and segmentation then operate on the prepared image.
+TactiDiagram includes an optional **Autotrace** control that uses the locally vendored `esm-potrace-wasm` runtime. It is an opt-in preprocessing step: when enabled, the browser passes the source image through Potrace, renders the resulting SVG back to an image at the original pixel dimensions, and sends that prepared raster through the normal analysis pipeline. OCR, leader detection, foreground and line-art analysis, and segmentation then operate on the prepared image.
 
 Autotrace is not the default path. With the control disabled, analysis uses the original image. The original source image is retained for comparison, and the prepared image is used for the analysis and downstream tactile layout. If Potrace initialization or reconstruction fails, the run reports the error and restores the previous application state rather than silently treating the failed result as valid.
 
@@ -176,4 +176,4 @@ The tactile SVG is an editable vector document sized in millimetres, with named 
 
 Use the vector editor for post-processing: compare with the source and analysis overlays, correct paths and false contours, adjust leaders, and inspect braille, label-to-part correspondence, line hierarchy, textures, clearances, and margins. Preserve the page dimensions and mm scale. Save a separate reviewed copy, then produce a physical proof on the intended swell-paper/fuser system.
 
-Vector editing is an optional manual post-processing and QC stage, not automated validation. Edits do not update TouchSight-NG's analysis state or guideline report. Recheck the edited SVG independently, retain the untouched export, and assess the physical proof; visual correctness alone does not establish tactile readability.
+Vector editing is an optional manual post-processing and QC stage, not automated validation. Edits do not update TactiDiagram's analysis state or guideline report. Recheck the edited SVG independently, retain the untouched export, and assess the physical proof; visual correctness alone does not establish tactile readability.

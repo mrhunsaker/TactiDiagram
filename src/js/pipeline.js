@@ -21,14 +21,14 @@ function withTimeout(promise, ms, label) {
 }
 
 
-export async function analyze(imageData, { onStage = () => {}, sensitivity = DEFAULT_TRACING_SENSITIVITY, preferIndra = false, segmentationBackend = 'slimsam' } = {}) {
+export async function analyze(imageData, { onStage = () => {}, sensitivity = DEFAULT_TRACING_SENSITIVITY, preferIndra = false, segmentationBackend = 'slimsam', transcribeOnly = false } = {}) {
   const timings = {};
   const timed = async (k, f) => { const t0 = performance.now(); const r = await f(); timings[k] = Math.round(performance.now() - t0); return r; };
   const W = imageData.width, H = imageData.height;
   sensitivity = tracingConfig(sensitivity).sensitivity;
 
   onStage('engines', 'Loading on-device models…');
-  const [cv, initialSam] = await timed('load', () => Promise.all([loadOpenCV(), loadSAM({ backend: segmentationBackend }), loadPaddle({ proxy: true }).catch(() => null)]));
+  const [cv, initialSam] = await timed('load', () => Promise.all([loadOpenCV(), transcribeOnly ? Promise.resolve(null) : loadSAM({ backend: segmentationBackend }), loadPaddle({ proxy: true }).catch(() => null)]));
   let sam = initialSam;
 
   onStage('ocr', 'Reading the printed labels…');
@@ -112,6 +112,17 @@ export async function analyze(imageData, { onStage = () => {}, sensitivity = DEF
 
   const fg = foregroundMask(cv, src, labels, sensitivity);
   const { lineArt, regions, edges } = await timed('lineart', () => lineArtMask(cv, src, labels, fg, sensitivity));
+
+  if (transcribeOnly) {
+    // Fast original-diagram mode needs OCR and text locations, not part masks.
+    // Avoid loading or running SAM; the UI preserves the source image and
+    // replaces detected print labels with braille at their original locations.
+    src.delete(); gray.delete();
+    return { W, H, labels, words: good, fg, lineArt, regions, edges, detailLines, timings,
+      device: null, ocrEngine, sensitivity, segmentationBackend: 'skipped',
+      segmentationFallbackReason: null, indraFallback: preferIndra && ocrEngine !== 'indra',
+      transcribeOnly: true };
+  }
 
   onStage('segment', 'Segmenting each labeled part…');
   const fgDil = dilateMask(cv, fg, W, H, 5);

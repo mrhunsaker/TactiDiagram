@@ -25,27 +25,27 @@ GitHub Pages hosts the MkDocs documentation only. It does not host the applicati
 
 ```mermaid
 flowchart TD
-  A[Source image] --> B[Decode, orient, resize, composite transparency]
-  B --> C[OCR engines]
-  C --> D[Word boxes and confidence]
-  C -. Indra selected: Paddle detection + Indra recognition .-> D
-  D --> E[Filter, group into lines and labels]
-  E --> F[Correct likely OCR slips]
-  E --> G[Detect leader lines]
-  G --> H[Associate label with leader tip]
-  F --> I[Foreground and structure analysis]
-  H --> J[Point prompts for named parts]
+  A["Source image"] --> B["Decode, orient, resize, composite transparency"]
+  B --> C["OCR engines"]
+  C --> D["Word boxes and confidence"]
+  C -.->|Indra selected: Paddle detection plus Indra recognition| D
+  D --> E["Filter, group into lines and labels"]
+  E --> F["Correct likely OCR slips"]
+  E --> G["Detect leader lines"]
+  G --> H["Associate label with leader tip"]
+  F --> I["Foreground and structure analysis"]
+  H --> J["Point prompts for named parts"]
   I --> J
-  J --> K{Segmentation backend}
-  K -->|Default| S[SlimSAM masks (WASM)]
-  K -->|Opt-in| S2[SAM 2.1 Hiera Tiny masks (WebGPU)]
-  S --> L[Line hierarchy and tactile layout]
+  J --> K{"Segmentation backend"}
+  K -->|Default| S["SlimSAM masks (WASM)"]
+  K -->|Opt-in| S2["SAM 2.1 Hiera Tiny masks (WebGPU)"]
+  S --> L["Line hierarchy and tactile layout"]
   S2 --> L
   I --> L
   F --> L
-  L --> M[Guideline checks]
-  M --> N[Transcriber review]
-  N --> O[SVG, key page, print/PDF, STL]
+  L --> M["Guideline checks"]
+  M --> N["Transcriber review"]
+  N --> O["SVG, key page, print PDF, STL"]
 ```
 
 The diagram shows conceptual dependencies. OCR, line analysis, and foreground analysis share the prepared source image; segmentation uses label anchors and an image embedding; layout consumes the analysis records.

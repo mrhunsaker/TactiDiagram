@@ -6,44 +6,44 @@ TouchSight-NG is a hybrid computer-vision pipeline. OCR and segmentation use tra
 
 ```mermaid
 flowchart TD
-  A[Input: PNG, JPG, WebP] --> B[Decode and normalize]
-  B --> I0{Use Indra OCR checked?}
-  I0 -->|Yes| I1[Indra detection and recognition]
-  I1 -->|error or no text| C{PaddleOCR available?}
-  I0 -->|No| C
-  C -->|Yes| D[PaddleOCR detection and recognition]
-  C -->|No / error| E[Tesseract fallback]
-  D --> F[Normalize word boxes]
+  A["Input: PNG, JPG, WebP"] --> B["Decode and normalize"]
+  B --> I0{"Use Indra OCR?"}
+  I0 -->|Yes| I1["PaddleOCR detection"]
+  I1 --> I2["Indra recognition"]
+  I2 -->|Success| F["Normalize word boxes"]
+  I2 -.->|Error or no text| D["Full PaddleOCR detection and recognition"]
+  I0 -->|No| D
+  D -->|Success| F
+  D -.->|Error or no text| E["Tesseract fallback"]
   E --> F
-  I1 --> F
-  F --> G[Filter low-confidence / implausible words]
-  G --> H[Group words into text lines]
-  H --> I[Merge stacked lines into semantic labels]
-  I --> J[Science-vocabulary correction, shown for review]
-  J --> K[Identify labels on the drawing]
-  K --> L[Thin-stroke extraction]
-  L --> M[Probabilistic Hough line segments]
-  M --> N[Assign segments to labels and chain broken leaders]
-  N --> O[Leader endpoint / in-figure anchor]
-  B --> P[Foreground mask and structural line analysis]
-  O --> Q[Point prompts]
+  F --> G["Filter low-confidence or implausible words"]
+  G --> H["Group words into text lines"]
+  H --> I["Merge stacked lines into semantic labels"]
+  I --> J["Science-vocabulary correction, shown for review"]
+  J --> K["Identify labels on the drawing"]
+  K --> L["Thin-stroke extraction"]
+  L --> M["Probabilistic Hough line segments"]
+  M --> N["Assign segments to labels and chain broken leaders"]
+  N --> O["Leader endpoint / in-figure anchor"]
+  B --> P["Foreground mask and structural line analysis"]
+  O --> Q["Point prompts"]
   P --> Q
-  Q --> R{Segmentation backend}
-  R -->|Default| S[SlimSAM embedding and mask candidates (WASM)]
-  R -->|Opt-in| S2[SAM 2.1 Hiera Tiny embedding and mask candidates (WebGPU)]
-  S --> T[Mask filtering and selection]
+  Q --> R{"Segmentation backend"}
+  R -->|Default| S["SlimSAM embedding and mask candidates (WASM)"]
+  R -->|Opt-in| S2["SAM 2.1 Hiera Tiny embedding and mask candidates (WebGPU)"]
+  S --> T["Mask filtering and selection"]
   S2 --> T
-  P --> U[Detailed or Simplified line-art extraction]
-  T --> V[Label-guided line hierarchy]
+  P --> U["Detailed or Simplified line-art extraction"]
+  T --> V["Label-guided line hierarchy"]
   U --> V
-  J --> W[Millimetre tactile layout]
+  J --> W["Millimetre tactile layout"]
   V --> W
-  W --> X[Braille, keys, textures, knockouts]
-  X --> Y[Automated guideline checks]
-  Y --> Z[Transcriber review and correction]
-  Z --> AA[Editable layered SVG / key page / print-PDF / STL]
-  AA --> AB[Optional Inkscape or other SVG editor: manual correction and QC]
-  AB --> AC[Physical proof and tactile QA]
+  W --> X["Braille, keys, textures, knockouts"]
+  X --> Y["Automated guideline checks"]
+  Y --> Z["Transcriber review and correction"]
+  Z --> AA["Editable layered SVG, key page, print PDF, STL"]
+  AA --> AB["Optional SVG editor for manual correction and QC"]
+  AB --> AC["Physical proof and tactile QA"]
 ```
 
 ## 1. Input normalization
@@ -106,13 +106,13 @@ The current method:
 
 ```mermaid
 flowchart TD
-  A[OCR label box] --> C[Candidate line segments]
-  B[Thin-stroke mask] --> C
-  C --> D[Score by proximity and direction]
-  D --> E[Assign best segment]
-  E --> F[Chain collinear gaps]
-  F --> G[Leader tip]
-  G --> H[Segmentation point prompt]
+  A["OCR label box"] --> C["Candidate line segments"]
+  B["Thin-stroke mask"] --> C
+  C --> D["Score by proximity and direction"]
+  D --> E["Assign best segment"]
+  E --> F["Chain collinear gaps"]
+  F --> G["Leader tip"]
+  G --> H["Segmentation point prompt"]
 ```
 
 This is a geometric heuristic, not a learned relationship model. Crossings, arrowheads, curved leaders, or crowded diagrams can produce incorrect endpoints. The review overlay is important.

@@ -75,14 +75,13 @@ flowchart TD
   P --> PR["PaddleOCR recognizer"]
   B -->|Yes| D["PaddleOCR text detector"]
   D --> Q["Rotated quadrilateral regions"]
-  Q --> W["OpenCV perspective crop / deskew"]
-  W --> I["Indra recognizer"]
-  D -. "detection error" .-> ID["Indra detector + recognizer fallback"]
-  I --> R["Shared OCR word records"]
-  ID --> R
-  PR --> R
+  Q --> W["Grayscale crop and resize to Indra input"]
+  W --> I["Indra CTC recognizer"]
+  I -.->|Any error or empty result| P
+  PR --> R["Shared OCR word records"]
+  I --> R
   R --> S["Shared OCR filtering, grouping and label correction"]
-  P -. "OCR error / no text" .-> T["Tesseract fallback"]
+  P -.->|PaddleOCR error or no text| T["Tesseract fallback"]
   S --> L["Leader detection and tactile pipeline"]
   T --> S
 ```
@@ -98,14 +97,14 @@ produced the words.
 
 ```mermaid
 flowchart TD
-  A["ImageData over white"] --> B["detector: det.onnx"]
-  B --> C["threshold + dilate probability map"]
-  C --> D["OpenCV contours → min-area quads → unclip → scale back"]
-  D --> E["perspective crop per quad"]
-  E --> F["recognizer: rec.onnx (batched CTC)"]
-  F --> G["greedy CTC decode with meta.json vocabulary"]
-  G --> H["line records → word records"]
-  H --> I["shared ocr.js post-processing<br/>(filter, group, merge, correct)"]
+  A["PaddleOCR text regions"] --> B["Grayscale crop and normalize"]
+  B --> C["Create one-channel ink map"]
+  C --> D["Resize using rec_height and rec_window"]
+  D --> E["Pad variable-width batch to multiple of 8"]
+  E --> F["Recognizer inputs: x and widths"]
+  F --> G["CTC outputs: ids, conf, lengths"]
+  G --> H["Decode with meta.json vocabulary"]
+  H --> I["Convert recognized lines to word records"]
 ```
 
 Roles of the vendored files:

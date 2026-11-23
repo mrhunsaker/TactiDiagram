@@ -272,13 +272,22 @@ function updateAnalyzeButton() {
   if (newImage || !state.analysis) { btn.textContent = state.pending ? 'Start analysis' : 'Re-analyze'; return; }
   const o = currentPipelineOptions(), s = state.optionsSnapshot;
   const enginesDiffer = !s || o.autotrace !== s.autotrace || o.indra !== s.indra || o.sam21 !== s.sam21 || o.originalBraille !== s.originalBraille;
-  btn.textContent = enginesDiffer || o.sensitivity !== state.sensitivity ? 'Apply settings & re-analyze' : 'Re-run analysis';
+  const sensitivityDiffers = !o.originalBraille && o.sensitivity !== state.sensitivity;
+  btn.textContent = enginesDiffer || sensitivityDiffers ? 'Apply settings & re-analyze' : 'Re-run analysis';
 }
 async function startAnalysis() {
   if (state.busy) return;
   const o = currentPipelineOptions(), s = state.optionsSnapshot;
   const enginesDiffer = !s || o.autotrace !== s.autotrace || o.indra !== s.indra || o.sam21 !== s.sam21 || o.originalBraille !== s.originalBraille;
   if (state.pending || !state.analysis || enginesDiffer) return run(state.pending ?? {});
+  if (o.originalBraille && o.sensitivity !== state.sensitivity) {
+    // Tracing sensitivity is not used by the OCR-only original-diagram output.
+    state.sensitivity = o.sensitivity;
+    state.optionsSnapshot = o;
+    setStatus('Tracing sensitivity does not affect original-diagram braille mode.');
+    updateAnalyzeButton();
+    return;
+  }
   if (o.sensitivity !== state.sensitivity) {
     // Same engines, only tracing sensitivity changed: reuse OCR and SAM masks.
     state.busy = true;

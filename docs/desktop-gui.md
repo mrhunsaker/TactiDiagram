@@ -147,7 +147,7 @@ node scripts/package.mjs --target linux --version 2026.11.22 --out dist
      `packaging/windows/TactiDiagram.nsi`. The installer installs both runtime
      files together, creates desktop and Start Menu shortcuts, and registers
      an uninstaller under the current user's Windows Apps list. It defaults
-     to `%LOCALAPPDATA%\\Programs\\TactiDiagram` and does not request admin
+     to `%LOCALAPPDATA%\Programs\TactiDiagram` and does not request admin
      elevation. The portable ZIP remains available. `scripts/win-icon.cjs`
      generates the multi-size icon and `rcedit` embeds it in the application.
 

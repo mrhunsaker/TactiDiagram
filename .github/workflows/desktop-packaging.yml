@@ -113,9 +113,17 @@ jobs:
           set -euo pipefail
           git fetch origin "$DEFAULT_BRANCH"
           git checkout -B "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH"
-          npm version "$VERSION" --no-git-tag-version
-          if git diff --quiet -- package.json package-lock.json; then
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          LOCK_VERSION="$(node -p "require('./package-lock.json').version")"
+          if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
+            npm version "$VERSION" --no-git-tag-version
+          elif [ "$LOCK_VERSION" != "$VERSION" ]; then
+            npm install --package-lock-only --ignore-scripts
+          else
             echo "package.json and package-lock.json already match $VERSION"
+          fi
+          if git diff --quiet -- package.json package-lock.json; then
+            echo "No package version changes to commit."
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

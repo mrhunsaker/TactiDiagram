@@ -102,7 +102,8 @@ app serves its own resources instead of depending on localhost:5173.
 ```bash
 npm ci
 npx neu update                  # once per machine
-npm run package:desktop         # linux -> AppImage, windows -> zipped exe
+npm run package:desktop         # linux -> AppImage, windows -> zipped exe bundle
+# On Windows, compile packaging/windows/TactiDiagram.nsi with NSIS after packaging
 ```
 
 The version can be stamped into the build so it matches the git tag and the
@@ -146,10 +147,8 @@ node scripts/package.mjs --target linux --version 2026.11.22 --out dist
 
 ### App icon
 
-`packaging/icon.svg` is the icon source of truth. The CI workflow rasterizes
-it; locally you can generate `packaging/icon.png` with ImageMagick
-(`convert -background none -density 300 packaging/icon.svg -resize 256x256 packaging/icon.png`)
-and, on Windows, `packaging/icon.ico` with
+`packaging/icon.svg` is the icon source of truth. The CI workflow generates `packaging/icon.png` and `packaging/icon.ico` from
+this source on Windows; locally you can generate the Windows assets with
 `npm i --no-save sharp png-to-ico && node scripts/win-icon.cjs`.
 Without an icon, the package still builds; the exe keeps the stock
 Neutralino icon, and the window has no custom taskbar icon.
@@ -164,11 +163,16 @@ build. On a matching tag the workflow:
 
 1. validates the tag format and verifies `package.json` matches the tag-derived
    version (`v2026.11.22` -> `2026.11.22`);
-2. stamps that version into the packaged builds (`neutralino.config.json`
-   and `resources/version.json`);
-3. builds the Linux AppImage and Windows ZIP independently, uploads both as
-   workflow artifacts, then one release job attaches both after both builds
-   succeed.
+2. stamps that version into the packaged builds (`neutralino.config.json`,
+   `resources/version.json`, and the Windows installer metadata);
+3. builds the Linux AppImage and Windows portable ZIP plus NSIS installer
+   independently, uploads the artifacts, then one release job attaches all
+   three after both platform builds succeed.
+
+Pull requests that touch packaging sources also compile the Windows installer
+on a Windows runner. Pull requests do not publish releases. The release job
+runs only for the version-tag push event; ordinary branch pushes do not build
+or publish release artifacts.
 
 To release: move the `CHANGES.md` `[Unreleased]` entries under a heading named
 for the tag and dated, set the same version in `package.json`, tag `vYYYY.M.D`,
@@ -176,9 +180,9 @@ and push the tag.
 
 ### Limitations
 
-- Windows distribution is an unsigned ZIP with a portable executable and
-  resources.neu, not an installer. SmartScreen may warn at first launch. The
-  target machine needs Microsoft Edge WebView2 Runtime.
+- Windows installer and portable ZIP are currently unsigned. SmartScreen may
+  warn at download or first launch. The target machine needs Microsoft Edge
+  WebView2 Runtime. The NSIS installer is per-user and does not elevate.
 - The AppImage is x86_64 only; aarch64 builds would need ARM Neutralino
   binaries and `aarch64` `appimagetool`.
 - The packaged app reaches the network the same way the web app does. Its

@@ -1,12 +1,12 @@
 # Architecture and design theory
 
-## The problem TouchSight-NG is designed to solve
+## The problem TactiDiagram is designed to solve
 
 A printed diagram is designed for vision. It communicates through colour, shading, fine lines, spatial proximity, typography, and visual conventions that do not transfer directly to touch. A tactile graphic must be a deliberate reinterpretation rather than a literal tracing.
 
 A useful tactile transcription has to answer several questions: What text is present? What does each label refer to? Which shapes carry meaning? How should visual information be encoded for touch? How can the result be checked?
 
-TouchSight-NG is organized around those questions. It attempts to create a reviewable first draft, not an autonomous final transcription.
+TactiDiagram is organized around those questions. It attempts to create a reviewable first draft, not an autonomous final transcription.
 
 ## Browser-only architecture
 
@@ -54,7 +54,7 @@ The diagram shows conceptual dependencies. OCR, line analysis, and foreground an
 
 Generic edge detection answers “where does contrast change?” It does not answer “which boundaries describe a named scientific part?” A textbook diagram may contain text, stipple, gradients, arrows, borders, and decorative marks. A naive edge detector can turn all of these into raised clutter.
 
-TouchSight-NG uses labels as semantic anchors:
+TactiDiagram uses labels as semantic anchors:
 
 - OCR proposes label text and a bounding box.
 - Leader analysis attempts to find the line connecting the label to a part.

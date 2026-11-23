@@ -1,4 +1,4 @@
-# Contributing to TouchSight-NG
+# Contributing to TactiDiagram
 
 Thanks for helping make tactile graphics faster to produce. This project is maintained alongside real transcription work, so contributions that reflect actual use are especially valuable: diagrams the pipeline fails on, checks that miss real problems, exports that misprint.
 

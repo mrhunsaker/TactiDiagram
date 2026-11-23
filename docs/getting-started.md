@@ -5,7 +5,7 @@ GitHub Pages publishes the documentation only. The browser application is run lo
 ## Requirements
 
 - Node.js 24 or newer (npm included).
-- A **Chromium-based desktop browser** (Chrome, Edge, Brave, Chromium) with JavaScript modules, WebAssembly, and Canvas support. Firefox can run everything except the optional SAM 2.1 backend (the ONNX Runtime WebGPU execution provider is Chromium-oriented and is disabled on Firefox). WebKit-based browsers (Safari on macOS, GNOME Web/Epiphany) are not supported. Packaged desktop builds additionally require Microsoft Edge WebView2 Runtime (Windows) or WebKitGTK (Linux); these runtimes are not bundled.
+- A **Chromium-based desktop browser** (Chrome, Edge, Brave, Chromium) with JavaScript modules, WebAssembly, and Canvas support is recommended. Firefox runs the standard application and SlimSAM, but TactiDiagram deliberately disables SAM 2.1 on Firefox because of an ONNX Runtime WebGPU compatibility issue. Safari and other WebKit browsers are not supported application targets. Packaged desktop builds additionally require Microsoft Edge WebView2 Runtime (Windows) or WebKitGTK (Linux); these runtimes are not bundled.
 - WebGL for the optional 3D relief view and STL export.
 - Internet access for dependency installation and initial asset preparation.
 - Enough memory for in-browser OCR, segmentation, and image processing.
@@ -29,6 +29,10 @@ npm run vendor
 The vendor script copies browser libraries into `src/vendor/` and downloads model assets into `src/models/`. It prepares OpenCV.js, Tesseract.js and English traineddata, Transformers.js, ONNX Runtime Web, three.js, SlimSAM, optional SAM 2.1 Hiera Tiny files (about 78 MB), PaddleOCR, optional Indra OCR files, and the Potrace runtime/license notice. Existing nonempty downloaded files are skipped. If a specific generated file is corrupt or incomplete, remove that file and rerun the command.
 
 Generated browser libraries and model weights are local runtime output, not application source. Do not commit them unless a deliberate distribution policy requires it.
+
+## Optional SAM 2.1 / WebGPU setup
+
+WebGPU is not required for TactiDiagram's default SlimSAM/WASM segmentation. To try the optional SAM 2.1 backend, use current Chrome or Edge on a platform with a compatible GPU adapter, enable hardware acceleration, restart the browser, and confirm WebGPU is available on the browser's internal GPU page (`chrome://gpu` or `edge://gpu`). Then check **Use experimental SAM 2.1 segmentation (WebGPU)** in the app before starting analysis. See the [WebGPU setup and browser compatibility guide](webgpu.md) for browser-specific instructions, Firefox limitations, operating-system notes, and troubleshooting. A browser reporting WebGPU support does not guarantee that every ONNX Runtime model operator will run; the app falls back to SlimSAM if SAM 2.1 fails.
 
 ## 3. Start the app
 
@@ -99,7 +103,7 @@ Generated output is written under `eval-out/`. The harness measures selected geo
 | PaddleOCR fails | The pipeline attempts Tesseract fallback; inspect console errors. |
 | Indra unavailable | Confirm detector, recognizer, metadata, and license files in `src/models/indra/`; fallback should continue to PaddleOCR. |
 | SlimSAM fails | Confirm both SlimSAM ONNX files and Transformers.js/ONNX Runtime assets exist. |
-| SAM 2.1 is unavailable, falls back to SlimSAM, or WebGPU errors appear | SAM 2.1 needs a Chromium-based browser (Chrome/Edge/Brave) with a working WebGPU adapter; it is disabled automatically on Firefox and unsupported on Safari/WebKit. Uncheck SAM 2.1 to use SlimSAM; WebGPU setup is optional and varies by browser, OS, GPU, and driver. |
+| SAM 2.1 is unavailable, falls back to SlimSAM, or WebGPU errors appear | Follow the [WebGPU setup guide](webgpu.md). Check hardware acceleration and the browser GPU page; Firefox is intentionally routed to SlimSAM. TactiDiagram automatically retries with SlimSAM if SAM 2.1 initialization or inference fails. |
 | 3D view blank | Check WebGL/browser/GPU support; SVG and Print/PDF do not need WebGL. |
 | Upload rejected | Use PNG/JPEG/WebP under 15 MiB. |
 | Print dimensions wrong | Print at actual size and disable fit-to-page/shrink-to-fit. |
@@ -114,5 +118,6 @@ Image decoding, OCR, segmentation, layout, checking, and rendering run in the br
 - [Transcriber review workflow](review-workflow.md)
 - [Tactile layout and BANA guidelines](guidelines.md)
 - [Models and inference engines](models-and-engines.md)
+- [WebGPU browser setup](webgpu.md)
 - [Pipeline stages](pipeline.md)
 - [Printing and swell paper](printing.md)

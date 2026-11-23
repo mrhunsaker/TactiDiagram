@@ -110,9 +110,13 @@ makensis /DAPP_VERSION=2026.11.22 packaging/windows/TactiDiagram.nsi
 ```
 
 The release tag is the source of truth for the build version. On a valid tag,
-GitHub Actions updates `package.json` and `package-lock.json` on the default
-branch to the tag-derived version, then stamps that version into the release
-artifacts. You do not need to edit the package version before tagging:
+GitHub Actions opens a pull request to update `package.json` and
+`package-lock.json` on the default branch to the tag-derived version when they
+differ, then stamps that version into the release artifacts. Configure the
+repository Actions secret `RELEASE_PR_TOKEN` with a fine-grained token granting
+Contents (read/write) and Pull requests (read/write) access so the workflow can
+create or update that PR. Merge the PR to align the default branch metadata.
+You do not need to edit the package version before tagging:
 
 ```bash
 node scripts/package.mjs --target linux --version 2026.11.22 --out dist
@@ -248,8 +252,9 @@ or publish release artifacts.
 
 To release: move the `CHANGES.md` `[Unreleased]` entries under a heading named
 for the release date, create and push a tag such as `v2026.11.23`. The workflow
-updates `package.json` and `package-lock.json` automatically; do not manually
-change the package version before tagging.
+opens a pull request to update `package.json` and `package-lock.json` when
+needed; merge that PR after its required checks pass. Do not manually change the
+package version before tagging.
 
 ### Limitations
 

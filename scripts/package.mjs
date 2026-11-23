@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Package TouchSight-NG as a desktop application.
+// Package TactiDiagram as a desktop application.
 //
 // Usage:
 //   npm run package:desktop            (auto: linux target on Linux, win on Windows)
@@ -19,7 +19,7 @@
 //   5. Packages it:
 //      - Linux: an AppImage built with appimagetool (downloaded on first run
 //        and executed with --appimage-extract-and-run, so no FUSE needed).
-//      - Windows: a zip with touchsight-ng.exe + resources.neu; the exe icon
+//      - Windows: a zip with TactiDiagram.exe + resources.neu; the exe icon
 //        is embedded with rcedit when available (see scripts/win-icon.cjs).
 //
 // --version stamps the build: it sets neutralino.config.json "version" and
@@ -120,7 +120,7 @@ function writeBuildConfig() {
     // Stamped build: the version matches the git tag and GitHub release.
     cfg.version = versionArg;
     writeFileSync(join(resDir, 'version.json'),
-      JSON.stringify({ name: 'TouchSight-NG', version: versionArg }, null, 2) + '\n');
+      JSON.stringify({ name: 'TactiDiagram', version: versionArg }, null, 2) + '\n');
   }
   if (existsSync(join(resDir, 'icon.png'))) {
     cfg.modes.window.icon = '/resources/icon.png';
@@ -167,7 +167,7 @@ function resolveAppIcon() {
   if (existsSync(png)) return png;
   const svg = join(packagingDir, 'icon.svg');
   if (existsSync(svg)) {
-    const pngOut = join(outDir, 'touchsight-ng.png');
+    const pngOut = join(outDir, 'TactiDiagram.png');
     for (const conv of ['convert', 'magick', 'rsvg-convert']) {
       const args = conv === 'rsvg-convert'
         ? ['-w', '256', '-h', '256', svg, '-o', pngOut]
@@ -197,18 +197,18 @@ function buildAppImage(binary, resources) {
   rmSync(appDir, { recursive: true, force: true });
   const icons = join(appDir, 'usr', 'share', 'icons', 'hicolor', '256x256', 'apps');
   mkdirSync(icons, { recursive: true });
-  copyFileSync(binary, join(appDir, 'touchsight-ng'));
-  chmodSync(join(appDir, 'touchsight-ng'), 0o755);
+  copyFileSync(binary, join(appDir, 'TactiDiagram'));
+  chmodSync(join(appDir, 'TactiDiagram'), 0o755);
   copyFileSync(resources, join(appDir, 'resources.neu'));
   chmodSync(join(appDir, 'resources.neu'), 0o644);
 
-  writeFileSync(join(appDir, 'touchsight-ng.desktop'),
+  writeFileSync(join(appDir, 'TactiDiagram.desktop'),
     '[Desktop Entry]\n' +
     'Type=Application\n' +
-    'Name=TouchSight-NG\n' +
+    'Name=TactiDiagram\n' +
     'Comment=Turn diagrams into print-ready tactile graphics with braille labels.\n' +
-    'Exec=touchsight-ng\n' +
-    'Icon=touchsight-ng\n' +
+    'Exec=TactiDiagram\n' +
+    'Icon=TactiDiagram\n' +
     'Categories=Graphics;Office;Education;\n' +
     'Terminal=false\n');
 
@@ -216,13 +216,13 @@ function buildAppImage(binary, resources) {
     '#!/bin/sh\n' +
     'HERE="$(dirname "$(readlink -f "$0")")"\n' +
     'cd "$HERE"\n' +
-    'exec ./touchsight-ng "$@"\n');
+    'exec ./TactiDiagram "$@"\n');
   chmodSync(join(appDir, 'AppRun'), 0o755);
 
   const icon = resolveAppIcon();
   if (icon) {
-    copyFileSync(icon, join(appDir, 'touchsight-ng.png'));
-    copyFileSync(icon, join(icons, 'touchsight-ng.png'));
+    copyFileSync(icon, join(appDir, 'TactiDiagram.png'));
+    copyFileSync(icon, join(icons, 'TactiDiagram.png'));
   } else {
     console.warn('No app icon found (packaging/icon.png). Continuing without a launcher icon.');
     console.warn('Generate one with ImageMagick: convert -background none packaging/icon.svg -resize 256x256 packaging/icon.png');
@@ -230,7 +230,7 @@ function buildAppImage(binary, resources) {
 
   const tool = resolveAppImageTool();
   chmodSync(tool, 0o755);
-  const appImagePath = join(outDir, 'TouchSight-NG-x86_64.AppImage');
+  const appImagePath = join(outDir, 'TactiDiagram-x86_64.AppImage');
   run(tool, ['--appimage-extract-and-run', appDir, appImagePath]);
   console.log('\nBuilt ' + appImagePath);
 }
@@ -252,17 +252,17 @@ async function buildWindowsPackage(binary, resources) {
     console.warn('To brand the exe: npm i --no-save sharp png-to-ico rcedit && node scripts/win-icon.cjs');
   }
 
-  const stage = join(outDir, 'touchsight-ng-win-x64');
+  const stage = join(outDir, 'TactiDiagram-win-x64');
   rmSync(stage, { recursive: true, force: true });
   mkdirSync(stage, { recursive: true });
-  copyFileSync(binary, join(stage, 'touchsight-ng.exe'));
+  copyFileSync(binary, join(stage, 'TactiDiagram.exe'));
   copyFileSync(resources, join(stage, 'resources.neu'));
   writeFileSync(join(stage, 'README.txt'),
-    'TouchSight-NG desktop application\n\n' +
-    'Keep touchsight-ng.exe and resources.neu together. Run touchsight-ng.exe;\n' +
+    'TactiDiagram desktop application\n\n' +
+    'Keep TactiDiagram.exe and resources.neu together. Run TactiDiagram.exe;\n' +
     'the app opens in its own window and serves itself (no Node.js needed).\n');
 
-  const zipPath = join(outDir, 'TouchSight-NG-win-x64.zip');
+  const zipPath = join(outDir, 'TactiDiagram-win-x64.zip');
   run('powershell', ['-NoProfile', '-Command',
     'Compress-Archive -Path "' + stage + '\\*" -DestinationPath "' + zipPath + '" -Force']);
   console.log('\nBuilt ' + zipPath + (iconEmbedded ? '' : ' (default exe icon)'));

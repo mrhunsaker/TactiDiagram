@@ -115,9 +115,10 @@ jobs:
           git checkout -B "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH"
           PACKAGE_VERSION="$(node -p "require('./package.json').version")"
           LOCK_VERSION="$(node -p "require('./package-lock.json').version")"
+          LOCK_ROOT_VERSION="$(node -p "require('./package-lock.json').packages[''].version")"
           if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
             npm version "$VERSION" --no-git-tag-version
-          elif [ "$LOCK_VERSION" != "$VERSION" ]; then
+          elif [ "$LOCK_VERSION" != "$VERSION" ] || [ "$LOCK_ROOT_VERSION" != "$VERSION" ]; then
             npm install --package-lock-only --ignore-scripts
           else
             echo "package.json and package-lock.json already match $VERSION"

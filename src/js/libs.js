@@ -84,8 +84,15 @@ export function loadSAM({ backend = 'slimsam' } = {}) {
     T.env.backends.onnx.wasm.proxy = true; // run inference in a worker so the page stays responsive
 
     if (backend === 'sam2') {
-      if (!navigator.gpu || !(await hasWebGPU())) {
-        const reason = 'WebGPU is unavailable or this device has no compatible GPU adapter';
+      // Firefox implements WebGPU, but the ONNX Runtime WebGPU execution provider
+      // is Chromium-oriented: the SAM 2.1 encoder can compile its shaders fine on
+      // the probe yet fail mid-run with an invalid shader module (for example
+      // "Pad"). Gate it off on Firefox so the run starts on SlimSAM instead of
+      // wedging the ORT worker partway through.
+      if (!navigator.gpu || isFirefox() || !(await hasWebGPU())) {
+        const reason = isFirefox()
+          ? "This browser's WebGPU is not compatible with the ONNX Runtime WebGPU backend (Firefox)"
+          : 'WebGPU is unavailable or this device has no compatible GPU adapter';
         console.warn(`SAM 2.1 unavailable (${reason}); falling back to SlimSAM.`);
         return { ...(await loadSlimSAM(T)), fallbackReason: reason };
       }
@@ -112,6 +119,9 @@ async function loadSlimSAM(T) {
   const model = await T.SamModel.from_pretrained(id, { dtype: 'fp32', device: 'wasm' });
   const processor = await T.AutoProcessor.from_pretrained(id);
   return { T, model, processor, device: 'wasm', backend: 'slimsam' };
+}
+function isFirefox() {
+  return /firefox/i.test(navigator.userAgent) && !/seamonkey/i.test(navigator.userAgent);
 }
 async function hasWebGPU() {
   try {

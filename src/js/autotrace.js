@@ -71,7 +71,8 @@ function makeOutlineImage(sourceImageData, labels) {
   for (let y = 1; y < height - 1; y++) {
     for (let x = 1; x < width - 1; x++) {
       const i = y * width + x;
-      if (excluded[i] || excluded[i - 1] || excluded[i + 1] || excluded[i - width] || excluded[i + width]\n        || excluded[i - width - 1] || excluded[i - width + 1] || excluded[i + width - 1] || excluded[i + width + 1]) continue;
+      if (excluded[i] || excluded[i - 1] || excluded[i + 1] || excluded[i - width] || excluded[i + width]
+        || excluded[i - width - 1] || excluded[i - width + 1] || excluded[i + width - 1] || excluded[i + width + 1]) continue;
       let strongest = 0;
       for (let c = 0; c < 3; c++) {
         const gx = -sample(x - 1, y - 1, c) + sample(x + 1, y - 1, c)

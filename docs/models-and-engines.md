@@ -113,7 +113,7 @@ With Transformers.js 4.3.0, every `SamProcessor` call runs the full image prepro
 - `processor.reshape_input_points(...)` rescales the [x, y] prompts into the model's reshaped input coordinates using the stored `original_sizes` / `reshaped_input_sizes`.
 - Labels are wrapped as an `int64` tensor shaped like the points tensor.
 - `reshaped_input_sizes` is passed to `post_process_masks`, which the v4 API requires to remove padding when upscaling masks back to original resolution.
-- The per-image preprocess outputs (`original_sizes`, `reshaped_input_sizes`) are cached for the whole analysis, so each label only re-runs one full model call instead of re-preprocessing the page. The multi-level image embeddings are deliberately NOT cached for SAM 2.1: this Sam2Model build re-dispatches decoder-only inputs into the vision encoder and fails (see the segment.js comment). runs alone for each subsequent label instead of rerunning the WebGPU vision encoder.
+- The per-image preprocess outputs (`original_sizes`, `reshaped_input_sizes`) are cached for the whole analysis, so each label only re-runs one full model call instead of re-preprocessing the page. The multi-level image embeddings are deliberately NOT cached for SAM 2.1: this Sam2Model build re-dispatches decoder-only inputs into the vision encoder and fails (see the segment.js comment).
 
 Passing `processor(null, ...)` throws "Cannot read properties of null (reading 'size')"; if a future Transformers.js upgrade reintroduces an inputs-only call, prefer that over manual tensor construction.
 

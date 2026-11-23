@@ -1,9 +1,9 @@
 import { loadOpenCV } from './libs.js';
 import { analyze, updateTracing } from './pipeline.js';
 import { DEFAULT_TRACING_SENSITIVITY } from './tracing-config.js';
-import { prepareAutotrace } from './autotrace.js';
+import { prepareAutotrace, traceOriginalDiagram } from './autotrace.js';
 import { buildLayout } from './tactile.js';
-import { renderTactile, renderOriginalBraille, renderKeyPage, TEXTURES } from './render.js';
+import { renderTactile, renderPotraceBraille, renderKeyPage, TEXTURES } from './render.js';
 import { checkAll } from './check.js';
 import { toUnicode } from './braille.js';
 
@@ -62,7 +62,7 @@ window.addEventListener('error', (event) => {
 window.addEventListener('unhandledrejection', (event) => sendTerminalLog('error', ['Unhandled promise rejection', event.reason]));
 
 const $ = (s) => document.querySelector(s);
-const state = { imageData: null, sourceImageData: null, original: null, analysis: null, layout: null, check: null, name: 'diagram', busy: false, mode: 'tactile', sensitivity: DEFAULT_TRACING_SENSITIVITY, pending: null, optionsSnapshot: null };
+const state = { imageData: null, sourceImageData: null, original: null, analysis: null, traceSvg: null, layout: null, check: null, name: 'diagram', busy: false, mode: 'tactile', sensitivity: DEFAULT_TRACING_SENSITIVITY, pending: null, optionsSnapshot: null };
 const MAX_SIDE = 1400; // keep in-browser inference fast
 const PAL = ['#e6194b', '#3cb44b', '#0082c8', '#f58230', '#911eb4', '#2fa8a8', '#f032e6', '#7f9d1f', '#008080', '#aa6e28', '#5a5aff', '#c0392b'];
 
@@ -341,7 +341,7 @@ const nextFrame = () => new Promise((r) => requestAnimationFrame(() => setTimeou
 // ---------- pipeline ----------
 async function run(input = {}) {
   if (state.busy) return;
-  const previous = { imageData: state.imageData, sourceImageData: state.sourceImageData, original: state.original, analysis: state.analysis, layout: state.layout, check: state.check, name: state.name };
+  const previous = { imageData: state.imageData, sourceImageData: state.sourceImageData, original: state.original, analysis: state.analysis, traceSvg: state.traceSvg, layout: state.layout, check: state.check, name: state.name };
   state.busy = true;
   document.body.setAttribute('aria-busy', 'true');
   document.querySelectorAll('#btn-analyze, #opt-autotrace, #opt-indra, #opt-sam21, #opt-original-braille, #opt-sensitivity, #opt-page, #opt-style, #opt-textures, #opt-keys, #opt-title, #file').forEach((el) => { el.disabled = true; });
@@ -365,12 +365,16 @@ async function run(input = {}) {
       transcribeOnly: $('#opt-original-braille')?.checked ?? false,
       onStage: (k, msg) => setStep(k, k === 'engines' ? 'Loading on-device models… (first run only)' : msg),
     });
+    const traceSvg = $('#opt-original-braille')?.checked
+      ? await (async () => { setStep('engines', 'Tracing diagram and removing detected print labels with Potrace…'); return traceOriginalDiagram(sourceImageData, analysis.labels); })()
+      : null;
     state.sourceImageData = sourceImageData;
     state.imageData = preparedImageData;
     state.original = input.original ?? state.original;
     state.name = input.name ?? state.name;
     if (input.title !== undefined) $('#opt-title').value = input.title;
     state.analysis = analysis;
+    state.traceSvg = traceSvg;
     await relayout(true);
     const secs = ((performance.now() - t0) / 1000).toFixed(1);
     const st = state.layout.stats;
@@ -432,6 +436,8 @@ async function relayout(withSteps = false) {
 function draw() {
   $('#tabs').hidden = false; $('#views').hidden = false; $('#side').hidden = false; $('#howto').hidden = true;
   const originalBraille = !!$('#opt-original-braille')?.checked;
+  $('#dl-pottrace-svg').hidden = !originalBraille;
+  $('#dl-svg').textContent = originalBraille ? 'Download layered editable SVG' : 'Download editable tactile SVG';
   for (const tabName of ['compare', 'key', 'relief']) {
     const tab = $(`#tabs [data-tab="${tabName}"]`);
     if (tab) tab.hidden = originalBraille;
@@ -459,7 +465,7 @@ function draw() {
 function drawTactile(highlight = null) {
   const el = $('#tactile');
   if ($('#opt-original-braille')?.checked) {
-    el.innerHTML = renderOriginalBraille(state.layout, state.analysis, state.original);
+    el.innerHTML = renderPotraceBraille(state.layout, state.analysis, state.traceSvg, { layered: true });
     el.querySelector('svg')?.setAttribute('aria-label', 'Original diagram with detected print labels replaced by braille');
     return;
   }
@@ -637,7 +643,12 @@ const indraInput = $('#opt-indra');
 indraInput?.addEventListener('change', () => updateAnalyzeButton());
 
 const originalBrailleInput = $('#opt-original-braille');
-originalBrailleInput?.addEventListener('change', () => updateAnalyzeButton());
+originalBrailleInput?.addEventListener('change', () => {
+  const ready = originalBrailleInput.checked && !!state.traceSvg && !!state.analysis?.transcribeOnly;
+  $('#dl-pottrace-svg').hidden = !ready;
+  $('#dl-svg').textContent = ready ? 'Download layered editable SVG' : 'Download editable tactile SVG';
+  updateAnalyzeButton();
+});
 
 const sensitivityInput = $('#opt-sensitivity');
 const sensitivityValue = $('#opt-sensitivity-value');
@@ -690,10 +701,11 @@ $('#dl-stl').onclick = async () => {
 };
 function primaryTactileSVG() {
   return $('#opt-original-braille')?.checked
-    ? renderOriginalBraille(state.layout, state.analysis, state.original)
+    ? renderPotraceBraille(state.layout, state.analysis, state.traceSvg, { layered: true })
     : renderTactile(state.layout);
 }
-$('#dl-svg').onclick = () => saveAs(`${state.name}-tactile-editable.svg`, primaryTactileSVG());
+$('#dl-svg').onclick = () => saveAs(`${state.name}-${$('#opt-original-braille')?.checked ? 'potrace-layered' : 'tactile-editable'}.svg`, primaryTactileSVG());
+$('#dl-pottrace-svg').onclick = () => saveAs(`${state.name}-potrace-braille.svg`, renderPotraceBraille(state.layout, state.analysis, state.traceSvg));
 $('#dl-key').onclick = () => saveAs(`${state.name}-key.svg`, renderKeyPage(state.layout, { preview: true }));
 function printHTML(L, pages) {
   // The document is written into a fresh browsing context (or a temp file), so

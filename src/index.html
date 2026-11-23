@@ -85,7 +85,7 @@
         <label class="check"><input id="opt-textures" type="checkbox"> Fill parts with textures</label>
         <label class="check"><input id="opt-keys" type="checkbox"> Use letter keys for every label</label>
         <label class="check"><input id="opt-original-braille" type="checkbox"> Experimental: keep the original diagram and replace printed labels with braille</label>
-        <p class="hint"><strong>Warning:</strong> This faster option skips part segmentation and covers detected print labels with braille. It may sacrifice segmentation quality and can obscure nearby diagram details.</p>
+        <p class="hint"><strong>Warning:</strong> This experimental option skips part segmentation and uses Potrace to vectorize the original diagram after covering detected print labels. It may sacrifice segmentation quality, simplify fine details, or obscure nearby diagram content. Review and adjust the traced paths and braille layers before production.</p>
         <button class="btn primary big" id="btn-analyze" type="button" disabled>Load a diagram to begin</button>
         <p class="hint">Loading an image or sample and changing options does not start processing. Set everything up, then press this button.</p>
       </details>
@@ -203,6 +203,7 @@
         <h2 class="ph"><span class="num">4</span> Export</h2>
         <div class="exports">
           <button class="btn primary" id="dl-svg">Download editable tactile SVG</button>
+          <button class="btn" id="dl-pottrace-svg" hidden>Download Potrace SVG</button>
           <button class="btn" id="dl-key">Key page</button>
           <button class="btn" id="print">Print / PDF</button>
         </div>

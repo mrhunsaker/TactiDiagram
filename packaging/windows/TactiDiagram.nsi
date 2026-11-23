@@ -13,7 +13,6 @@ InstallDir "$LOCALAPPDATA\Programs\TactiDiagram"
 InstallDirRegKey HKCU "${UNINSTALL_KEY}" "InstallLocation"
 RequestExecutionLevel user
 Unicode True
-SetShellVarContext current
 SetCompressor /SOLID lzma
 Icon "packaging\icon.ico"
 UninstallIcon "packaging\icon.ico"
@@ -37,6 +36,7 @@ VIAddVersionKey "FileVersion" "${APP_VERSION}"
 VIAddVersionKey "LegalCopyright" "Copyright TactiDiagram contributors"
 
 Section "Install"
+  SetShellVarContext current
   SetOutPath "$INSTDIR"
   ; Keep the Neutralino executable and resources.neu side by side.
   File "dist\TactiDiagram-win-x64\TactiDiagram.exe"
@@ -66,6 +66,7 @@ Section "Install"
 SectionEnd
 
 Section "Uninstall"
+  SetShellVarContext current
   ; Delete only files owned by this installer; preserve unexpected files.
   Delete "$DESKTOP\${APP_NAME}.lnk"
   !insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder

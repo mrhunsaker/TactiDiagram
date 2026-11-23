@@ -377,7 +377,7 @@ async function run(input = {}) {
     console.error(e);
     Object.assign(state, previous);
     if (state.analysis) { try { draw(); } catch {} }
-    if (!state.analysis && byId[state.name] && await showPrecomputed(state.name)) {
+    if (!state.analysis && !$('#opt-original-braille')?.checked && byId[state.name] && await showPrecomputed(state.name)) {
       setStatus(`This browser could not run the on-device models (${e.message || e}). Showing a result computed earlier with the same pipeline.`, true);
     } else {
       $('#empty').hidden = !!state.layout;
@@ -425,9 +425,11 @@ function draw() {
   $('#viewmode').hidden = currentTab() !== 'tactile' || $('#opt-original-braille')?.checked;
   drawTactile();
   $('#ours-small').innerHTML = renderTactile(state.layout);
-  $('#keypage').innerHTML = state.layout.keyEntries.length
-    ? renderKeyPage(state.layout, { preview: true })
-    : '<p>Every label fits as full braille, so no key page is needed.</p>';
+  $('#keypage').innerHTML = $('#opt-original-braille')?.checked
+    ? '<p>Original-diagram mode renders the full transcribed braille labels directly; no key page is generated.</p>'
+    : state.layout.keyEntries.length
+      ? renderKeyPage(state.layout, { preview: true })
+      : '<p>Every label fits as full braille, so no key page is needed.</p>';
   drawBaseline();
   drawAnalysis();
   drawLabels();
@@ -684,7 +686,7 @@ function printHTML(L, pages) {
 $('#print').onclick = async () => {
   const L = state.layout;
   const pages = [primaryTactileSVG()];
-  if (L.keyEntries.length) pages.push(renderKeyPage(L, { preview: true }));
+  if (!$('#opt-original-braille')?.checked && L.keyEntries.length) pages.push(renderKeyPage(L, { preview: true }));
   const html = printHTML(L, pages);
   if (!desktop) {
     // Browser: a new tab is the only way to print the bare page-sized SVGs.

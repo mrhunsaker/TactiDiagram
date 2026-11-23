@@ -21,14 +21,14 @@ function withTimeout(promise, ms, label) {
 }
 
 
-export async function analyze(imageData, { onStage = () => {}, sensitivity = DEFAULT_TRACING_SENSITIVITY, preferIndra = false, segmentationBackend = 'slimsam' } = {}) {
+export async function analyze(imageData, { onStage = () => {}, sensitivity = DEFAULT_TRACING_SENSITIVITY, preferIndra = false, segmentationBackend = 'slimsam', transcribeOnly = false } = {}) {
   const timings = {};
   const timed = async (k, f) => { const t0 = performance.now(); const r = await f(); timings[k] = Math.round(performance.now() - t0); return r; };
   const W = imageData.width, H = imageData.height;
   sensitivity = tracingConfig(sensitivity).sensitivity;
 
   onStage('engines', 'Loading on-device models…');
-  const [cv, initialSam] = await timed('load', () => Promise.all([loadOpenCV(), loadSAM({ backend: segmentationBackend }), loadPaddle({ proxy: true }).catch(() => null)]));
+  const [cv, initialSam] = await timed('load', () => Promise.all([loadOpenCV(), transcribeOnly ? Promise.resolve(null) : loadSAM({ backend: segmentationBackend }), loadPaddle({ proxy: true }).catch(() => null)]));
   let sam = initialSam;
 
   onStage('ocr', 'Reading the printed labels…');
@@ -83,6 +83,28 @@ export async function analyze(imageData, { onStage = () => {}, sensitivity = DEF
   // Repair low-confidence OCR slips against a science vocabulary (shown to the teacher).
   for (const w of good) { w.orig = w.text; w.text = correctWord(w.text, w.conf); }
   const lines = wordsToLines(good);
+
+  if (transcribeOnly) {
+    // The quick mode only needs recognized text and its OCR boxes. Skip leader
+    // detection, line extraction, foreground reconstruction, and SAM entirely.
+    onStage('leaders', 'Preparing recognized labels for braille replacement…');
+    const quickLabels = linesToLabels(lines).sort((a, b) => (a.y0 - b.y0) || (a.x0 - b.x0));
+    const singles = quickLabels.filter((L) => L.text.replace(/[^A-Za-z0-9]/g, '').length <= 1);
+    if (singles.length < 3) for (const L of singles) quickLabels.splice(quickLabels.indexOf(L), 1);
+    for (const L of quickLabels) {
+      const fixes = L.lines.flatMap((l) => l.words).filter((w) => w.orig !== w.text);
+      L.corrections = fixes.map((w) => `${w.orig} → ${w.text}`);
+      const ph = correctPhrase(L.text);
+      if (ph !== L.text) { L.corrections.push(`${L.text} → ${ph}`); L.text = ph; }
+    }
+    onStage('segment', 'Skipping part segmentation in original-diagram mode…');
+    src.delete(); gray.delete();
+    return { W, H, labels: quickLabels, words: good, fg: new Uint8Array(W * H), lineArt: [],
+      regions: null, edges: new Uint8Array(W * H), detailLines: [], timings,
+      device: null, ocrEngine, sensitivity, segmentationBackend: 'skipped',
+      segmentationFallbackReason: null, indraFallback: preferIndra && ocrEngine !== 'indra',
+      transcribeOnly: true };
+  }
 
   onStage('leaders', 'Tracing leader lines to the parts they name…');
   // Labels printed on top of the drawing name the part underneath; they get no leader.

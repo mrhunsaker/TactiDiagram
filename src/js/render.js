@@ -1,7 +1,7 @@
 // Stage 3 — SVG output in millimetres. Everything tactile is pure black on white
 // (swell paper raises any dark toner, so no greys). Print text for sighted readers
 // lives in a separate preview layer that is stripped from the tactile export.
-import { cellDots, BRAILLE, brailleWidth } from './braille.js';
+import { cellDots, BRAILLE, brailleWidth, toCells } from './braille.js';
 import { SPEC } from './tactile.js';
 
 export const TEXTURES = [
@@ -96,6 +96,40 @@ export function renderTactile(layout, { preview = false, highlight = null, under
     out.push('</g>');
   }
   out.push('</svg>');
+  return out.join('');
+}
+
+// Experimental quick output: retain the source diagram and replace each detected
+// print-label box with uncontracted braille. This does not claim the segmentation,
+// spacing, or tactile-line quality of the full reconstruction.
+export function renderOriginalBraille(layout, analysis, original) {
+  const { pageW, pageH, ox, oy, s } = layout;
+  const out = [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${f(pageW)}mm" height="${f(pageH)}mm" viewBox="0 0 ${f(pageW)} ${f(pageH)}">`,
+    '<title>Original diagram with braille-transcribed labels</title>',
+    '<desc>Experimental output. Original diagram retained; detected print labels are covered and replaced with braille. Review carefully before tactile production.</desc>',
+    '<rect width="100%" height="100%" fill="#fff"/>',
+    `<image href="${original}" x="${f(ox)}" y="${f(oy)}" width="${f(analysis.W * s)}" height="${f(analysis.H * s)}" preserveAspectRatio="none"/>`,
+    '<g id="print-label-coverups" fill="#fff">'
+  ];
+  for (const L of analysis.labels) {
+    if (L.removed) continue;
+    const pad = 2;
+    const x = ox + (L.x0 - pad) * s, y = oy + (L.y0 - pad) * s;
+    const w = (L.x1 - L.x0 + 2 * pad) * s, h = (L.y1 - L.y0 + 2 * pad) * s;
+    out.push(`<rect x="${f(x)}" y="${f(y)}" width="${f(w)}" height="${f(h)}"/>`);
+  }
+  out.push('</g><g id="transcribed-braille" fill="#000">');
+  for (const L of analysis.labels) {
+    if (L.removed) continue;
+    const cells = toCells(L.text.toLowerCase());
+    if (!cells.length) continue;
+    const w = brailleWidth(cells.length);
+    const x = ox + ((L.x0 + L.x1) / 2) * s - w / 2;
+    const y = oy + ((L.y0 + L.y1) / 2) * s - BRAILLE.dotPitch;
+    out.push(brailleSVG(cells, x, y));
+  }
+  out.push('</g></svg>');
   return out.join('');
 }
 

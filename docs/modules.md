@@ -52,7 +52,7 @@ Builds structural line art from colour-region boundaries and thin strokes. It us
 
 ### `segment.js`
 
-Uses Transformers.js with SlimSAM by default or SAM 2.1 Hiera Tiny when the experimental WebGPU checkbox is selected. It computes/caches image embeddings, applies point prompts for each label, evaluates candidate masks by score and area, and returns a mask for each label where possible. SAM 2.1 requires a usable WebGPU adapter; it does not automatically fall back to SlimSAM.
+Uses Transformers.js with SlimSAM by default or SAM 2.1 Hiera Tiny when the experimental WebGPU checkbox is selected. The experimental original-diagram/braille-only option returns immediately after OCR and label correction, skipping leader detection, line extraction, foreground reconstruction, and SAM; it uses OCR boxes to replace printed labels with braille. It computes/caches image embeddings, applies point prompts for each label, evaluates candidate masks by score and area, and returns a mask for each label where possible. SAM 2.1 requires a usable WebGPU adapter; it does not automatically fall back to SlimSAM.
 
 ### `libs.js`
 

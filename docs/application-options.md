@@ -101,3 +101,8 @@ Screen-only preview elements are not necessarily part of the production SVG. Pre
 ## Current limitations
 
 The app has no in-app freehand contour editor, freehand leader editor, add-missed-label control, contracted UEB, multilingual braille transcription, or automatic tactile-usability certification. Larger vision-language and segmentation models on the [research roadmap](advanced-model-options.md) are not current app options.
+
+
+### Experimental: keep the original diagram and replace labels with braille
+
+This option retains the uploaded diagram instead of reconstructing its parts. OCR-detected print-label regions are covered and the recognized text is rendered as uncontracted braille in approximately the same location. It skips leader detection, line extraction, foreground reconstruction, and Segment Anything part segmentation, so it runs faster but does not provide segmented part boundaries, textures, or the full pipeline's tactile-spacing guarantees. The white label cover-ups can also hide nearby diagram details. Review the result carefully before printing or producing swell paper.

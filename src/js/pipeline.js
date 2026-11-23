@@ -10,6 +10,17 @@ import { loadIndra, recognizeTextRegions } from './indra.js';
 import { structureLines } from './lineart.js';
 import { DEFAULT_TRACING_SENSITIVITY, tracingConfig } from './tracing-config.js';
 
+// A stalled model backend (for example a wedged ONNX Runtime worker after a
+// WebGPU failure) must never leave the UI permanently disabled; fail loudly
+// instead so the run can unwind and the interface recovers.
+function withTimeout(promise, ms, label) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(label + ' did not finish within ' + Math.round(ms / 1000) + ' s; please try again or reload the page.')), ms);
+    Promise.resolve(promise).then((v) => { clearTimeout(timer); resolve(v); }, (e) => { clearTimeout(timer); reject(e); });
+  });
+}
+
+
 export async function analyze(imageData, { onStage = () => {}, sensitivity = DEFAULT_TRACING_SENSITIVITY, preferIndra = false, segmentationBackend = 'slimsam' } = {}) {
   const timings = {};
   const timed = async (k, f) => { const t0 = performance.now(); const r = await f(); timings[k] = Math.round(performance.now() - t0); return r; };
@@ -142,12 +153,12 @@ export async function analyze(imageData, { onStage = () => {}, sensitivity = DEF
     segmentationFallbackReason = error?.message || String(error);
     console.warn('SAM 2.1 inference failed; retrying segmentation with SlimSAM.', error);
     onStage('segment', 'SAM 2.1 WebGPU failed; retrying segmentation with SlimSAM…');
-    sam = await loadSAM({ backend: 'slimsam' });
+    sam = await withTimeout(loadSAM({ backend: 'slimsam' }), 180000, 'The SlimSAM fallback model load');
     for (const L of labels) { L.mask = null; L.maskScore = 0; }
-    await segmentAll(sam);
+    await withTimeout(segmentAll(sam), 300000, 'The SlimSAM fallback segmentation');
   }
   src.delete(); gray.delete();
-  return { W, H, labels, words: good, fg, lineArt, regions, edges, detailLines, timings, device: sam.device, ocrEngine, sensitivity, segmentationBackend: sam.backend, segmentationFallbackReason };
+  return { W, H, labels, words: good, fg, lineArt, regions, edges, detailLines, timings, device: sam.device, ocrEngine, sensitivity, segmentationBackend: sam.backend, segmentationFallbackReason, indraFallback: preferIndra && ocrEngine !== 'indra' };
 }
 
 // Non-background pixels minus text and thin strokes (leader lines), holes filled.

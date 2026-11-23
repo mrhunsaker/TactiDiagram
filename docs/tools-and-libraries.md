@@ -16,7 +16,8 @@ At a glance:
 | Indra OCR (Datalab) | Experimental alternative OCR engine | `src/js/indra.js`, `models/indra/` |
 | Potrace | Raster reconstruction before analysis and monochrome outline tracing after analysis | `src/js/autotrace.js`, `src/js/render.js`, `src/vendor/potrace/` |
 | three.js | 3D relief preview | `src/js/relief.js`, `src/vendor/three/` |
-| Neutralino | Desktop application shell | `desktop/`, `scripts/package.mjs` |
+| Neutralino | Desktop application shell and embedded resource server | `desktop/`, `scripts/package.mjs` |
+| NSIS (Nullsoft Scriptable Install System) | Compiles the Windows setup executable from the built Neutralino payload; handles install pages, shortcuts, per-user registration, and uninstall | `packaging/windows/TactiDiagram.nsi`, `.github/workflows/desktop-packaging.yml` |
 
 ---
 
@@ -133,6 +134,37 @@ Three interchangeable engines read the printed labels. They all expose the same 
 
 **The benefit:** a real double-click application with no application server or network. Note the webview caveat for SAM 2.1: Windows WebView2 is Chromium-based, so SAM 2.1 is available there, but the Linux WebKitGTK webview provides no usable WebGPU, so packaged Linux builds run the SlimSAM backend only.
 
+
+## NSIS (Windows installer compiler)
+
+**What it is:** NSIS (Nullsoft Scriptable Install System) is a Windows
+installer authoring system. Its `makensis.exe` compiler turns an `.nsi`
+script into a setup executable; the compiled installer then performs the
+file-copy, shortcut, registry, and uninstall operations defined by that
+script.
+
+**How TactiDiagram uses it:** NSIS is a packaging layer after the Neutralino
+application build, not a replacement for Neutralino and not an application
+runtime dependency. `scripts/package.mjs` first produces
+`dist/TactiDiagram-win-x64/TactiDiagram.exe` and the adjacent
+`resources.neu` file. The NSIS script
+`packaging/windows/TactiDiagram.nsi` copies those runtime files, a README,
+and the ICO into the install directory, then writes an uninstaller. The
+GitHub Actions workflow installs NSIS on `windows-latest` and calls
+`makensis.exe /DAPP_VERSION=...` so the setup executable's version metadata
+matches the packaged app and release tag.
+
+The script uses Modern UI 2 (`MUI2.nsh`) for welcome, directory-selection,
+Start Menu, progress, and uninstall pages. It requests user-level execution,
+defaults to `%LOCALAPPDATA%\Programs\TactiDiagram`, remembers the previous
+install location, creates desktop and Start Menu shortcuts, and writes the
+current user's Add/Remove Programs registration. Uninstall removes only
+installer-owned files and shortcuts; it does not recursively delete the
+destination directory, which protects unexpected user files.
+
+**The benefit:** Windows users get a conventional install/uninstall flow
+without bundling an additional runtime or requiring administrator rights.
+The portable ZIP remains available for users who prefer not to install.
 
 ## Where each tool is pinned
 

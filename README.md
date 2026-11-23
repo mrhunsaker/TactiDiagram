@@ -128,10 +128,47 @@ There are three ways to run TactiDiagram:
    and no browser chrome, using the operating system webview instead of a
    bundled Chromium.
 3. **Install a packaged desktop build** (no Node.js on the target machine):
-   download the x86_64 Linux AppImage or unsigned Windows x64 ZIP from
-   [Releases](https://github.com/mrhunsaker/TactiDiagram/releases). Linux
-   requires system WebKitGTK; Windows requires Microsoft Edge WebView2 Runtime.
+   download the x86_64 Linux AppImage or Windows x64 NSIS installer from
+   [Releases](https://github.com/mrhunsaker/TactiDiagram/releases). The Windows
+   installer creates desktop and Start Menu shortcuts and an uninstaller;
+   the portable ZIP remains available. Linux requires system WebKitGTK;
+   Windows requires Microsoft Edge WebView2 Runtime.
    See [Desktop app and packaging](docs/desktop-gui.md).
+
+### Windows installer design
+
+The Windows setup program is generated with **NSIS (Nullsoft Scriptable Install System)** from
+`packaging/windows/TactiDiagram.nsi`. The packaging script first builds the Neutralino
+application bundle: `TactiDiagram.exe` and its required sibling `resources.neu`.
+NSIS then wraps those files, the app icon, and a generated uninstaller in
+`TactiDiagram-Setup.exe`.
+
+The installer is deliberately per-user: it defaults to
+`%LOCALAPPDATA%\Programs\TactiDiagram`, requests no administrator elevation,
+and registers the application under the current user's Windows uninstall
+registry key. It creates desktop and Start Menu launch shortcuts. The
+uninstaller removes the files and shortcuts owned by TactiDiagram while
+preserving unrelated files in the install directory. Re-running the installer
+uses the previously registered install location, supporting upgrades.
+
+For a local Windows build, prepare the icon and Neutralino runtime, build the
+app bundle, install NSIS, and compile the script:
+
+```powershell
+npm ci
+npm install --no-save sharp png-to-ico rcedit
+npx neu update
+node scripts/win-icon.cjs
+node scripts/package.mjs --target win --version 2026.11.23
+choco install nsis --yes
+& "${env:ProgramFiles(x86)}\NSIS\makensis.exe" /DAPP_VERSION=2026.11.23 packaging/windows/TactiDiagram.nsi
+```
+
+The resulting installer is written to `dist/TactiDiagram-Setup.exe`.
+GitHub Actions performs the same build on Windows: pull requests compile-check
+the installer without publishing it, while version-tag pushes build and attach
+the installer and portable ZIP to the GitHub Release. The installer is
+currently unsigned, and Windows WebView2 Runtime is still a system prerequisite.
 
 To run the automated evaluation harness:
 

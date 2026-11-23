@@ -101,8 +101,12 @@ app serves its own resources instead of depending on localhost:5173.
 
 ```bash
 npm ci
+npm i --no-save sharp png-to-ico rcedit
 npx neu update                  # once per machine
-npm run package:desktop         # linux -> AppImage, windows -> zipped exe
+node scripts/win-icon.cjs       # generate packaging/icon.ico before packaging
+npm run package:desktop -- --target win --version 2026.11.22
+choco install nsis --yes
+makensis /DAPP_VERSION=2026.11.22 packaging/windows/TactiDiagram.nsi
 ```
 
 The version can be stamped into the build so it matches the git tag and the
@@ -138,18 +142,83 @@ node scripts/package.mjs --target linux --version 2026.11.22 --out dist
      `TactiDiagram.desktop` entry and the app icon, so it can be marked
      executable and launched directly or integrated into application menus
      with an AppImage launcher.
-   - **Windows:** `TactiDiagram-win-x64.zip` containing
-     `TactiDiagram.exe` + `resources.neu` (keep the two files together).
-     When `packaging/icon.ico` exists and `rcedit` is installed, the
-     application icon is embedded in the exe, so Explorer and the Start menu
-     show TactiDiagram's icon after extraction or shortcut creation.
+   - **Windows:** `TactiDiagram-win-x64.zip` containing `TactiDiagram.exe`
+     and `resources.neu`, plus `TactiDiagram-Setup.exe` compiled from
+     `packaging/windows/TactiDiagram.nsi`. The installer installs both runtime
+     files together, creates desktop and Start Menu shortcuts, and registers
+     an uninstaller in the current user's Apps/installed-applications list.
+     It defaults to `%LOCALAPPDATA%\Programs\TactiDiagram` and does not
+     request administrator elevation. The portable ZIP remains available.
+     `scripts/win-icon.cjs` generates the multi-size icon and `rcedit`
+     embeds it in the application executable.
+
+### How the NSIS installer is constructed
+
+NSIS is the installer compiler and runtime; it does not build the TactiDiagram
+application itself. The application is first built by Neutralino, then the
+NSIS script packages that build into a conventional Windows setup executable.
+
+The build has two distinct stages:
+
+1. **Build the application payload.** `scripts/package.mjs` vendors the
+   browser libraries and models, stages `src/` into Neutralino's resources,
+   configures Neutralino to serve the embedded `resources.neu` archive, and
+   runs `neu build --release`. It produces the Windows x64 executable and
+   `resources.neu` side by side. The Windows packaging step also generates
+   `TactiDiagram-win-x64.zip` for users who prefer a portable, extraction-only
+   distribution. `scripts/win-icon.cjs` creates a multi-resolution ICO from
+   `packaging/icon.svg`; `rcedit` embeds that icon into the executable.
+
+2. **Compile the installer.** The Windows workflow installs NSIS with
+   Chocolatey, then invokes `makensis.exe` on
+   `packaging/windows/TactiDiagram.nsi`, passing the release version as
+   `/DAPP_VERSION=...`. The NSIS script includes `MUI2.nsh` for the standard
+   welcome, install-directory, Start Menu, progress, and uninstall pages. Its
+   `File` instructions copy the executable, `resources.neu`, bundled
+   README, and icon into the selected install directory; NSIS writes
+   `Uninstall.exe` there as well.
+
+The installer policy is intentionally conservative:
+
+- **Per-user, no elevation:** `RequestExecutionLevel user`; the default
+  destination is `$LOCALAPPDATA\Programs\TactiDiagram`.
+- **Upgrade-aware destination:** `InstallDirRegKey` reads the previous
+  `InstallLocation` from the per-user uninstall registration.
+- **Shortcuts:** a desktop launch shortcut plus Start Menu launch and
+  uninstall shortcuts are created for the current user.
+- **Windows app registration:** version, publisher, install location, display
+  icon, and quoted uninstall commands are written beneath
+  `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\TactiDiagram`.
+- **Scoped cleanup:** uninstall deletes the known application files and
+  shortcuts, removes the app's uninstall registration, and removes its
+  Start Menu folder only if empty. It does not recursively erase the install
+  directory, so unexpected or user-created files are preserved.
+
+A local Windows build can reproduce the CI sequence (run from the repository
+root; use the same version for the app and installer):
+
+```powershell
+npm ci
+npm install --no-save sharp png-to-ico rcedit
+npx neu update
+node scripts/win-icon.cjs
+node scripts/package.mjs --target win --version 2026.11.23
+choco install nsis --yes
+& "${env:ProgramFiles(x86)}\NSIS\makensis.exe" /DAPP_VERSION=2026.11.23 packaging/windows/TactiDiagram.nsi
+```
+
+The compiler writes `dist/TactiDiagram-Setup.exe`. The script's
+`OutFile` setting points there, and its `APP_VERSION` define stamps the
+installer's Windows file metadata and Add/Remove Programs version. The
+version-tag workflow validates `vYYYY.M.D` and the matching
+`package.json` version before creating release artifacts. Pull requests
+compile the installer on `windows-latest` as a validation check but do not
+run the release job. Only a valid version-tag push publishes a GitHub Release.
 
 ### App icon
 
-`packaging/icon.svg` is the icon source of truth. The CI workflow rasterizes
-it; locally you can generate `packaging/icon.png` with ImageMagick
-(`convert -background none -density 300 packaging/icon.svg -resize 256x256 packaging/icon.png`)
-and, on Windows, `packaging/icon.ico` with
+`packaging/icon.svg` is the icon source of truth. The CI workflow generates `packaging/icon.png` and `packaging/icon.ico` from
+this source on Windows; locally you can generate the Windows assets with
 `npm i --no-save sharp png-to-ico && node scripts/win-icon.cjs`.
 Without an icon, the package still builds; the exe keeps the stock
 Neutralino icon, and the window has no custom taskbar icon.
@@ -164,11 +233,16 @@ build. On a matching tag the workflow:
 
 1. validates the tag format and verifies `package.json` matches the tag-derived
    version (`v2026.11.22` -> `2026.11.22`);
-2. stamps that version into the packaged builds (`neutralino.config.json`
-   and `resources/version.json`);
-3. builds the Linux AppImage and Windows ZIP independently, uploads both as
-   workflow artifacts, then one release job attaches both after both builds
-   succeed.
+2. stamps that version into the packaged builds (`neutralino.config.json`,
+   `resources/version.json`, and the Windows installer metadata);
+3. builds the Linux AppImage and Windows portable ZIP plus NSIS installer
+   independently, uploads the artifacts, then one release job attaches all
+   three after both platform builds succeed.
+
+Pull requests that touch packaging sources also compile the Windows installer
+on a Windows runner. Pull requests do not publish releases. The release job
+runs only for the version-tag push event; ordinary branch pushes do not build
+or publish release artifacts.
 
 To release: move the `CHANGES.md` `[Unreleased]` entries under a heading named
 for the tag and dated, set the same version in `package.json`, tag `vYYYY.M.D`,
@@ -176,21 +250,22 @@ and push the tag.
 
 ### Limitations
 
-- Windows distribution is an unsigned ZIP with a portable executable and
-  resources.neu, not an installer. SmartScreen may warn at first launch. The
-  target machine needs Microsoft Edge WebView2 Runtime.
+- Windows installer and portable ZIP are currently unsigned. SmartScreen may
+  warn at download or first launch. The target machine needs Microsoft Edge
+  WebView2 Runtime. The NSIS installer is per-user and does not elevate.
 - The AppImage is x86_64 only; aarch64 builds would need ARM Neutralino
   binaries and `aarch64` `appimagetool`.
 - The packaged app reaches the network the same way the web app does. Its
   native-API access is limited to the `nativeAllowList` (dialogs, file
   writes, opening a file with the system browser).
 
-## If you later want an installable desktop app: Tauri
+## Future packaging options: Tauri
 
-Neutralino remains intentionally minimal. This repository now provides a
-basic x86_64 Linux AppImage and portable unsigned Windows ZIP, but not signed
-installers, automatic updates, or a managed installer experience. If the
-project later wants more complete installer, signing, and update machinery
+Neutralino remains intentionally minimal. This repository already provides a
+basic x86_64 Linux AppImage, a portable Windows ZIP, and a per-user NSIS
+Windows installer. The installer handles basic install/uninstall and shortcuts,
+but the binaries are unsigned and there is no automatic updater. If the
+project later wants integrated signing and update machinery
 with the same system-webview, no-Chromium design,
 [Tauri 2](https://v2.tauri.app/) is the natural next step and the migration is
 small because the architecture is identical (stub shell + local static server):

@@ -43,6 +43,39 @@ jobs:
           python -m pip install -r requirements-docs.txt
           mkdocs build --site-dir _site
 
+  windows-installer-validation:
+    name: Validate Windows installer on pull requests
+    if: github.event_name == 'pull_request'
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm install --no-save sharp png-to-ico rcedit
+      - name: Install Neutralino binaries
+        run: npx neu update
+        working-directory: desktop/neutralino
+      - name: Generate Windows icon assets
+        run: node scripts/win-icon.cjs
+      - name: Build Windows application bundle
+        shell: pwsh
+        run: |
+          $version = node -p "require('./package.json').version"
+          node scripts/package.mjs --target win --version $version
+      - name: Install NSIS
+        run: choco install nsis --yes --no-progress
+      - name: Compile Windows installer
+        shell: pwsh
+        run: |
+          $version = node -p "require('./package.json').version"
+          & "${env:ProgramFiles(x86)}\NSIS\makensis.exe" "/DAPP_VERSION=$version" "packaging/windows/TactiDiagram.nsi"
+
   version:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -115,10 +148,17 @@ jobs:
         name: Build Windows icon assets
       - run: node scripts/package.mjs --target win --version "${{ needs.version.outputs.version }}"
         name: Build Windows ZIP
+      - name: Install NSIS
+        run: choco install nsis --yes --no-progress
+      - name: Build Windows installer
+        shell: pwsh
+        run: '& "${env:ProgramFiles(x86)}\NSIS\makensis.exe" "/DAPP_VERSION=${{ needs.version.outputs.version }}" "packaging/windows/TactiDiagram.nsi"'
       - uses: actions/upload-artifact@v4
         with:
           name: TactiDiagram-win-x64
-          path: dist/TactiDiagram-win-x64.zip
+          path: |
+            dist/TactiDiagram-win-x64.zip
+            dist/TactiDiagram-Setup.exe
           if-no-files-found: error
 
   release:
@@ -131,9 +171,10 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: release-assets
-      - name: Attach both artifacts to the release
+      - name: Attach all desktop artifacts to the release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             release-assets/TactiDiagram-linux-x86_64/TactiDiagram-x86_64.AppImage
             release-assets/TactiDiagram-win-x64/TactiDiagram-win-x64.zip
+            release-assets/TactiDiagram-win-x64/TactiDiagram-Setup.exe

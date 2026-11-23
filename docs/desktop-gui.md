@@ -102,8 +102,12 @@ app serves its own resources instead of depending on localhost:5173.
 ```bash
 npm ci
 npx neu update                  # once per machine
-npm run package:desktop         # linux -> AppImage, windows -> zipped exe bundle
-# On Windows, compile packaging/windows/TactiDiagram.nsi with NSIS after packaging
+npm run package:desktop -- --target win --version 2026.11.22
+# On Windows, after the bundle is built:
+npm i --no-save sharp png-to-ico rcedit
+node scripts/win-icon.cjs
+choco install nsis --yes
+makensis /DAPP_VERSION=2026.11.22 packaging/windows/TactiDiagram.nsi
 ```
 
 The version can be stamped into the build so it matches the git tag and the
@@ -139,11 +143,14 @@ node scripts/package.mjs --target linux --version 2026.11.22 --out dist
      `TactiDiagram.desktop` entry and the app icon, so it can be marked
      executable and launched directly or integrated into application menus
      with an AppImage launcher.
-   - **Windows:** `TactiDiagram-win-x64.zip` containing
-     `TactiDiagram.exe` + `resources.neu` (keep the two files together).
-     When `packaging/icon.ico` exists and `rcedit` is installed, the
-     application icon is embedded in the exe, so Explorer and the Start menu
-     show TactiDiagram's icon after extraction or shortcut creation.
+   - **Windows:** `TactiDiagram-win-x64.zip` containing `TactiDiagram.exe`
+     and `resources.neu`, plus `TactiDiagram-Setup.exe` compiled from
+     `packaging/windows/TactiDiagram.nsi`. The installer installs both runtime
+     files together, creates desktop and Start Menu shortcuts, and registers
+     an uninstaller under the current user's Windows Apps list. It defaults
+     to `%LOCALAPPDATA%\\Programs\\TactiDiagram` and does not request admin
+     elevation. The portable ZIP remains available. `scripts/win-icon.cjs`
+     generates the multi-size icon and `rcedit` embeds it in the application.
 
 ### App icon
 
@@ -192,9 +199,10 @@ and push the tag.
 ## If you later want an installable desktop app: Tauri
 
 Neutralino remains intentionally minimal. This repository now provides a
-basic x86_64 Linux AppImage and portable unsigned Windows ZIP, but not signed
-installers, automatic updates, or a managed installer experience. If the
-project later wants more complete installer, signing, and update machinery
+basic x86_64 Linux AppImage, a portable Windows ZIP, and a per-user NSIS
+Windows installer. The installer handles basic install/uninstall and shortcuts,
+but the binaries are unsigned and there is no automatic updater. If the
+project later wants integrated signing and update machinery
 with the same system-webview, no-Chromium design,
 [Tauri 2](https://v2.tauri.app/) is the natural next step and the migration is
 small because the architecture is identical (stub shell + local static server):

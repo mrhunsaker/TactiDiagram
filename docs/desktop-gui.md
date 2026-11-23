@@ -146,10 +146,74 @@ node scripts/package.mjs --target linux --version 2026.11.22 --out dist
      and `resources.neu`, plus `TactiDiagram-Setup.exe` compiled from
      `packaging/windows/TactiDiagram.nsi`. The installer installs both runtime
      files together, creates desktop and Start Menu shortcuts, and registers
-     an uninstaller under the current user's Windows Apps list. It defaults
-     to `%LOCALAPPDATA%\Programs\TactiDiagram` and does not request admin
-     elevation. The portable ZIP remains available. `scripts/win-icon.cjs`
-     generates the multi-size icon and `rcedit` embeds it in the application.
+     an uninstaller in the current user's Apps/installed-applications list.
+     It defaults to `%LOCALAPPDATA%\Programs\TactiDiagram` and does not
+     request administrator elevation. The portable ZIP remains available.
+     `scripts/win-icon.cjs` generates the multi-size icon and `rcedit`
+     embeds it in the application executable.
+
+### How the NSIS installer is constructed
+
+NSIS is the installer compiler and runtime; it does not build the TactiDiagram
+application itself. The application is first built by Neutralino, then the
+NSIS script packages that build into a conventional Windows setup executable.
+
+The build has two distinct stages:
+
+1. **Build the application payload.** `scripts/package.mjs` vendors the
+   browser libraries and models, stages `src/` into Neutralino's resources,
+   configures Neutralino to serve the embedded `resources.neu` archive, and
+   runs `neu build --release`. It produces the Windows x64 executable and
+   `resources.neu` side by side. The Windows packaging step also generates
+   `TactiDiagram-win-x64.zip` for users who prefer a portable, extraction-only
+   distribution. `scripts/win-icon.cjs` creates a multi-resolution ICO from
+   `packaging/icon.svg`; `rcedit` embeds that icon into the executable.
+
+2. **Compile the installer.** The Windows workflow installs NSIS with
+   Chocolatey, then invokes `makensis.exe` on
+   `packaging/windows/TactiDiagram.nsi`, passing the release version as
+   `/DAPP_VERSION=...`. The NSIS script includes `MUI2.nsh` for the standard
+   welcome, install-directory, Start Menu, progress, and uninstall pages. Its
+   `File` instructions copy the executable, `resources.neu`, bundled
+   README, and icon into the selected install directory; NSIS writes
+   `Uninstall.exe` there as well.
+
+The installer policy is intentionally conservative:
+
+- **Per-user, no elevation:** `RequestExecutionLevel user`; the default
+  destination is `$LOCALAPPDATA\Programs\TactiDiagram`.
+- **Upgrade-aware destination:** `InstallDirRegKey` reads the previous
+  `InstallLocation` from the per-user uninstall registration.
+- **Shortcuts:** a desktop launch shortcut plus Start Menu launch and
+  uninstall shortcuts are created for the current user.
+- **Windows app registration:** version, publisher, install location, display
+  icon, and quoted uninstall commands are written beneath
+  `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\TactiDiagram`.
+- **Scoped cleanup:** uninstall deletes the known application files and
+  shortcuts, removes the app's uninstall registration, and removes its
+  Start Menu folder only if empty. It does not recursively erase the install
+  directory, so unexpected or user-created files are preserved.
+
+A local Windows build can reproduce the CI sequence (run from the repository
+root; use the same version for the app and installer):
+
+```powershell
+npm ci
+npm install --no-save sharp png-to-ico rcedit
+npx neu update
+node scripts/win-icon.cjs
+node scripts/package.mjs --target win --version 2026.11.23
+choco install nsis --yes
+& "${env:ProgramFiles(x86)}\NSIS\makensis.exe" /DAPP_VERSION=2026.11.23 packaging/windows/TactiDiagram.nsi
+```
+
+The compiler writes `dist/TactiDiagram-Setup.exe`. The script's
+`OutFile` setting points there, and its `APP_VERSION` define stamps the
+installer's Windows file metadata and Add/Remove Programs version. The
+version-tag workflow validates `vYYYY.M.D` and the matching
+`package.json` version before creating release artifacts. Pull requests
+compile the installer on `windows-latest` as a validation check but do not
+run the release job. Only a valid version-tag push publishes a GitHub Release.
 
 ### App icon
 
@@ -195,9 +259,9 @@ and push the tag.
   native-API access is limited to the `nativeAllowList` (dialogs, file
   writes, opening a file with the system browser).
 
-## If you later want an installable desktop app: Tauri
+## Future packaging options: Tauri
 
-Neutralino remains intentionally minimal. This repository now provides a
+Neutralino remains intentionally minimal. This repository already provides a
 basic x86_64 Linux AppImage, a portable Windows ZIP, and a per-user NSIS
 Windows installer. The installer handles basic install/uninstall and shortcuts,
 but the binaries are unsigned and there is no automatic updater. If the

@@ -1,6 +1,6 @@
 # Code Style
 
-TouchSight-NG is a browser-first, dependency-light ES module codebase. Follow the style of the existing files.
+TactiDiagram is a browser-first, dependency-light ES module codebase. Follow the style of the existing files.
 
 ## Language and modules
 

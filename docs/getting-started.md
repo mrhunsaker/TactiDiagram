@@ -13,8 +13,8 @@ GitHub Pages publishes the documentation only. The browser application is run lo
 ## 1. Clone and install
 
 ```bash
-git clone https://github.com/mrhunsaker/touchsight-NG.git
-cd touchsight-NG
+git clone https://github.com/mrhunsaker/TactiDiagram.git
+cd TactiDiagram
 npm ci
 ```
 
@@ -67,8 +67,8 @@ This downloads Neutralino binaries into the ignored `desktop/neutralino/bin/` di
 
 **Or install a packaged build (no Node.js needed on the target machine):**
 
-- **Linux x86_64:** download `TouchSight-NG-x86_64.AppImage` from [Releases](https://github.com/mrhunsaker/touchsight-NG/releases), mark it executable (`chmod +x TouchSight-NG-x86_64.AppImage`), and run it. It ships an application menu entry and launcher icon. A compatible WebKitGTK runtime must be installed by the distribution; the AppImage does not bundle the system webview.
-- **Windows x64:** download `TouchSight-NG-win-x64.zip` from Releases, extract it anywhere, and run `touchsight-ng.exe` (keep `resources.neu` next to it). Microsoft Edge WebView2 Runtime is required. The executable is unsigned, so Windows SmartScreen may warn at first launch.
+- **Linux x86_64:** download `TactiDiagram-x86_64.AppImage` from [Releases](https://github.com/mrhunsaker/TactiDiagram/releases), mark it executable (`chmod +x TactiDiagram-x86_64.AppImage`), and run it. It ships an application menu entry and launcher icon. A compatible WebKitGTK runtime must be installed by the distribution; the AppImage does not bundle the system webview.
+- **Windows x64:** download `TactiDiagram-win-x64.zip` from Releases, extract it anywhere, and run `TactiDiagram.exe` (keep `resources.neu` next to it). Microsoft Edge WebView2 Runtime is required. The executable is unsigned, so Windows SmartScreen may warn at first launch.
 
 Packaged builds carry the same version as the `vYYYY.M.D` release tag and the GitHub release they are attached to. See [Desktop app and packaging](desktop-gui.md).
 

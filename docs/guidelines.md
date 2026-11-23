@@ -1,10 +1,10 @@
 # Tactile layout and BANA guidelines
 
-TouchSight-NG implements a checkable subset of the BANA *Guidelines and Standards for Tactile Graphics* (2022), with braille geometry based on Library of Congress Spec 800 and uncontracted Unified English Braille (UEB) Grade 1. These are current implementation targets, not a substitute for full standards, local production requirements, or qualified transcription review.
+TactiDiagram implements a checkable subset of the BANA *Guidelines and Standards for Tactile Graphics* (2022), with braille geometry based on Library of Congress Spec 800 and uncontracted Unified English Braille (UEB) Grade 1. These are current implementation targets, not a substitute for full standards, local production requirements, or qualified transcription review.
 
 ## Why tactile translation differs from visual tracing
 
-Colour, shading, small labels, thin leaders, and close contours do not transfer directly to touch. Raised features that are too close can merge; tiny fragments may be impossible to identify. TouchSight-NG attempts to preserve named-part boundaries, suppress print/noise, and replace colour distinctions with line hierarchy and limited texture patterns.
+Colour, shading, small labels, thin leaders, and close contours do not transfer directly to touch. Raised features that are too close can merge; tiny fragments may be impossible to identify. TactiDiagram attempts to preserve named-part boundaries, suppress print/noise, and replace colour distinctions with line hierarchy and limited texture patterns.
 
 ## Line hierarchy
 
@@ -51,7 +51,7 @@ The slider ranges 0–100 in increments of 5, default 55. Higher values lower th
 
 ## Automated checks
 
-The checker compares TouchSight-NG output with a Canny edge baseline at the same page scale. It reports residual print-label marks, braille placement, proportion of figure area affected by lines closer than 3 mm, fragments shorter than 12.5 mm, braille labels meeting the 3 mm clearance target, texture count, and diagnostic leader lengths in the 20–37.5 mm range.
+The checker compares TactiDiagram output with a Canny edge baseline at the same page scale. It reports residual print-label marks, braille placement, proportion of figure area affected by lines closer than 3 mm, fragments shorter than 12.5 mm, braille labels meeting the 3 mm clearance target, texture count, and diagnostic leader lengths in the 20–37.5 mm range.
 
 These are geometric proxies. They do not verify scientific correctness, semantic label-to-part relationships, tactile-reader comprehension, physical texture distinction, or full standards compliance. A green status is not certification; some rows are diagnostic only.
 

@@ -1,6 +1,6 @@
 # OCR engines
 
-TouchSight-NG reads the printed labels on a diagram with one of three on-device
+TactiDiagram reads the printed labels on a diagram with one of three on-device
 OCR engines. They are tried in a fixed order, and the pipeline reports which
 one was used (the "ocrEngine" field in the analysis result, also visible in
 the browser console as an "OCR engine:" message):

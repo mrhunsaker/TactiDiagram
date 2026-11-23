@@ -28,7 +28,7 @@ export function renderTactile(layout, { preview = false, highlight = null, under
   const { pageW, pageH } = layout;
   const out = [];
   out.push(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${f(pageW)}mm" height="${f(pageH)}mm" viewBox="0 0 ${f(pageW)} ${f(pageH)}">`);
-  out.push(`<title>TouchSight-NG editable tactile graphic</title><desc>Editable tactile artwork in millimetres. Separate named groups support vector-editor post-processing. Verify all content before production.</desc>`);
+  out.push(`<title>TactiDiagram editable tactile graphic</title><desc>Editable tactile artwork in millimetres. Separate named groups support vector-editor post-processing. Verify all content before production.</desc>`);
   out.push(`<defs>${TEXTURES.map((t) => t.svg).join('')}</defs>`);
   out.push(`<g id="page-background" inkscape:groupmode="layer" inkscape:label="Page background"><rect width="${f(pageW)}" height="${f(pageH)}" fill="#fff"/></g>`);
 
@@ -103,7 +103,7 @@ export function renderTactile(layout, { preview = false, highlight = null, under
 export function renderKeyPage(layout, { preview = false } = {}) {
   const { pageW, pageH, margin } = layout;
   const out = [`<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${f(pageW)}mm" height="${f(pageH)}mm" viewBox="0 0 ${f(pageW)} ${f(pageH)}">`,
-    `<title>TouchSight-NG editable braille key page</title><desc>Editable braille key in millimetres.</desc>`, '<g id="key-braille" inkscape:groupmode="layer" inkscape:label="Braille key" fill="#000">'];
+    `<title>TactiDiagram editable braille key page</title><desc>Editable braille key in millimetres.</desc>`, '<g id="key-braille" inkscape:groupmode="layer" inkscape:label="Braille key" fill="#000">'];
   let y = margin;
   const titleCells = layout.title ? layout.title.cells : [];
   if (titleCells.length) { out.push(brailleSVG(titleCells, (pageW - brailleWidth(titleCells.length)) / 2, y)); y += 2 * BRAILLE.linePitch; }

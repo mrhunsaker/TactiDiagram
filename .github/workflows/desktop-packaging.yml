@@ -91,8 +91,8 @@ jobs:
         name: Build Linux AppImage
       - uses: actions/upload-artifact@v4
         with:
-          name: TouchSight-NG-linux-x86_64
-          path: dist/TouchSight-NG-x86_64.AppImage
+          name: TactiDiagram-linux-x86_64
+          path: dist/TactiDiagram-x86_64.AppImage
           if-no-files-found: error
 
   windows:
@@ -117,8 +117,8 @@ jobs:
         name: Build Windows ZIP
       - uses: actions/upload-artifact@v4
         with:
-          name: TouchSight-NG-win-x64
-          path: dist/TouchSight-NG-win-x64.zip
+          name: TactiDiagram-win-x64
+          path: dist/TactiDiagram-win-x64.zip
           if-no-files-found: error
 
   release:
@@ -135,5 +135,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            release-assets/TouchSight-NG-linux-x86_64/TouchSight-NG-x86_64.AppImage
-            release-assets/TouchSight-NG-win-x64/TouchSight-NG-win-x64.zip
+            release-assets/TactiDiagram-linux-x86_64/TactiDiagram-x86_64.AppImage
+            release-assets/TactiDiagram-win-x64/TactiDiagram-win-x64.zip

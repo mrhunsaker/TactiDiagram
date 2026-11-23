@@ -1,4 +1,4 @@
-# Launch touchsight-NG: .\launch-touchsight.ps1 [desktop|web]
+# Launch TactiDiagram: .\launch-touchsight.ps1 [desktop|web]
 param(
     [Parameter(Position = 0)]
     [ValidateSet('desktop', 'web', '')]
@@ -35,6 +35,6 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 npm run vendor
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-Write-Host "==> Starting touchsight-NG ($Mode)"
+Write-Host "==> Starting TactiDiagram ($Mode)"
 Invoke-Expression $runCmd
 exit $LASTEXITCODE

@@ -1,6 +1,6 @@
 # Desktop GUI with Neutralino
 
-TouchSight-NG is a static, browser-based application, so the graphics pipeline
+TactiDiagram is a static, browser-based application, so the graphics pipeline
 (OCR, segmentation, layout, WebGL/3D preview) runs on the user's device and no
 application backend exists. By default the transcriber opens the app in a
 normal browser tab. Some users prefer an application window instead, with an
@@ -123,17 +123,17 @@ node scripts/package.mjs --target linux --version 2026.11.22 --out dist
    The `--out` option accepts a relative or absolute directory; `PACKAGE_OUT`
    is also supported as an environment-variable override. Automatic target
    selection is supported only on Linux and Windows.
-   - **Linux:** `TouchSight-NG-x86_64.AppImage`, built with `appimagetool`
+   - **Linux:** `TactiDiagram-x86_64.AppImage`, built with `appimagetool`
      (downloaded on first run; executed with `--appimage-extract-and-run` so
      FUSE is not required). The AppImage includes an `AppRun`, a
-     `touchsight-ng.desktop` entry and the app icon, so it can be marked
+     `TactiDiagram.desktop` entry and the app icon, so it can be marked
      executable and launched directly or integrated into application menus
      with an AppImage launcher.
-   - **Windows:** `TouchSight-NG-win-x64.zip` containing
-     `touchsight-ng.exe` + `resources.neu` (keep the two files together).
+   - **Windows:** `TactiDiagram-win-x64.zip` containing
+     `TactiDiagram.exe` + `resources.neu` (keep the two files together).
      When `packaging/icon.ico` exists and `rcedit` is installed, the
      application icon is embedded in the exe, so Explorer and the Start menu
-     show TouchSight-NG's icon after extraction or shortcut creation.
+     show TactiDiagram's icon after extraction or shortcut creation.
 
 ### App icon
 
@@ -186,7 +186,7 @@ with the same system-webview, no-Chromium design,
 [Tauri 2](https://v2.tauri.app/) is the natural next step and the migration is
 small because the architecture is identical (stub shell + local static server):
 
-- Add a Rust crate that declares TouchSight-NG's Node server as a
+- Add a Rust crate that declares TactiDiagram's Node server as a
   *sidecar* process which Tauri launches at startup and terminates on window
   close, then point the window (or a Tauri static asset) at
   http://localhost:5173/.

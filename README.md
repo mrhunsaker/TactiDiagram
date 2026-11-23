@@ -1,15 +1,15 @@
-# TouchSight-NG
+# TactiDiagram
 
 **A production-oriented drafting tool for tactile graphics transcription.**
 
-TouchSight-NG helps a braille transcriber turn a labeled textbook or instructional diagram into an editable first draft of a tactile graphic. It automates the image-analysis and page-layout work—reading printed labels, tracing the leader lines that identify diagram parts, segmenting those parts, and laying out braille and tactile features—so the transcriber can spend more time reviewing the content and less time building every graphic from scratch.
+TactiDiagram helps a braille transcriber turn a labeled textbook or instructional diagram into an editable first draft of a tactile graphic. It automates the image-analysis and page-layout work—reading printed labels, tracing the leader lines that identify diagram parts, segmenting those parts, and laying out braille and tactile features—so the transcriber can spend more time reviewing the content and less time building every graphic from scratch.
 
-The transcriber remains responsible for the finished graphic. TouchSight-NG is an assistive production tool, not an autonomous replacement for professional transcription, accessibility review, or testing with tactile readers.
+The transcriber remains responsible for the finished graphic. TactiDiagram is an assistive production tool, not an autonomous replacement for professional transcription, accessibility review, or testing with tactile readers.
 
 - **Application:** Run it directly from the repository, or install a packaged
-  desktop build from [Releases](https://github.com/mrhunsaker/touchsight-NG/releases).
+  desktop build from [Releases](https://github.com/mrhunsaker/TactiDiagram/releases).
   It is not hosted on GitHub Pages.
-- **User and technical documentation:** https://mrhunsaker.github.io/touchsight-NG/
+- **User and technical documentation:** https://mrhunsaker.github.io/TactiDiagram/
 - **Getting started:** [docs/getting-started.md](docs/getting-started.md)
 - **Every application setting and action:** [docs/application-options.md](docs/application-options.md)
 - **Theory and pipeline:** [docs/architecture.md](docs/architecture.md), [docs/pipeline.md](docs/pipeline.md)
@@ -80,11 +80,11 @@ Layout and checking are informed by the BANA *Guidelines and Standards for Tacti
 
 In an evaluation of 16 Wikimedia Commons diagrams, the current benchmark reported 148 of 151 hand-counted labels found (98%). The evaluation also measured braille placement, short fragments, and close-line areas against an edge-tracing baseline. See [Evaluation and benchmarks](docs/evaluation.md) for the method, per-diagram results, and reproduction instructions.
 
-These measurements are automated checks, not evidence of validated tactile usability. TouchSight-NG has not yet been formally tested with blind readers or systematically validated on physical swell-paper output. Labels are uncontracted UEB. Diagrams without printed labels (or with only math symbols) may receive outlines without named-part labels. OCR can miss text on busy fills; the transcriber can correct detected wording but cannot currently add a label the system failed to detect. Professional review remains necessary.
+These measurements are automated checks, not evidence of validated tactile usability. TactiDiagram has not yet been formally tested with blind readers or systematically validated on physical swell-paper output. Labels are uncontracted UEB. Diagrams without printed labels (or with only math symbols) may receive outlines without named-part labels. OCR can miss text on busy fills; the transcriber can correct detected wording but cannot currently add a label the system failed to detect. Professional review remains necessary.
 
 ## Privacy and deployment
 
-TouchSight-NG is a static, browser-based application. OCR, segmentation, layout, checking, rendering, and 3D preview run on the user's device. There is no application backend, account, or image-upload service; source diagrams are not sent to a server. Model and library assets are prepared locally with `npm run vendor`; GitHub Pages publishes documentation only.
+TactiDiagram is a static, browser-based application. OCR, segmentation, layout, checking, rendering, and 3D preview run on the user's device. There is no application backend, account, or image-upload service; source diagrams are not sent to a server. Model and library assets are prepared locally with `npm run vendor`; GitHub Pages publishes documentation only.
 
 This design supports use with school and student materials while keeping source images on the transcriber's computer. See [Architecture](docs/architecture.md) and [Deployment](docs/deployment.md).
 
@@ -100,7 +100,7 @@ npm run serve
 
 The vendor step copies browser libraries into `src/vendor/` and downloads model assets into `src/models/`, including the optional SAM 2.1 model files (about 78 MB). SAM 2.1 requires a browser/device with a working WebGPU adapter; SlimSAM remains the default and uses WebAssembly. The local server serves `src/` directly at http://localhost:5173 by default. Keep the terminal open while using the app.
 
-There are three ways to run TouchSight-NG:
+There are three ways to run TactiDiagram:
 
 1. **Browser tab** (`npm run serve`, above): the simplest; everything runs in
    your browser at http://localhost:5173.
@@ -116,7 +116,7 @@ There are three ways to run TouchSight-NG:
    bundled Chromium.
 3. **Install a packaged desktop build** (no Node.js on the target machine):
    download the x86_64 Linux AppImage or unsigned Windows x64 ZIP from
-   [Releases](https://github.com/mrhunsaker/touchsight-NG/releases). Linux
+   [Releases](https://github.com/mrhunsaker/TactiDiagram/releases). Linux
    requires system WebKitGTK; Windows requires Microsoft Edge WebView2 Runtime.
    See [Desktop app and packaging](docs/desktop-gui.md).
 
@@ -164,7 +164,7 @@ Contributions are welcome, particularly bug reports and improvements grounded in
 
 ## Credits and licensing
 
-TouchSight-NG builds on open-source OCR, computer-vision, segmentation, and rendering libraries, including Indra OCR (optional engine), PaddleOCR, Tesseract.js, SlimSAM, experimental SAM 2.1, Transformers.js, ONNX Runtime Web, OpenCV.js, three.js, and Potrace. See the project dependency manifests and relevant upstream projects for their respective licenses.
+TactiDiagram builds on open-source OCR, computer-vision, segmentation, and rendering libraries, including Indra OCR (optional engine), PaddleOCR, Tesseract.js, SlimSAM, experimental SAM 2.1, Transformers.js, ONNX Runtime Web, OpenCV.js, three.js, and Potrace. See the project dependency manifests and relevant upstream projects for their respective licenses.
 
 The application code is licensed under **GPL-3.0-or-later**. Sample diagrams retain their source licenses; attribution is maintained in [src/samples/CREDITS.md](src/samples/CREDITS.md). The precomputed tactile SVGs retain the licenses of their source diagrams.
 
@@ -172,22 +172,22 @@ The application code is licensed under **GPL-3.0-or-later**. Sample diagrams ret
 
 The tactile SVG export is a vector document with physical dimensions in millimetres. It contains separate, named SVG groups for the page background, textures, structural line art, outlines, label-clearance knockouts, leader lines, and braille dots. The key-page SVG also separates braille from sighted print-reference text. Paths, circles, and text remain vector objects rather than a flattened screenshot.
 
-**Inkscape is the recommended reference editor because it is free and open-source (FOSS).** The exported SVG is standard vector artwork; other SVG-capable editors—including Adobe Illustrator and Affinity Designer—can also be used. TouchSight-NG targets FOSS workflows, so Inkscape is the editor used in these instructions, not a technical requirement.
+**Inkscape is the recommended reference editor because it is free and open-source (FOSS).** The exported SVG is standard vector artwork; other SVG-capable editors—including Adobe Illustrator and Affinity Designer—can also be used. TactiDiagram targets FOSS workflows, so Inkscape is the editor used in these instructions, not a technical requirement.
 
 Recommended post-processing sequence:
 
 1. Export the editable tactile SVG and, when present, the key-page SVG.
 2. Open the SVG in Inkscape. Use the Objects/Layers panel to inspect and isolate the named groups.
-3. Compare the artwork with the source diagram and the TouchSight-NG analysis views. Correct path geometry, remove false contours, reconnect broken boundaries, and adjust leader placement where necessary.
+3. Compare the artwork with the source diagram and the TactiDiagram analysis views. Correct path geometry, remove false contours, reconnect broken boundaries, and adjust leader placement where necessary.
 4. Check label-to-part correspondence, braille spelling and dot patterns, line hierarchy, texture distinction, clearances, and page margins. Do not assume that a visually attractive edit is tactilely legible.
 5. Preserve the physical page dimensions and millimetre scale. Avoid scaling individual objects in ways that alter specified braille or line dimensions.
 6. Save a separate reviewed SVG, then produce a physical proof on the target printer/swell-paper/fuser system. Inspect the raised output and obtain tactile-reader feedback where possible.
 
-The vector editor is a post-processing and QC option, not an automated validation step. Editing SVG geometry does not update TouchSight-NG's analysis state or its automated guideline report. Re-run or independently perform checks after edits, and retain the unmodified export so changes can be compared or reverted.
+The vector editor is a post-processing and QC option, not an automated validation step. Editing SVG geometry does not update TactiDiagram's analysis state or its automated guideline report. Re-run or independently perform checks after edits, and retain the unmodified export so changes can be compared or reverted.
 
 ## Component licenses
 
-TouchSight-NG application code is licensed under **GPL-3.0-or-later**. The
+TactiDiagram application code is licensed under **GPL-3.0-or-later**. The
 third-party components it uses, runs, or downloads carry their own licenses,
 listed here at the component level. Full license texts included in the
 repository are in the `LICENSES/` directory and alongside the downloaded

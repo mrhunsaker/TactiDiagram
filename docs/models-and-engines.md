@@ -6,7 +6,7 @@ The file names below come from the checked-in `scripts/vendor.mjs`, `package.jso
 
 ## At a glance
 
-| Component | Model / asset | Purpose in TouchSight-NG | When used |
+| Component | Model / asset | Purpose in TactiDiagram | When used |
 |---|---|---|---|
 | OpenCV.js | `@techstark/opencv-js@4.12.0-release.1` browser build | Classical image processing and geometry | Throughout analysis and checking |
 | PaddleOCR detector | `PP-OCRv6_det_small.onnx` | Locates text regions in the image | Primary OCR |
@@ -23,7 +23,7 @@ The file names below come from the checked-in `scripts/vendor.mjs`, `package.jso
 
 ## PaddleOCR: primary OCR
 
-OCR (optical character recognition) converts printed words in the source diagram into text plus spatial coordinates. TouchSight-NG needs both: the recognized word and its bounding box are used to group labels and search for leader lines.
+OCR (optical character recognition) converts printed words in the source diagram into text plus spatial coordinates. TactiDiagram needs both: the recognized word and its bounding box are used to group labels and search for leader lines.
 
 PaddleOCR is the primary OCR path. The vendor script downloads two ONNX models converted by RapidOCR:
 
@@ -96,9 +96,9 @@ The vendor script downloads:
 - `onnx/vision_encoder.onnx`
 - `onnx/prompt_encoder_mask_decoder.onnx`
 
-Segment Anything models are promptable segmentation systems. They do not need a fixed class label such as “heart chamber” to return a mask; they need a visual prompt, such as a point inside the region of interest. TouchSight-NG supplies a point estimated from the tip of a leader line or from the area around a label printed directly on the part.
+Segment Anything models are promptable segmentation systems. They do not need a fixed class label such as “heart chamber” to return a mask; they need a visual prompt, such as a point inside the region of interest. TactiDiagram supplies a point estimated from the tip of a leader line or from the area around a label printed directly on the part.
 
-The vision encoder creates an image embedding once. The prompt encoder and mask decoder then use each point prompt to produce candidate masks. TouchSight-NG filters candidates by area and confidence, preferring a tighter mask when its score is close to the best candidate. This is an attempt to select the named component rather than an entire surrounding object.
+The vision encoder creates an image embedding once. The prompt encoder and mask decoder then use each point prompt to produce candidate masks. TactiDiagram filters candidates by area and confidence, preferring a tighter mask when its score is close to the best candidate. This is an attempt to select the named component rather than an entire surrounding object.
 
 The current loader uses Transformers.js with local-only model resolution and ONNX Runtime WASM. It explicitly selects `device: 'wasm'`; the code comments say WebGPU is not considered sufficiently tested across the target hardware. The ONNX WASM proxy is enabled for the segmentation loader so inference does not block the UI thread.
 
@@ -177,4 +177,4 @@ The tactile SVG is an editable vector document sized in millimetres, with named 
 
 Use the vector editor for post-processing: compare with the source and analysis overlays, correct paths and false contours, adjust leaders, and inspect braille, label-to-part correspondence, line hierarchy, textures, clearances, and margins. Preserve the page dimensions and mm scale. Save a separate reviewed copy, then produce a physical proof on the intended swell-paper/fuser system.
 
-Vector editing is an optional manual post-processing and QC stage, not automated validation. Edits do not update TouchSight-NG's analysis state or guideline report. Recheck the edited SVG independently, retain the untouched export, and assess the physical proof; visual correctness alone does not establish tactile readability.
+Vector editing is an optional manual post-processing and QC stage, not automated validation. Edits do not update TactiDiagram's analysis state or guideline report. Recheck the edited SVG independently, retain the untouched export, and assess the physical proof; visual correctness alone does not establish tactile readability.

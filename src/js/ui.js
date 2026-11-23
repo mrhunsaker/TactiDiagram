@@ -682,7 +682,7 @@ $('#print').onclick = async () => {
   try {
     const tempDir = await desktop.os.getPath('temp');
     // '/' separators work on Windows too, so keep it simple.
-    const dir = (tempDir.endsWith('/') ? tempDir : tempDir + '/') + 'touchsight-ng';
+    const dir = (tempDir.endsWith('/') ? tempDir : tempDir + '/') + 'TactiDiagram';
     try { await desktop.filesystem.mkdir(dir); } catch {}
     const path = dir + '/' + 'print-' + Date.now() + '.html';
     await desktop.filesystem.writeFile(path, html);

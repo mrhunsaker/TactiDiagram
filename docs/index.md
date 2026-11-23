@@ -1,8 +1,8 @@
-# TouchSight-NG
+# TactiDiagram
 
-**Textbook diagram in, tactile graphic out.** TouchSight-NG turns a labeled science diagram into a first-draft tactile graphic designed for swell paper, with braille labels. The application runs locally in the browser: no uploads, no accounts, no application server. GitHub Pages hosts this documentation only; it does not host the application.
+**Textbook diagram in, tactile graphic out.** TactiDiagram turns a labeled science diagram into a first-draft tactile graphic designed for swell paper, with braille labels. The application runs locally in the browser: no uploads, no accounts, no application server. GitHub Pages hosts this documentation only; it does not host the application.
 
-TouchSight-NG is a working tool in daily use by a braille transcriber, not a demo. It began as a hackathon build and is now maintained and refined against real transcription work: preparing science and geography diagrams for students who read by touch.
+TactiDiagram is a working tool in daily use by a braille transcriber, not a demo. It began as a hackathon build and is now maintained and refined against real transcription work: preparing science and geography diagrams for students who read by touch.
 
 ## Who it is for
 
@@ -22,7 +22,7 @@ Packaged releases currently provide an x86_64 Linux AppImage and an unsigned Win
 
 Each textbook diagram has to be redrawn by hand as a *tactile graphic*: clutter removed, print replaced with braille, lines spaced at least 3 mm apart so fingers can tell them apart, only a few distinguishable textures. A science assignment with graphics can take up to 10 hours to transcribe ([Jordan School District, 2024](https://jam.jordandistrict.org/2024/10/03/transcription-services-for-the-visually-impaired/)), and a 2023 survey found almost half of the teachers making tactile graphics had never been trained to do so ([British Journal of Visual Impairment](https://experts.arizona.edu/en/publications/creating-tactile-graphics-in-school-settings-a-survey-of-training/)).
 
-Naive tracing does not work: edge detection turns every printed label into raised squiggles and every shading gradient into noise. TouchSight-NG reads the labels, follows the leader lines, segments the parts the labels name, and redraws the result for touch.
+Naive tracing does not work: edge detection turns every printed label into raised squiggles and every shading gradient into noise. TactiDiagram reads the labels, follows the leader lines, segments the parts the labels name, and redraws the result for touch.
 
 ## What it produces
 
@@ -32,7 +32,7 @@ Naive tracing does not work: edge detection turns every printed label into raise
 - A **tactile SVG** (pure black, no greys) ready for swell paper, or print / PDF at true page size
 - An automated **guideline check**, shown side by side with a naive edge-tracing baseline
 
-In evaluation on 16 Wikimedia Commons diagrams, TouchSight-NG found 148 of 151 hand-counted labels (98%), placed all but 1 of 233 detected labels in braille, and left 66 fragments below the 12.5 mm touch threshold versus 763 for plain edge tracing. See [Evaluation and benchmarks](evaluation.md).
+In evaluation on 16 Wikimedia Commons diagrams, TactiDiagram found 148 of 151 hand-counted labels (98%), placed all but 1 of 233 detected labels in braille, and left 66 fragments below the 12.5 mm touch threshold versus 763 for plain edge tracing. See [Evaluation and benchmarks](evaluation.md).
 
 ## Learn the theory and technology
 
@@ -54,21 +54,21 @@ In evaluation on 16 Wikimedia Commons diagrams, TouchSight-NG found 148 of 151 h
 
 ## Status and honest limits
 
-These are automated checks derived from BANA guidelines, not a substitute for a qualified transcriber. TouchSight-NG has not yet been formally tested with blind readers or printed on physical swell paper. Labels are uncontracted UEB. Diagrams without printed labels (or with only math symbols) get outlines only. OCR misses some text on busy fills; the teacher can edit wrong words but cannot yet add a missed label.
+These are automated checks derived from BANA guidelines, not a substitute for a qualified transcriber. TactiDiagram has not yet been formally tested with blind readers or printed on physical swell paper. Labels are uncontracted UEB. Diagrams without printed labels (or with only math symbols) get outlines only. OCR misses some text on busy fills; the teacher can edit wrong words but cannot yet add a missed label.
 
 ## Editable SVG post-processing and quality control
 
 The tactile SVG export is a vector document with physical dimensions in millimetres. It contains separate, named SVG groups for the page background, textures, structural line art, outlines, label-clearance knockouts, leader lines, and braille dots. The key-page SVG also separates braille from sighted print-reference text. Paths, circles, and text remain vector objects rather than a flattened screenshot.
 
-**Inkscape is the recommended reference editor because it is free and open-source (FOSS).** The exported SVG is standard vector artwork; other SVG-capable editors—including Adobe Illustrator and Affinity Designer—can also be used. TouchSight-NG targets FOSS workflows, so Inkscape is the editor used in these instructions, not a technical requirement.
+**Inkscape is the recommended reference editor because it is free and open-source (FOSS).** The exported SVG is standard vector artwork; other SVG-capable editors—including Adobe Illustrator and Affinity Designer—can also be used. TactiDiagram targets FOSS workflows, so Inkscape is the editor used in these instructions, not a technical requirement.
 
 Recommended post-processing sequence:
 
 1. Export the editable tactile SVG and, when present, the key-page SVG.
 2. Open the SVG in Inkscape. Use the Objects/Layers panel to inspect and isolate the named groups.
-3. Compare the artwork with the source diagram and the TouchSight-NG analysis views. Correct path geometry, remove false contours, reconnect broken boundaries, and adjust leader placement where necessary.
+3. Compare the artwork with the source diagram and the TactiDiagram analysis views. Correct path geometry, remove false contours, reconnect broken boundaries, and adjust leader placement where necessary.
 4. Check label-to-part correspondence, braille spelling and dot patterns, line hierarchy, texture distinction, clearances, and page margins. Do not assume that a visually attractive edit is tactilely legible.
 5. Preserve the physical page dimensions and millimetre scale. Avoid scaling individual objects in ways that alter specified braille or line dimensions.
 6. Save a separate reviewed SVG, then produce a physical proof on the target printer/swell-paper/fuser system. Inspect the raised output and obtain tactile-reader feedback where possible.
 
-The vector editor is a post-processing and QC option, not an automated validation step. Editing SVG geometry does not update TouchSight-NG's analysis state or its automated guideline report. Re-run or independently perform checks after edits, and retain the unmodified export so changes can be compared or reverted.
+The vector editor is a post-processing and QC option, not an automated validation step. Editing SVG geometry does not update TactiDiagram's analysis state or its automated guideline report. Re-run or independently perform checks after edits, and retain the unmodified export so changes can be compared or reverted.

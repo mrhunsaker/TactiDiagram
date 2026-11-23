@@ -1,5 +1,5 @@
 // Fine-line recall metric: how much of hand-annotated fine exterior linework
-// survives into TouchSight-NG's analysis. Annotations are binary PNGs in
+// survives into TactiDiagram's analysis. Annotations are binary PNGs in
 // src/samples/fine_lines/<id>.png (white = annotated fine line, any size, matched
 // to the sample by image size). Samples without an annotation are listed as
 // unannotated. Writes eval-out/fineline.md.

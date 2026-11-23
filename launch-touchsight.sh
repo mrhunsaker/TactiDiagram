@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Launch touchsight-NG: ./launch-touchsight.sh [desktop|web]
+# Launch TactiDiagram: ./launch-touchsight.sh [desktop|web]
 set -euo pipefail
 
 cd "$(dirname "$0")"
@@ -28,5 +28,5 @@ npm install
 npm ci
 npm run vendor
 
-echo "==> Starting touchsight-NG (${MODE})"
+echo "==> Starting TactiDiagram (${MODE})"
 exec $RUN_CMD

@@ -1,5 +1,5 @@
 {
-  "applicationId": "org.hunsakerweb.touchsightng",
+  "applicationId": "org.hunsakerweb.tactidiagram",
   "version": "1.0.0",
   "defaultMode": "window",
   "port": 0,
@@ -11,7 +11,7 @@
   "url": "http://localhost:5173/",
   "modes": {
     "window": {
-      "title": "TouchSight-NG",
+      "title": "TactiDiagram",
       "width": 1280,
       "height": 800,
       "minWidth": 640,
@@ -29,7 +29,7 @@
     }
   },
   "cli": {
-    "binaryName": "touchsight-ng",
+    "binaryName": "tactidiagram",
     "resourcesPath": "/resources/",
     "extensionsPath": "/extensions/",
     "clientLibrary": "/resources/js/neutralino.js",

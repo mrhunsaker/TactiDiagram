@@ -43,7 +43,7 @@ async function fetchTo(url, dst, description) {
   console.log(`    complete (${(data.length / (1024 * 1024)).toFixed(1)} MiB)`);
 }
 
-console.log('TouchSight-NG browser dependency and model setup');
+console.log('TactiDiagram browser dependency and model setup');
 console.log('This step prepares local assets so the browser app can run without fetching these files from a CDN at runtime.');
 console.log('Existing non-empty model files are reused; missing files are downloaded.');
 

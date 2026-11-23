@@ -1,5 +1,5 @@
 {
-  "applicationId": "org.hunsakerweb.TactiDiagram",
+  "applicationId": "org.hunsakerweb.tactidiagram",
   "version": "1.0.0",
   "defaultMode": "window",
   "port": 0,
@@ -29,7 +29,7 @@
     }
   },
   "cli": {
-    "binaryName": "TactiDiagram",
+    "binaryName": "tactidiagram",
     "resourcesPath": "/resources/",
     "extensionsPath": "/extensions/",
     "clientLibrary": "/resources/js/neutralino.js",

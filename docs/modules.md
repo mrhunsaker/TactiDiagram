@@ -265,4 +265,4 @@ The following boundaries are useful when changing the application:
 - [Application controls and options](application-options.md) — user-facing controls and their effects.
 - [Tactile layout and BANA guidelines](guidelines.md) — physical constraints and design rationale.
 - [Transcriber review workflow](review-workflow.md) — human review and production QA.
-- [Code style](../CODE_STYLE.md) — source organization and implementation conventions.
+- [Code style](https://github.com/mrhunsaker/TactiDiagram/blob/main/CODE_STYLE.md) — source organization and implementation conventions.

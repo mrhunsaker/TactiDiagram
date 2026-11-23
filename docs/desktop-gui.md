@@ -109,9 +109,10 @@ choco install nsis --yes
 makensis /DAPP_VERSION=2026.11.22 packaging/windows/TactiDiagram.nsi
 ```
 
-The version can be stamped into the build so it matches the git tag and the
-GitHub release. The release workflow verifies that `package.json` matches
-the tag-derived version before building:
+The release tag is the source of truth for the build version. On a valid tag,
+GitHub Actions updates `package.json` and `package-lock.json` on the default
+branch to the tag-derived version, then stamps that version into the release
+artifacts. You do not need to edit the package version before tagging:
 
 ```bash
 node scripts/package.mjs --target linux --version 2026.11.22 --out dist
@@ -210,7 +211,7 @@ choco install nsis --yes
 The compiler writes `dist/TactiDiagram-Setup.exe`. The script's
 `OutFile` setting points there, and its `APP_VERSION` define stamps the
 installer's Windows file metadata and Add/Remove Programs version. The
-version-tag workflow validates `vYYYY.M.D` and the matching
+version-tag workflow validates `vYYYY.MM.DD` and the matching
 `package.json` version before creating release artifacts. Pull requests
 compile the installer on `windows-latest` as a validation check but do not
 run the release job. Only a valid version-tag push publishes a GitHub Release.
@@ -228,11 +229,12 @@ Neutralino icon, and the window has no custom taskbar icon.
 `.github/workflows/desktop-packaging.yml` validates packaging scripts and
 builds the documentation on relevant pull requests. Desktop artifacts are
 built only on release tags; there is no manual release dispatch. The tag must follow
-the `vYYYY.M.D` format (for example `v2026.11.22`); anything else fails the
+the `vYYYY.MM.DD` format (for example `v2026.11.22`); anything else fails the
 build. On a matching tag the workflow:
 
-1. validates the tag format and verifies `package.json` matches the tag-derived
-   version (`v2026.11.22` -> `2026.11.22`);
+1. validates the tag format and calendar date, then synchronizes
+   `package.json` and `package-lock.json` on the default branch to the
+   tag-derived version (`v2026.11.22` -> `2026.11.22`);
 2. stamps that version into the packaged builds (`neutralino.config.json`,
    `resources/version.json`, and the Windows installer metadata);
 3. builds the Linux AppImage and Windows portable ZIP plus NSIS installer
@@ -245,8 +247,9 @@ runs only for the version-tag push event; ordinary branch pushes do not build
 or publish release artifacts.
 
 To release: move the `CHANGES.md` `[Unreleased]` entries under a heading named
-for the tag and dated, set the same version in `package.json`, tag `vYYYY.M.D`,
-and push the tag.
+for the release date, create and push a tag such as `v2026.11.23`. The workflow
+updates `package.json` and `package-lock.json` automatically; do not manually
+change the package version before tagging.
 
 ### Limitations
 

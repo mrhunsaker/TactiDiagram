@@ -1,7 +1,7 @@
 {
   "task": "update_tracing_sensitivity",
   "project": "TouchSight",
-  "target_repository": "https://github.com/mrhunsaker/touchsight-NG",
+  "target_repository": "https://github.com/mrhunsaker/TactiDiagram",
   "implementation_language": "JavaScript",
   "implementation_scope": "Additive change to the existing browser-only OpenCV.js tracing pipeline. Do not replace OCR, leader assignment, SlimSAM segmentation, tactile layout, braille encoding, SVG export, or STL export.",
   "problem_statement": {

@@ -6,7 +6,7 @@ The documentation is built with MkDocs and deployed on every push to `main` thro
 
 ## Published site
 
-- **Documentation:** [https://mrhunsaker.github.io/touchsight-NG/](https://mrhunsaker.github.io/touchsight-NG/)
+- **Documentation:** [https://mrhunsaker.github.io/TactiDiagram/](https://mrhunsaker.github.io/TactiDiagram/)
 
 There is no hosted application at `/app/`. The application source remains in this repository and is run locally by the transcriber or developer. GitHub Pages deployment must not be treated as an application release or distribution mechanism.
 
@@ -43,4 +43,4 @@ The application is separate from the documentation deployment. To run it locally
 
 ## Application releases
 
-Application distribution happens through [GitHub Releases](https://github.com/mrhunsaker/touchsight-NG/releases), not Pages. Release tags use the `vYYYY.M.D` format (releases are dated, for example `v2026.11.22`), and `.github/workflows/desktop-packaging.yml` builds the desktop artifacts only on those tags, stamping the tag-derived version into the builds and attaching them to the release. Everything else on the site remains documentation only.
+Application distribution happens through [GitHub Releases](https://github.com/mrhunsaker/TactiDiagram/releases), not Pages. Release tags use the `vYYYY.M.D` format (releases are dated, for example `v2026.11.22`), and `.github/workflows/desktop-packaging.yml` builds the desktop artifacts only on those tags, stamping the tag-derived version into the builds and attaching them to the release. Everything else on the site remains documentation only.

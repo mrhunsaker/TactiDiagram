@@ -59,7 +59,7 @@ export async function traceOriginalDiagram(sourceImageData, labels = []) {
     opttolerance: 0.25, pathonly: false, extractcolors: true,
     posterizelevel: 4, posterizationalgorithm: 0,
   });
-  if (typeof svg !== 'string' || !/<svg\\b/i.test(svg) || !/<path\\b/i.test(svg)) {
+  if (typeof svg !== 'string' || !/<svg\b/i.test(svg) || !/<path\b/i.test(svg)) {
     throw new Error('Potrace did not return editable SVG paths.');
   }
   return svg;

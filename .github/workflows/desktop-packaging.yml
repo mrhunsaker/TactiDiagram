@@ -98,7 +98,8 @@ jobs:
             exit 1
           fi
           VERSION="${TAG#v}"
-          if [ "$(date -d "$VERSION" +%Y.%m.%d 2>/dev/null || true)" != "$VERSION" ]; then
+          DATE_INPUT="${VERSION//./-}"
+          if [ "$(date -d "$DATE_INPUT" +%Y.%m.%d 2>/dev/null || true)" != "$VERSION" ]; then
             echo "::error::Tag version must be a valid calendar date in YYYY.MM.DD format."
             exit 1
           fi

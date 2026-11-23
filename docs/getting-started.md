@@ -76,9 +76,10 @@ This downloads Neutralino binaries into the ignored `desktop/neutralino/bin/` di
 **Or install a packaged build (no Node.js needed on the target machine):**
 
 - **Linux x86_64:** download `TactiDiagram-x86_64.AppImage` from [Releases](https://github.com/mrhunsaker/TactiDiagram/releases), mark it executable (`chmod +x TactiDiagram-x86_64.AppImage`), and run it. It ships an application menu entry and launcher icon. A compatible WebKitGTK runtime must be installed by the distribution; the AppImage does not bundle the system webview.
-- **Windows x64:** download `TactiDiagram-win-x64.zip` from Releases, extract it anywhere, and run `TactiDiagram.exe` (keep `resources.neu` next to it). Microsoft Edge WebView2 Runtime is required. The executable is unsigned, so Windows SmartScreen may warn at first launch.
+- **Windows x64 (recommended):** download `TactiDiagram-Setup.exe` from [Releases](https://github.com/mrhunsaker/TactiDiagram/releases) and run it. It installs per-user, creates a desktop shortcut and a Start Menu item, and registers an uninstaller; administrator privileges are not required. Microsoft Edge WebView2 Runtime is required. The installer is currently unsigned, so Windows SmartScreen may display a warning.
+- **Windows x64 (portable):** download `TactiDiagram-win-x64.zip`, extract it anywhere, and run `TactiDiagram.exe`. Keep `resources.neu` beside the executable.
 
-Packaged builds carry the same version as the `vYYYY.M.D` release tag and the GitHub release they are attached to. See [Desktop app and packaging](desktop-gui.md).
+Packaged builds carry the same version as the `vYYYY.M.D` release tag and the GitHub release they are attached to. GitHub Actions publishes releases only when a matching version tag is pushed; pull requests validate the installer build but never publish a release. See [Desktop app and packaging](desktop-gui.md).
 
 ## Evaluation
 

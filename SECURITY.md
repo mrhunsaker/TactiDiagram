@@ -6,7 +6,7 @@ Only the latest version on `main` is supported; releases are frequent.
 
 ## Reporting a vulnerability
 
-TouchSight-NG is a static, client-only application, which keeps the attack surface small: no server, no accounts, no user data storage. Issues that would still matter include XSS through file content rendered in previews, path handling in the dev server (`scripts/serve.mjs`), and dependency vulnerabilities in the vendored model runtimes.
+TactiDiagram is a static, client-only application, which keeps the attack surface small: no server, no accounts, no user data storage. Issues that would still matter include XSS through file content rendered in previews, path handling in the dev server (`scripts/serve.mjs`), and dependency vulnerabilities in the vendored model runtimes.
 
 - **Do not open a public issue** for a suspected vulnerability.
 - Email [github@main.hunsakerweb.com](mailto:github@main.hunsakerweb.com), or use GitHub's private security advisory feature on this repository.

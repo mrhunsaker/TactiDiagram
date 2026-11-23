@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to TouchSight-NG are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses calendar-style versions. Git tags and GitHub releases
+All notable changes to TactiDiagram are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses calendar-style versions. Git tags and GitHub releases
 use the `vYYYY.M.D` format (for example `v2026.11.22`), where the version is
 the release date and reads as a SemVer triple (`2026.11.22`).
 
@@ -21,8 +21,8 @@ the release date and reads as a SemVer triple (`2026.11.22`).
 ### Added
 - Desktop packaging: `npm run package:desktop` (`scripts/package.mjs`)
   builds the existing Neutralino shell into distributable artifacts - an
-  AppImage (`TouchSight-NG-x86_64.AppImage`) on Linux and a zipped,
-  icon-embedded `touchsight-ng.exe` bundle on Windows, both serving the app
+  AppImage (`TactiDiagram-x86_64.AppImage`) on Linux and a zipped,
+  icon-embedded `TactiDiagram.exe` bundle on Windows, both serving the app
   without Node.js. A new `packaging/icon.svg` provides the app icon, and
   `.github/workflows/desktop-packaging.yml` builds both artifacts only on
   release tags. Tags use the `vYYYY.M.D` format (for example
@@ -72,8 +72,8 @@ the release date and reads as a SemVer triple (`2026.11.22`).
 
 ### Changed
 - Repository layout: the application moves from `app/` to `src/` so the repository and the Pages site are cleaner; scripts (serve, vendor, eval, recall, thumb) and `.gitignore` updated accordingly.
-- README rewritten to reflect TouchSight-NG as a maintained, in-use tool by a transcriber rather than a hackathon entry.
-- `package.json` homepage corrected to `https://mrhunsaker.github.io/touchsight-NG/`.
+- README rewritten to reflect TactiDiagram as a maintained, in-use tool by a transcriber rather than a hackathon entry.
+- `package.json` homepage corrected to `https://mrhunsaker.github.io/TactiDiagram/`.
 
 ## [2026.11.20] - 2026-11-20
 

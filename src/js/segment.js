@@ -4,7 +4,7 @@
 export async function embedImage(sam, imageData) {
   const { T, model, processor } = sam;
   const raw = new T.RawImage(imageData.data, imageData.width, imageData.height, 4).rgb();
-  if (sam.backend === 'sam2') return { raw, inputs: await processor(raw), width: imageData.width, height: imageData.height, imageEmbeddings: null };
+  if (sam.backend === 'sam2') return { raw, inputs: await processor(raw), width: imageData.width, height: imageData.height };
   const inputs = await processor(raw);
   const embeddings = await model.get_image_embeddings(inputs);
   return { inputs, embeddings, width: imageData.width, height: imageData.height };
@@ -22,18 +22,12 @@ export async function segmentPoint(sam, emb, positives, { minFrac = 0.0008, maxF
     // tensors directly from the cached embed-step dimensions instead.
     const input_points = processor.reshape_input_points([[pts]], emb.inputs.original_sizes, emb.inputs.reshaped_input_sizes);
     const input_labels = new T.Tensor('int64', pointLabels.map(BigInt), input_points.dims.slice(0, -1));
-    // Cache the multi-level image embeddings after the first decode, so later prompts
-    // do not rerun the (WebGPU) vision encoder for every label.
-    let inputs;
-    if (emb.imageEmbeddings) {
-      inputs = { ...emb.imageEmbeddings, input_points, input_labels };
-    } else {
-      const out = await model({ ...emb.inputs, input_points, input_labels });
-      emb.imageEmbeddings = { ...out };
-      const masks = await processor.post_process_masks(out.pred_masks, emb.inputs.original_sizes, emb.inputs.reshaped_input_sizes);
-      return maskCandidates(masks, out, emb, { minFrac, maxFrac });
-    }
-    const out = await model(inputs);
+    // Always run the full forward (pixel_values + prompts). Reusing the first
+    // call's decoder-only outputs (image embeddings) as inputs makes this
+    // Sam2Model build re-dispatch into the vision encoder and fail with
+    // "Missing the following inputs: pixel_values" on the second label, so the
+    // embedding cache is deliberately not used on this backend.
+    const out = await model({ ...emb.inputs, input_points, input_labels });
     const masks = await processor.post_process_masks(out.pred_masks, emb.inputs.original_sizes, emb.inputs.reshaped_input_sizes);
     return maskCandidates(masks, out, emb, { minFrac, maxFrac });
   }

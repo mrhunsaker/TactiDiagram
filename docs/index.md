@@ -39,6 +39,7 @@ In evaluation on 16 Wikimedia Commons diagrams, TactiDiagram found 148 of 151 ha
 - [Architecture](architecture.md): why the system combines OCR, geometric computer vision, and segmentation.
 - [Pipeline stages](pipeline.md): standard segmented workflow, Autotrace preprocessing, direct Potrace output, edge-map construction, and how errors propagate.
 - [Models and inference engines](models-and-engines.md): the exact OCR and segmentation model files, runtime libraries, and their purposes.
+- [WebGPU browser setup](webgpu.md): browser compatibility, GPU acceleration, and SAM 2.1 troubleshooting.
 - [Tools and libraries](tools-and-libraries.md): every third-party tool the application uses (SlimSAM, SAM 2.1, PaddleOCR, Tesseract.js, Indra, Potrace, OpenCV.js, ONNX Runtime Web, three.js, Neutralino), what it does technically, and why it is worth shipping.
 - [Advanced AI model options](advanced-model-options.md): larger models that could improve grounding, segmentation, and diagram reasoning. These are research options, not implemented features.
 

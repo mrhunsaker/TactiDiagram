@@ -7,7 +7,11 @@ TactiDiagram is a hybrid computer-vision pipeline. OCR and segmentation use trai
 ```mermaid
 flowchart TD
   A["Input: PNG, JPG, WebP"] --> B["Decode and normalize"]
-  B --> I0{"Use Indra OCR?"}
+  B --> AT{"Use Autotrace?"}
+  AT -->|No| PREP["Prepared analysis raster"]
+  AT -->|Yes| ATR["Potrace reconstruction + SVG rasterization"]
+  ATR --> PREP
+  PREP --> I0{"Use Indra OCR?"}
   I0 -->|Yes| I1["PaddleOCR detection"]
   I1 --> I2["Indra recognition"]
   I2 -->|Success| F["Normalize word boxes"]
@@ -41,8 +45,12 @@ flowchart TD
   W --> X["Braille, keys, textures, knockouts"]
   X --> Y["Automated guideline checks"]
   Y --> Z["Transcriber review and correction"]
-  Z --> AA["Editable layered SVG, key page, print PDF, STL"]
-  AA --> AB["Optional SVG editor for manual correction and QC"]
+  Z --> AA{"Diagram output mode"}
+  AA -->|Default| A1["Segmented tactile SVG"]
+  AA -->|Direct Potrace option| A2["Original source: RGB Sobel + Otsu + Potrace"]
+  A2 --> A3["Transparent monochrome paths + independent braille layers"]
+  A1 --> AB["Optional SVG editor for manual correction and QC"]
+  A3 --> AB
   AB --> AC["Physical proof and tactile QA"]
 ```
 

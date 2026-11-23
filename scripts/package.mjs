@@ -269,7 +269,7 @@ async function buildWindowsPackage(binary, resources) {
 }
 
 // ---- main ------------------------------------------------------------------
-const backupRoot = mkdtempSync(join(tmpdir(), 'touchsight-package-'));
+const backupRoot = mkdtempSync(join(tmpdir(), 'tactidiagram-package-'));
 const resourceBackup = join(backupRoot, 'resources');
 const hadResources = existsSync(resDir);
 if (hadResources) cpSync(resDir, resourceBackup, { recursive: true });

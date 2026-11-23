@@ -1,8 +1,9 @@
 # Changelog
 
 All notable changes to TactiDiagram are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses calendar-style versions. Git tags and GitHub releases
-use the `vYYYY.M.D` format (for example `v2026.11.22`), where the version is
-the release date and reads as a SemVer triple (`2026.11.22`).
+use the strict `vYYYY.MM.DD` format (for example `v2026.11.22`). The tag is
+the source of truth; the release workflow synchronizes `package.json` and
+`package-lock.json` on the default branch to the corresponding SemVer triple.
 
 ## [Unreleased]
 
@@ -27,9 +28,10 @@ the release date and reads as a SemVer triple (`2026.11.22`).
   icon-embedded `TactiDiagram.exe` bundle on Windows, both serving the app
   without Node.js. A new `packaging/icon.svg` provides the app icon, and
   `.github/workflows/desktop-packaging.yml` builds both artifacts only on
-  release tags. Tags use the `vYYYY.M.D` format (for example
-  `v2026.11.22`); the workflow validates that format, stamps the date-derived
-  version (`v2026.11.22` -> `2026.11.22`) into the packaged app so tag, build,
+  release tags. Tags use the `vYYYY.MM.DD` format (for example
+  `v2026.11.22`); the workflow validates that format, synchronizes the package
+  version (`v2026.11.22` -> `2026.11.22`) on the default branch, and stamps it
+  into the packaged app so tag, build,
   and GitHub release agree, and attaches both artifacts to the release.
 - Explicit start: loading an image or sample and changing options no longer
   starts processing on its own. A "Start analysis" button in the Output

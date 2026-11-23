@@ -14,7 +14,7 @@ At a glance:
 | PaddleOCR | Primary OCR engine | `src/js/paddle.js`, `models/paddleocr/` |
 | Tesseract.js | Fallback OCR engine | `src/js/ocr.js`, `src/vendor/tesseract/` |
 | Indra OCR (Datalab) | Experimental alternative OCR engine | `src/js/indra.js`, `models/indra/` |
-| Potrace | Raster-to-vector tracing (Autotrace preprocessing) | `src/js/autotrace.js`, `src/vendor/potrace/` |
+| Potrace | Raster reconstruction before analysis and monochrome outline tracing after analysis | `src/js/autotrace.js`, `src/js/render.js`, `src/vendor/potrace/` |
 | three.js | 3D relief preview | `src/js/relief.js`, `src/vendor/three/` |
 | Neutralino | Desktop application shell | `desktop/`, `scripts/package.mjs` |
 
@@ -101,13 +101,20 @@ Three interchangeable engines read the printed labels. They all expose the same 
 
 - **The benefit, concretely:** a second independent opinion on hard diagrams, with no extra runtime dependency (it shares ONNX Runtime) and no risk of silently changing results: when Indra is unsure, the pipeline uses a competing engine.
 
-## Potrace (optional Autotrace preprocessing)
+## Potrace (Autotrace preprocessing and direct SVG tracing)
 
-**What it is:** the classic **Potrace** bitmap-tracing algorithm by Peter Selinger, here as the `esm-potrace-wasm` WebAssembly build (its GPL-2.0 license notice ships with the vendored copy). Potrace turns a bitmap into smooth vector paths; it is a *vectorizer*, not an OCR or segmentation engine.
+**What it is:** the classic **Potrace** bitmap-tracing algorithm by Peter Selinger, provided as the esm-potrace-wasm WebAssembly package. Potrace converts binary raster regions into smooth vector paths; it is a vectorizer, not OCR, semantic segmentation, or tactile-layout software. Its GPL-2.0 notice ships with the vendored runtime.
 
-**How TactiDiagram uses it:** in the optional **Autotrace** preprocessor, behind `src/js/autotrace.js`: the image is traced with `turdsize: 4, alphamax: 1.0, opticurve: 1, opttolerance: 0.25, posterizelevel: 4` and color extraction, converted to an SVG, then immediately rasterized back to `ImageData` at source resolution over white. That result becomes the normal analysis input. If the traced image would be blank, the step throws instead of feeding an empty image onward.
+**Two different call paths use the same engine:**
 
-**The benefit, concretely:** tracing suppresses JPEG noise, anti-aliasing fringes, gradient backgrounds, and stray specks; the mild posterization makes faint watermarks and pale fills collapse toward the background. It is entirely optional (an explicit UI toggle), so clean scans skip it.
+1. **Autotrace preprocessing**: an optional reconstruction pass before OCR. Potrace's SVG is rasterized back to image data at normalized source dimensions over white. This raster becomes the input for OCR, leader detection, foreground/line analysis, and segmentation. It can affect all later analysis results.
+2. **Direct Potrace SVG output**: an optional post-analysis rendering path. The complete OCR, leader, foreground/line, SAM segmentation, tactile layout, and guideline-check stages still run. The original upload is separately converted into a monochrome edge map and traced to editable SVG paths. This path is used as the primary diagram artwork instead of the segmented renderer.
+
+**How the direct outline map is made:** OCR label boxes are padded and excluded; RGB Sobel gradients are calculated independently per channel; the strongest channel gradient is selected per pixel; an Otsu threshold bounded to 24–76 creates a black/white map; Potrace traces that map in single-colour black mode with transparent background. The SVG is normalized to remove background primitives and force black editable paths. The output deliberately discards original colour fills and has no white page rectangle or opaque label cover-ups.
+
+**Layered handoff:** the direct SVG separates Potrace linework, optional braille title, and each braille label into independent Inkscape layers. Braille positions and two-letter key assignments come from the normal tactile layout, not a second placement algorithm. When Autotrace and direct output are both enabled, analysis uses the reconstructed raster but final direct linework still traces the original upload.
+
+**Trade-offs:** Autotrace can simplify or alter boundaries before OCR/segmentation. Direct tracing can preserve irrelevant internal colour edges, miss faint boundaries, simplify small features, and suppress content near masked print labels. Neither mode guarantees tactile readability. Compare the output with the source and inspect a physical proof before production.
 
 ## three.js (3D relief preview)
 

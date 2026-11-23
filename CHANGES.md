@@ -92,3 +92,10 @@ the release date and reads as a SemVer triple (`2026.11.22`).
 ### Notes
 - Results snapshot in the README (98% label recall, all but 1 of 233 labels placed in braille, 66 short fragments vs 763 for edge tracing).
 - Not yet formally tested with blind readers or printed on physical swell paper.
+
+
+### Documentation update — processing modes and pipelines
+
+- Expanded user and technical documentation to distinguish standard segmented tactile rendering, optional pre-analysis Autotrace reconstruction, and post-analysis direct Potrace SVG output.
+- Documented the direct outline-image algorithm: OCR text masking, per-channel RGB Sobel gradients, bounded Otsu thresholding, monochrome Potrace tracing, and SVG normalization.
+- Documented transparent output, editable Potrace and per-label braille layers, normal tactile-layout/key-page reuse, the interaction between the two Potrace options, and mode-specific review limitations.

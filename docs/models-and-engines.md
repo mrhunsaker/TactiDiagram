@@ -19,7 +19,7 @@ The file names below come from the checked-in `scripts/vendor.mjs`, `package.jso
 | Transformers.js | `@huggingface/transformers@4.3.0` | Loads and runs SlimSAM and optional SAM 2.1 in the browser | Segmentation |
 | ONNX Runtime Web | `onnxruntime-web` WASM and WebGPU-targeted bundle | Executes ONNX inference in the browser | PaddleOCR, SlimSAM, and optional SAM 2.1 |
 | three.js | `three@0.186.1` | 3D relief visualization and STL geometry support | Only when the relief view/export is used |
-| Potrace | `esm-potrace-wasm@^0.5.1` package dependency | Optional bitmap-to-vector preprocessing | When Autotrace is enabled before analysis |
+| Potrace | `esm-potrace-wasm@^0.5.1` package dependency | Autotrace raster preprocessing and direct monochrome SVG outline tracing | Before analysis or after full analysis, depending on selected option |
 
 ## PaddleOCR: primary OCR
 
@@ -145,19 +145,43 @@ three.js is a rendering library. It supports the interactive relief preview and 
 
 ## Potrace and Autotrace
 
-Potrace is a bitmap-to-vector tracer: it converts raster shapes into vector paths. It is useful when a raster diagram needs a clean vector representation, but it is not an OCR engine, a semantic segmentation model, or a tactile-layout engine.
+Potrace is a bitmap-to-vector tracer. It converts binary raster regions into editable vector paths; it is not an OCR engine, semantic segmentation model, or tactile-layout engine. TactiDiagram uses the same locally vendored esm-potrace-wasm package in two distinct stages.
 
-The repository's package manifest includes `esm-potrace-wasm`, a browser-oriented WebAssembly package. The optional Autotrace control in `src/index.html` invokes `src/js/autotrace.js`. The vendor script copies the ESM/WASM runtime into `src/vendor/potrace/` and includes the GPL-2.0 notice beside it.
+### Autotrace preprocessing (before analysis)
 
-The implemented Autotrace design is an optional upstream preprocessing pass:
+The optional **Use Autotrace (Potrace)** checkbox invokes the preprocessing path in src/js/autotrace.js before the main analysis function:
 
-1. Preserve the original uploaded raster.
-2. If Autotrace is enabled, run Potrace to reconstruct a cleaner representation.
-3. Rasterize that representation into an image for analysis.
-4. Run OCR, leader detection, foreground/structure analysis, and segmentation on the prepared image.
-5. Keep the original available for comparison and for the non-Autotrace path.
+1. Preserve the uploaded source raster separately.
+2. Run Potrace to reconstruct the image.
+3. Rasterize the resulting SVG over white at normalized source dimensions.
+4. Use that reconstructed raster for OCR, label grouping/correction, leader detection, foreground and line analysis, and SAM segmentation.
+5. Retain the original upload for comparison.
 
-That is different from simply exporting Potrace's paths as the tactile graphic. The tactile renderer still needs semantic parts, braille, physical spacing, line hierarchy, and production constraints. Potrace is an optional preprocessing stage, not the tactile renderer. Browser behavior and output quality should be checked against representative samples before production use.
+This mode changes every downstream analysis input. It is not the direct tactile renderer. If both Autotrace and direct Potrace output are selected, the prepared raster still feeds analysis, but final direct linework uses the untouched original source image.
+
+### Direct Potrace SVG output (after full analysis)
+
+The **Use direct Potrace SVG output (full analysis)** checkbox does not bypass OCR or segmentation. The full pipeline completes first, including OCR, leader detection, foreground/structural-line analysis, point-prompted SAM masks, normal tactile layout, braille/key placement, and geometric checks. Then the direct-output path traces the original uploaded raster into transparent monochrome outlines.
+
+The direct-outline algorithm is separate from preprocessing:
+
+1. Build a source RGB image, compositing transparency against white.
+2. Expand and exclude OCR label boxes. Their pixels are whitened before gradient calculation; a one-pixel guard around the mask is also excluded to avoid tracing the mask boundary.
+3. Compute Sobel gradient magnitude independently for red, green, and blue, retaining the strongest channel response per pixel. This preserves boundaries between different colours even when their luminance is similar.
+4. Calculate an Otsu threshold from non-zero gradient magnitudes and clamp it to 24–76.
+5. Generate a black/white edge map and reject a near-empty result.
+6. Run Potrace in single-colour black mode with transparent background.
+7. Normalize the SVG: remove background primitives and style overrides, force retained paths to black, and validate that editable paths exist.
+
+The direct SVG contains no source-colour fills, white page rectangle, or opaque print-label patches. OCR masking can suppress nearby image details. The trace can omit faint boundaries or retain irrelevant internal edges; review it against the original.
+
+### Braille and layered SVG handoff
+
+Direct Potrace rendering does not independently place braille. It consumes the standard tactile layout, so page size, label positions, collision handling, clearance, title placement, and key assignment remain consistent with segmented output. With **Use letter keys for every label** enabled, each placed label is represented by a unique two-letter alphabetic key and the standard key-page data maps that key to the full print label.
+
+The layered direct SVG contains a Potrace linework layer, an optional braille-title layer, and one independently movable Inkscape layer for each braille label. The normal key-page SVG and print/PDF key-page inclusion behavior are retained. The direct mode hides the 3D relief and edge-baseline comparison views because those views visualize the segmented layout, not the direct Potrace paths.
+
+The vendor script copies the ESM/WASM runtime into src/vendor/potrace/ and includes the GPL-2.0 notice beside it. Review the Potrace package's GPL-2.0 terms independently from the application's GPL-3.0-or-later license. See [Pipeline stages](pipeline.md#potrace-processing-paths) and [Module reference](modules.md) for implementation details and call sites.
 
 ## Download size and caching
 

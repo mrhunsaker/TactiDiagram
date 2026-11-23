@@ -84,6 +84,18 @@ export async function analyze(imageData, { onStage = () => {}, sensitivity = DEF
   for (const w of good) { w.orig = w.text; w.text = correctWord(w.text, w.conf); }
   const lines = wordsToLines(good);
 
+  if (transcribeOnly) {
+    // The quick mode only needs recognized text and its OCR boxes. Skip leader
+    // detection, line extraction, foreground reconstruction, and SAM entirely.
+    onStage('leaders', 'Preparing recognized labels for braille replacement…');
+    src.delete(); gray.delete();
+    return { W, H, labels, words: good, fg: new Uint8Array(W * H), lineArt: [],
+      regions: null, edges: new Uint8Array(W * H), detailLines: [], timings,
+      device: null, ocrEngine, sensitivity, segmentationBackend: 'skipped',
+      segmentationFallbackReason: null, indraFallback: preferIndra && ocrEngine !== 'indra',
+      transcribeOnly: true };
+  }
+
   onStage('leaders', 'Tracing leader lines to the parts they name…');
   // Labels printed on top of the drawing name the part underneath; they get no leader.
   const solid = solidMask(cv, src);
@@ -112,17 +124,6 @@ export async function analyze(imageData, { onStage = () => {}, sensitivity = DEF
 
   const fg = foregroundMask(cv, src, labels, sensitivity);
   const { lineArt, regions, edges } = await timed('lineart', () => lineArtMask(cv, src, labels, fg, sensitivity));
-
-  if (transcribeOnly) {
-    // Fast original-diagram mode needs OCR and text locations, not part masks.
-    // Avoid loading or running SAM; the UI preserves the source image and
-    // replaces detected print labels with braille at their original locations.
-    src.delete(); gray.delete();
-    return { W, H, labels, words: good, fg, lineArt, regions, edges, detailLines, timings,
-      device: null, ocrEngine, sensitivity, segmentationBackend: 'skipped',
-      segmentationFallbackReason: null, indraFallback: preferIndra && ocrEngine !== 'indra',
-      transcribeOnly: true };
-  }
 
   onStage('segment', 'Segmenting each labeled part…');
   const fgDil = dilateMask(cv, fg, W, H, 5);

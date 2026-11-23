@@ -19,7 +19,7 @@ The file names below come from the checked-in `scripts/vendor.mjs`, `package.jso
 | Transformers.js | `@huggingface/transformers@4.3.0` | Loads and runs SlimSAM and optional SAM 2.1 in the browser | Segmentation |
 | ONNX Runtime Web | `onnxruntime-web` WASM and WebGPU-targeted bundle | Executes ONNX inference in the browser | PaddleOCR, SlimSAM, and optional SAM 2.1 |
 | three.js | `three@0.186.1` | 3D relief visualization and STL geometry support | Only when the relief view/export is used |
-| Potrace | `esm-potrace-wasm@^0.5.1` package dependency | Optional bitmap-to-vector preprocessing | When Autotrace is enabled before analysis |
+| Potrace | `esm-potrace-wasm@^0.5.1` package dependency | Autotrace raster preprocessing and direct monochrome SVG outline tracing | Before analysis or after full analysis, depending on selected option |
 
 ## PaddleOCR: primary OCR
 

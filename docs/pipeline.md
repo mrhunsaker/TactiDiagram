@@ -7,7 +7,11 @@ TactiDiagram is a hybrid computer-vision pipeline. OCR and segmentation use trai
 ```mermaid
 flowchart TD
   A["Input: PNG, JPG, WebP"] --> B["Decode and normalize"]
-  B --> I0{"Use Indra OCR?"}
+  B --> AT{"Use Autotrace?"}
+  AT -->|No| PREP["Prepared analysis raster"]
+  AT -->|Yes| ATR["Potrace reconstruction + SVG rasterization"]
+  ATR --> PREP
+  PREP --> I0{"Use Indra OCR?"}
   I0 -->|Yes| I1["PaddleOCR detection"]
   I1 --> I2["Indra recognition"]
   I2 -->|Success| F["Normalize word boxes"]
@@ -41,8 +45,12 @@ flowchart TD
   W --> X["Braille, keys, textures, knockouts"]
   X --> Y["Automated guideline checks"]
   Y --> Z["Transcriber review and correction"]
-  Z --> AA["Editable layered SVG, key page, print PDF, STL"]
-  AA --> AB["Optional SVG editor for manual correction and QC"]
+  Z --> AA{"Diagram output mode"}
+  AA -->|Default| A1["Segmented tactile SVG"]
+  AA -->|Direct Potrace option| A2["Original source: RGB Sobel + Otsu + Potrace"]
+  A2 --> A3["Transparent monochrome paths + independent braille layers"]
+  A1 --> AB["Optional SVG editor for manual correction and QC"]
+  A3 --> AB
   AB --> AC["Physical proof and tactile QA"]
 ```
 
@@ -160,13 +168,61 @@ The checker measures selected geometric properties such as short fragments, narr
 
 The transcriber must compare every label and part relationship against the source, inspect the tactile graphic and 3D relief, and perform applicable production QA. See [Review workflow](review-workflow.md).
 
-## Potrace: optional preprocessing
+## Potrace processing paths
+
+Potrace is used in two different places. They share one locally vendored WebAssembly engine but solve different problems. Autotrace is a pre-analysis input transformation; direct Potrace SVG is a post-analysis output renderer.
+
+### A. Autotrace preprocessing
 
 TactiDiagram includes an optional **Autotrace** control that uses the locally vendored `esm-potrace-wasm` runtime. It is an opt-in preprocessing step: when enabled, the browser passes the source image through Potrace, renders the resulting SVG back to an image at the original pixel dimensions, and sends that prepared raster through the normal analysis pipeline. OCR, leader detection, foreground and line-art analysis, and segmentation then operate on the prepared image.
 
 Autotrace is not the default path. With the control disabled, analysis uses the original image. The original source image is retained for comparison, and the prepared image is used for the analysis and downstream tactile layout. If Potrace initialization or reconstruction fails, the run reports the error and restores the previous application state rather than silently treating the failed result as valid.
 
-Potrace does not generate the final tactile graphic. The normal layout and rendering stages still create the semantic parts, braille, physical spacing, line hierarchy, and production-oriented SVG. Autotrace can change or simplify image details, so compare its results with the original and review labels, boundaries, and tactile meaning before export. See [Models and inference engines](models-and-engines.md#potrace-and-autotrace).
+This path changes the **analysis input**, not the output renderer. It can suppress raster noise and simplify boundaries, but can also merge nearby features, remove faint details, or affect OCR and leader detection. Compare the reconstructed analysis view with the untouched Original view. A failed or empty reconstruction aborts the run rather than silently accepting an empty image. See [Models and inference engines](models-and-engines.md#potrace-and-autotrace).
+
+### B. Direct Potrace SVG output (full analysis)
+
+This is an **output-rendering branch after ordinary analysis and layout**, not a shortcut around them. The full sequence still runs:
+
+1. Decode and normalize the upload; optionally run Autotrace preprocessing if that separate checkbox is enabled.
+2. Run OCR and label grouping/correction.
+3. Detect and chain leader lines; estimate the named-part anchor.
+4. Compute foreground masks and structural-line analysis.
+5. Run point-prompted SlimSAM or the selected SAM 2.1 backend for every label.
+6. Build the normal physical tactile layout, including page size, braille positions, optional title, texture/layout data, key mapping, collision handling, and clearance.
+7. Run the geometric guideline checks.
+8. Call traceOriginalDiagram on the **original uploaded raster**, not the Autotrace-prepared raster. Fit the resulting paths to the same millimetre page coordinates.
+
+#### Outline-image construction
+
+The makeOutlineImage function in src/js/autotrace.js builds Potrace's input:
+
+- Source alpha is composited against white.
+- OCR-detected label rectangles are expanded by a small margin and excluded. Their pixels are whitened before gradient calculation; the mask and its one-pixel neighbourhood are skipped so the mask boundary is not traced as a false edge.
+- Sobel gradients are evaluated independently for red, green, and blue. The strongest channel magnitude is retained, preserving boundaries between differently coloured regions even when luminance is similar.
+- An Otsu threshold is calculated from non-zero gradient magnitudes and bounded to 24–76.
+- Pixels above the threshold become black; the rest become white. A near-empty edge map is rejected with an actionable error.
+
+Potrace runs in single-colour mode with black foreground and transparent background. SVG normalization validates the result, removes background/shape primitives and style overrides, forces retained paths to black, and rejects output without editable paths.
+
+#### Direct-output SVG structure
+
+The renderer embeds traced path geometry in the diagram's millimetre coordinate system. The export contains:
+
+- **Potrace object outlines:** black editable vector paths on a transparent canvas; no white page rectangle, original colour fills, or opaque label knockouts.
+- **Braille title:** a separate layer when a title is supplied.
+- **One braille layer per placed label:** each can be moved independently in an SVG editor. Layer labels include the print label and key annotation when applicable.
+- **Key page:** the normal key-page renderer and print/PDF inclusion rules remain in effect when labels use keys.
+
+The standard analysis view still exposes OCR boxes, leader estimates, anchors, and SAM masks. These remain essential review evidence even though SAM geometry is not the primary diagram artwork in this mode.
+
+#### Letter keys in direct-output mode
+
+The ordinary tactile layout is the single source of braille placement and key assignment in both output modes. With **Use letter keys for every label** enabled, all placed labels use unique two-letter alphabetic keys; the key page maps each key to its full print label. Direct Potrace rendering consumes those same layout cells and coordinates rather than implementing a second placement algorithm.
+
+#### Limitations and review
+
+The direct trace is an edge-derived outline, not a semantic segmentation result. It can retain internal colour boundaries, omit subtle boundaries below threshold, trace irrelevant details, and lose fine features during vectorization. OCR-masked regions are removed from the edge map, so content immediately adjacent to printed text can also be suppressed. Review paths, label placement, braille/key mapping, and a physical proof before production.
 
 ## Editable SVG post-processing and quality control
 
@@ -177,8 +233,3 @@ The tactile SVG is an editable vector document sized in millimetres, with named 
 Use the vector editor for post-processing: compare with the source and analysis overlays, correct paths and false contours, adjust leaders, and inspect braille, label-to-part correspondence, line hierarchy, textures, clearances, and margins. Preserve the page dimensions and mm scale. Save a separate reviewed copy, then produce a physical proof on the intended swell-paper/fuser system.
 
 Vector editing is an optional manual post-processing and QC stage, not automated validation. Edits do not update TactiDiagram's analysis state or guideline report. Recheck the edited SVG independently, retain the untouched export, and assess the physical proof; visual correctness alone does not establish tactile readability.
-
-
-## Direct Potrace SVG output
-
-This output option does not bypass analysis. The complete pipeline runs normally: OCR and label correction, leader detection, foreground and structural-line analysis, Segment Anything part segmentation, standard tactile layout, and guideline checks. After analysis, the direct-output path converts the original RGB image to a monochrome edge map and uses Potrace to trace object boundaries rather than colour fills. OCR-detected print-label regions are excluded before edge detection. The returned SVG contains black editable vector paths on a transparent page: it has no white page rectangle, colour fills, or opaque label cover-up blocks. Braille labels use the normal layout coordinates and collision/clearance rules, and each label is an independent SVG layer. The **Use letter keys for every label** option is honored: when enabled, every placed label uses its unique two-letter braille key and the standard key page maps keys to full print labels. The key page is included in print/PDF output when needed. The full analysis and segmentation remain available for review and label-to-part association, but segmented geometry is not used as the primary diagram artwork. Potrace can simplify small details, and masking print labels can obscure nearby content; inspect the paths, label placement, and key mapping before production.

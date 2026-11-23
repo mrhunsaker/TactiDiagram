@@ -207,7 +207,7 @@ model assets; the samples' per-image attribution is in
 | Component | Role | License | License source |
 |---|---|---|---|
 | Atkinson Hyperlegible (woff2) | Self-hosted accessibility font, `src/fonts/` | SIL Open Font License 1.1 | [Braille Institute](https://www.brailleinstitute.org/freefont/) |
-| esm-potrace-wasm / Potrace | Optional bitmap-to-vector preprocessing (Autotrace) | GPL-2.0-or-later (Potrace) | vendored with its license notice; `LICENSES/GPL-2.0.txt` |
+| esm-potrace-wasm / Potrace | Optional Autotrace preprocessing and direct monochrome SVG outline tracing | GPL-2.0-or-later (Potrace) | vendored with its license notice; `LICENSES/GPL-2.0.txt` |
 | Indra OCR models (opt-in engine) | `det.onnx`, `rec.onnx`, `meta.json` | **AI Pub-Open RAIL-M (modified), not GPL** — see note below | `src/models/indra/LICENSE` (downloaded) |
 | ONNX Runtime Web | Executes the OCR and segmentation ONNX models in the browser | MIT | [microsoft/onnxruntime](https://github.com/microsoft/onnxruntime/blob/main/LICENSE) |
 | OpenCV.js | Classical image processing, contours, Hough, checks | Apache-2.0 | [@techstark/opencv-js](https://www.npmjs.com/package/@techstark/opencv-js), OpenCV 4.12.0 |

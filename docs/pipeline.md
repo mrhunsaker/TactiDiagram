@@ -177,3 +177,8 @@ The tactile SVG is an editable vector document sized in millimetres, with named 
 Use the vector editor for post-processing: compare with the source and analysis overlays, correct paths and false contours, adjust leaders, and inspect braille, label-to-part correspondence, line hierarchy, textures, clearances, and margins. Preserve the page dimensions and mm scale. Save a separate reviewed copy, then produce a physical proof on the intended swell-paper/fuser system.
 
 Vector editing is an optional manual post-processing and QC stage, not automated validation. Edits do not update TactiDiagram's analysis state or guideline report. Recheck the edited SVG independently, retain the untouched export, and assess the physical proof; visual correctness alone does not establish tactile readability.
+
+
+## Experimental original-diagram braille mode
+
+When selected, the pipeline still runs OCR and label correction but skips Segment Anything inference. The result keeps the uploaded source image, covers each detected print-label box, and places the recognized text in uncontracted braille near that box. This mode is a fast transcription aid, not a segmentation or tactile-layout substitute: part boundaries, textures, leader-aware placement, and the full guideline checks are not provided. White cover-ups may obscure adjacent diagram content.

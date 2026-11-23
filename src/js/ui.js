@@ -418,7 +418,8 @@ async function relayout(withSteps = false) {
   if (withSteps) { setStep('check', 'Running guideline checks…'); await nextFrame(); }
   if ($('#opt-original-braille')?.checked) {
     setStep('engines', 'Tracing the analyzed diagram with Potrace…');
-    state.traceSvg = await traceOriginalDiagram(state.sourceImageData, state.analysis.labels);
+    const placedTexts = new Set(state.layout.labels.map((label) => label.text));
+    state.traceSvg = await traceOriginalDiagram(state.sourceImageData, state.analysis.labels.filter((label) => !label.removed && placedTexts.has(label.text)));
   }
   state.check = checkAll(cv, state.analysis, state.layout, state.imageData);
   draw();

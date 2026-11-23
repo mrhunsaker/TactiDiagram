@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Build Windows icon assets for the TouchSight-NG desktop package.
+// Build Windows icon assets for the TactiDiagram desktop package.
 //
 // Usage:
 //   npm i --no-save sharp png-to-ico

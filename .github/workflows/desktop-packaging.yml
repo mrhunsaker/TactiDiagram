@@ -81,7 +81,7 @@ jobs:
   macos-packaging-validation:
     name: Validate macOS app and DMG packaging
     if: github.event_name == 'pull_request'
-    runs-on: macos-14
+    runs-on: macos-14-large
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -231,7 +231,7 @@ jobs:
   macos:
     if: github.event_name == 'push'
     needs: version
-    runs-on: macos-14
+    runs-on: macos-14-large
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4

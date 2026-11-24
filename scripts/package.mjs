@@ -170,7 +170,7 @@ function neuBuild() {
   const binary = files.find((path) => binaryPattern.test(basename(path)));
   if (!binary || !resources) {
     throw new Error('Could not find target x86_64 binary and resources.neu under ' + distRoot +
-      '. Found:\\n' + files.join('\\n'));
+      '. Found:\n' + files.join('\n'));
   }
   if (dirname(binary) !== dirname(resources)) {
     throw new Error('Neutralino binary and resources.neu are not in the same directory.');
@@ -324,7 +324,7 @@ function buildMacPackage(binary, resources) {
     '<key>NSHighResolutionCapable</key><true/>',
     '</dict></plist>',
     '',
-  ].join('\\n');
+  ].join('\n');
   writeFileSync(join(contents, 'Info.plist'), plist);
   writeFileSync(join(contents, 'PkgInfo'), 'APPL????');
 
@@ -339,7 +339,7 @@ function buildMacPackage(binary, resources) {
   const dmgPath = join(outDir, 'TactiDiagram-macOS-universal.dmg');
   run('hdiutil', ['create', '-volname', 'TactiDiagram', '-srcfolder', dmgStage, '-ov', '-format', 'UDZO', dmgPath]);
   rmSync(dmgStage, { recursive: true, force: true });
-  console.log('\\nBuilt ' + appPath + ', ' + zipPath + ', and ' + dmgPath);
+  console.log('\nBuilt ' + appPath + ', ' + zipPath + ', and ' + dmgPath);
 }
 
 // ---- main ------------------------------------------------------------------

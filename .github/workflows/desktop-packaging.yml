@@ -16,7 +16,6 @@ on:
       - 'docs/desktop-gui.md'
       - 'docs/getting-started.md'
       - 'docs/index.md'
-      - 'docs/desktop-gui.md'
       - 'docs/deployment.md'
       - 'README.md'
 
@@ -78,7 +77,7 @@ jobs:
           $version = node -p "require('./package.json').version"
           & "${env:ProgramFiles(x86)}\NSIS\makensis.exe" "/DAPP_VERSION=$version" "packaging/windows/TactiDiagram.nsi"
 
-  
+
   macos-packaging-validation:
     name: Validate macOS app and DMG packaging
     if: github.event_name == 'pull_request'

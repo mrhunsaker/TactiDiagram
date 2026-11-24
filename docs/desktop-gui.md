@@ -16,8 +16,9 @@ webview:
 - **Windows:** Microsoft Edge WebView2 Runtime. It is preinstalled on most
   current Windows 10/11 systems; managed, LTSC, or stripped-down images may
   need the [Evergreen WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
-- **macOS:** WKWebView, provided by the operating system. macOS is not a
-  packaged release target at present.
+- **macOS:** WKWebView, provided by the operating system. Releases include a
+  universal macOS app bundle for Intel and Apple silicon, a portable ZIP, and
+  a drag-to-install DMG.
 - **Linux:** WebKitGTK, which must be installed from the distribution's
   packages (commonly named webkit2gtk or webkit2gtk-4.1).
 
@@ -156,6 +157,45 @@ node scripts/package.mjs --target linux --version 2026.11.22 --out dist
      request administrator elevation. The portable ZIP remains available.
      `scripts/win-icon.cjs` generates the multi-size icon and `rcedit`
      embeds it in the application executable.
+   - **macOS:** `TactiDiagram.app` is a standard app bundle containing the
+     universal Neutralino executable and its `resources.neu` payload.
+     `TactiDiagram-macOS-universal.zip` preserves the app bundle for portable
+     extraction and direct launch. `TactiDiagram-macOS-universal.dmg` contains
+     the same app plus an `/Applications` shortcut for drag-to-install. The
+     universal executable supports both Intel and Apple-silicon Macs.
+
+### macOS app bundle and disk image
+
+The macOS package uses Neutralino's universal Darwin executable
+(`mac_universal`), so one build runs natively on Intel and Apple-silicon Macs.
+The packaging script creates `dist/TactiDiagram.app` with an `Info.plist`,
+the executable, and its adjacent `resources.neu` payload. It then creates:
+
+- `TactiDiagram-macOS-universal.zip`: a portable archive containing the
+  `.app` bundle. Extract it and move or launch the app from the extracted
+  location.
+- `TactiDiagram-macOS-universal.dmg`: a compressed disk image containing the
+  same `.app` bundle and an `/Applications` alias. Open the image and drag
+  TactiDiagram into Applications to install it.
+
+Local macOS build (run from the repository root):
+
+```bash
+npm ci
+npx neu update
+node scripts/package.mjs --target mac --version 2026.11.23
+```
+
+The script uses macOS-provided `ditto`, `ln`, and `hdiutil`; no third-party
+installer compiler is required. `--target mac` is also selected automatically
+when `npm run package:desktop` is run on macOS. The outputs are written to
+`dist/`.
+
+The current artifacts are not code-signed or notarized. Gatekeeper may block
+the first launch when the app is downloaded from the internet; users may need
+to Control-click the app, choose **Open**, and confirm the macOS prompt.
+Signing and notarization require an Apple Developer identity and are not
+configured in this workflow.
 
 ### How the NSIS installer is constructed
 
@@ -241,12 +281,13 @@ build. On a matching tag the workflow:
    tag-derived version (`v2026.11.22` -> `2026.11.22`);
 2. stamps that version into the packaged builds (`neutralino.config.json`,
    `resources/version.json`, and the Windows installer metadata);
-3. builds the Linux AppImage and Windows portable ZIP plus NSIS installer
-   independently, uploads the artifacts, then one release job attaches all
-   three after both platform builds succeed.
+3. builds the Linux AppImage, Windows portable ZIP plus NSIS installer, and
+   macOS universal app ZIP plus DMG independently, uploads the artifacts, then
+   one release job attaches all platform artifacts after every build succeeds.
 
 Pull requests that touch packaging sources also compile the Windows installer
-on a Windows runner. Pull requests do not publish releases. The release job
+on a Windows runner and build the macOS app bundle, portable ZIP, and DMG on a
+macOS runner. Pull requests do not publish releases. The release job
 runs only for the version-tag push event; ordinary branch pushes do not build
 or publish release artifacts.
 
@@ -261,6 +302,7 @@ package version before tagging.
 - Windows installer and portable ZIP are currently unsigned. SmartScreen may
   warn at download or first launch. The target machine needs Microsoft Edge
   WebView2 Runtime. The NSIS installer is per-user and does not elevate.
+- The macOS app is universal (Intel x86_64 and Apple arm64) but is unsigned and not notarized.
 - The AppImage is x86_64 only; aarch64 builds would need ARM Neutralino
   binaries and `aarch64` `appimagetool`.
 - The packaged app reaches the network the same way the web app does. Its

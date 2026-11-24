@@ -16,6 +16,7 @@ on:
       - 'docs/desktop-gui.md'
       - 'docs/getting-started.md'
       - 'docs/index.md'
+      - 'docs/deployment.md'
       - 'README.md'
 
 permissions:
@@ -75,6 +76,26 @@ jobs:
         run: |
           $version = node -p "require('./package.json').version"
           & "${env:ProgramFiles(x86)}\NSIS\makensis.exe" "/DAPP_VERSION=$version" "packaging/windows/TactiDiagram.nsi"
+
+
+  macos-packaging-validation:
+    name: Validate macOS app and DMG packaging
+    if: github.event_name == 'pull_request'
+    runs-on: macos-14-large
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Neutralino binaries
+        run: npx neu update
+        working-directory: desktop/neutralino
+      - name: Build macOS universal app, portable ZIP, and installer DMG
+        run: node scripts/package.mjs --target mac --version "$(node -p "require('./package.json').version")"
 
   version:
     if: github.event_name == 'push'
@@ -207,9 +228,35 @@ jobs:
             dist/TactiDiagram-Setup.exe
           if-no-files-found: error
 
+  macos:
+    if: github.event_name == 'push'
+    needs: version
+    runs-on: macos-14-large
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Neutralino binaries
+        run: npx neu update
+        working-directory: desktop/neutralino
+      - name: Build macOS universal app, portable ZIP, and installer DMG
+        run: node scripts/package.mjs --target mac --version "${{ needs.version.outputs.version }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TactiDiagram-macOS-universal
+          path: |
+            dist/TactiDiagram-macOS-universal.zip
+            dist/TactiDiagram-macOS-universal.dmg
+          if-no-files-found: error
+
   release:
     if: github.event_name == 'push'
-    needs: [version, linux, windows]
+    needs: [version, linux, windows, macos]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -224,3 +271,5 @@ jobs:
             release-assets/TactiDiagram-linux-x86_64/TactiDiagram-x86_64.AppImage
             release-assets/TactiDiagram-win-x64/TactiDiagram-win-x64.zip
             release-assets/TactiDiagram-win-x64/TactiDiagram-Setup.exe
+            release-assets/TactiDiagram-macOS-universal/TactiDiagram-macOS-universal.zip
+            release-assets/TactiDiagram-macOS-universal/TactiDiagram-macOS-universal.dmg

@@ -128,8 +128,11 @@ There are three ways to run TactiDiagram:
    and no browser chrome, using the operating system webview instead of a
    bundled Chromium.
 3. **Install a packaged desktop build** (no Node.js on the target machine):
-   download the x86_64 Linux AppImage or Windows x64 NSIS installer from
-   [Releases](https://github.com/mrhunsaker/TactiDiagram/releases). The Windows
+   download the x86_64 Linux AppImage, universal macOS DMG/portable ZIP, or
+   Windows x64 NSIS installer from
+   [Releases](https://github.com/mrhunsaker/TactiDiagram/releases). The macOS DMG
+   supports drag-to-install into Applications; the ZIP contains the portable
+   `.app` bundle. The Windows
    installer creates desktop and Start Menu shortcuts and an uninstaller;
    the portable ZIP remains available. Linux requires system WebKitGTK;
    Windows requires Microsoft Edge WebView2 Runtime.

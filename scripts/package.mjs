@@ -2,9 +2,10 @@
 // Package TactiDiagram as a desktop application.
 //
 // Usage:
-//   npm run package:desktop            (auto: linux target on Linux, win on Windows)
+//   npm run package:desktop            (auto: linux, macOS, or Windows target)
 //   node scripts/package.mjs --target linux [--version 2026.11.22] [--out dist]
 //   node scripts/package.mjs --target win   [--version 2026.11.22] [--out dist]
+//   node scripts/package.mjs --target mac   [--version 2026.11.22] [--out dist]
 //
 // What this does:
 //   1. Vendors runtime assets ("npm run vendor") so the bundle is complete.
@@ -21,6 +22,7 @@
 //        and executed with --appimage-extract-and-run, so no FUSE needed).
 //      - Windows: a zip with TactiDiagram.exe + resources.neu; the exe icon
 //        is embedded with rcedit when available (see scripts/win-icon.cjs).
+//      - macOS: a universal .app bundle, a portable ZIP, and a drag-to-install DMG.
 //
 // --version stamps the build: it sets neutralino.config.json "version" and
 // writes resources/version.json. The release workflow passes the tag version
@@ -33,6 +35,7 @@
 //   npx neu update      (once, downloads binaries into desktop/neutralino/bin/)
 //   On Linux: curl/network for the first appimagetool download.
 //   On Windows (optional, for the exe icon): npm i --no-save sharp png-to-ico rcedit
+//   On macOS: Xcode command-line tools (ditto, hdiutil) are provided by macOS.
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import {
@@ -54,7 +57,7 @@ const run = (cmd, args, opts = {}) => {
 const isDir = (p) => { try { return statSync(p).isDirectory(); } catch { return false; } };
 
 // ---- arguments -------------------------------------------------------------
-let target = process.platform === 'win32' ? 'win' : process.platform === 'linux' ? 'linux' : null;
+let target = process.platform === 'win32' ? 'win' : process.platform === 'linux' ? 'linux' : process.platform === 'darwin' ? 'mac' : null;
 let versionArg = null;
 let outArg = process.env.PACKAGE_OUT || 'dist';
 const argv = process.argv.slice(2);
@@ -67,9 +70,9 @@ function option(name) {
 target = option('--target') || target;
 versionArg = option('--version');
 outArg = option('--out') || outArg;
-if (!target) throw new Error('Automatic target selection supports Linux and Windows only; use --target linux or --target win.');
-if (!['linux', 'win'].includes(target)) {
-  console.error('Unsupported target: ' + target + '. Use --target linux or --target win.');
+if (!target) throw new Error('Automatic target selection supports Linux, macOS, and Windows; use --target linux, --target mac, or --target win.');
+if (!['linux', 'win', 'mac'].includes(target)) {
+  console.error('Unsupported target: ' + target + '. Use --target linux, --target mac, or --target win.');
   process.exit(1);
 }
 const SEMVER = /^[0-9]+[.][0-9]+[.][0-9]+(?:[-+][0-9A-Za-z.-]+)?$/;
@@ -163,7 +166,7 @@ function neuBuild() {
   if (!isDir(distRoot)) throw new Error('Neutralino did not create ' + distRoot);
   const files = walk(distRoot);
   const resources = files.find((path) => basename(path) === 'resources.neu');
-  const binaryPattern = target === 'win' ? /win_x64\.exe$/i : /linux_x64$/i;
+  const binaryPattern = target === 'win' ? /win_x64\.exe$/i : target === 'mac' ? /mac_universal$/i : /linux_x64$/i;
   const binary = files.find((path) => binaryPattern.test(basename(path)));
   if (!binary || !resources) {
     throw new Error('Could not find target x86_64 binary and resources.neu under ' + distRoot +
@@ -290,6 +293,55 @@ async function buildWindowsPackage(binary, resources) {
   console.log('\nBuilt ' + zipPath + (iconEmbedded ? '' : ' (default exe icon)'));
 }
 
+
+// ---- 5. package: macOS universal app, ZIP, and DMG -------------------------
+function buildMacPackage(binary, resources) {
+  const appPath = join(outDir, 'TactiDiagram.app');
+  const contents = join(appPath, 'Contents');
+  const macOS = join(contents, 'MacOS');
+  mkdirSync(macOS, { recursive: true });
+  copyFileSync(binary, join(macOS, 'TactiDiagram'));
+  chmodSync(join(macOS, 'TactiDiagram'), 0o755);
+  // Keep resources.neu beside the executable: this is the layout emitted by
+  // Neutralino's native macOS build and is resolved relative to the binary.
+  copyFileSync(resources, join(macOS, 'resources.neu'));
+
+  const version = versionArg || JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8')).version;
+  const plist = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">',
+    '<plist version="1.0"><dict>',
+    '<key>CFBundleDevelopmentRegion</key><string>en</string>',
+    '<key>CFBundleExecutable</key><string>TactiDiagram</string>',
+    '<key>CFBundleIdentifier</key><string>org.hunsakerweb.tactidiagram</string>',
+    '<key>CFBundleInfoDictionaryVersion</key><string>6.0</string>',
+    '<key>CFBundleName</key><string>TactiDiagram</string>',
+    '<key>CFBundleDisplayName</key><string>TactiDiagram</string>',
+    '<key>CFBundlePackageType</key><string>APPL</string>',
+    '<key>CFBundleShortVersionString</key><string>' + version + '</string>',
+    '<key>CFBundleVersion</key><string>' + version + '</string>',
+    '<key>LSMinimumSystemVersion</key><string>10.13</string>',
+    '<key>NSHighResolutionCapable</key><true/>',
+    '</dict></plist>',
+    '',
+  ].join('\\n');
+  writeFileSync(join(contents, 'Info.plist'), plist);
+  writeFileSync(join(contents, 'PkgInfo'), 'APPL????');
+
+  const zipPath = join(outDir, 'TactiDiagram-macOS-universal.zip');
+  run('ditto', ['-c', '-k', '--sequesterRsrc', '--keepParent', appPath, zipPath]);
+
+  const dmgStage = join(outDir, 'TactiDiagram-dmg-stage');
+  rmSync(dmgStage, { recursive: true, force: true });
+  mkdirSync(dmgStage, { recursive: true });
+  run('ditto', [appPath, join(dmgStage, 'TactiDiagram.app')]);
+  run('ln', ['-s', '/Applications', join(dmgStage, 'Applications')]);
+  const dmgPath = join(outDir, 'TactiDiagram-macOS-universal.dmg');
+  run('hdiutil', ['create', '-volname', 'TactiDiagram', '-srcfolder', dmgStage, '-ov', '-format', 'UDZO', dmgPath]);
+  rmSync(dmgStage, { recursive: true, force: true });
+  console.log('\\nBuilt ' + appPath + ', ' + zipPath + ', and ' + dmgPath);
+}
+
 // ---- main ------------------------------------------------------------------
 const backupRoot = mkdtempSync(join(tmpdir(), 'tactidiagram-package-'));
 const resourceBackup = join(backupRoot, 'resources');
@@ -302,6 +354,7 @@ try {
   writeBuildConfig();
   const built = neuBuild();
   if (target === 'linux') buildAppImage(built.binary, built.resources);
+  else if (target === 'mac') buildMacPackage(built.binary, built.resources);
   else await buildWindowsPackage(built.binary, built.resources);
   console.log('Done.');
 } catch (err) {
